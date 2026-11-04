@@ -389,6 +389,11 @@ recurring series recall ≥ 0.85, MISSED precision ≥ 0.80 and recall ≥ 0.80,
   Pages per role as in §2.
 * **Android** (customer only): Flutter, Firebase Auth + Google Sign-In, Riverpod, Dio, go_router, fl_chart.
   Screens: Login, Home, Transactions (+detail, re-categorize), Recurring, Insights.
+* **UI is a first-class deliverable**: one token file (`design/tokens.json`) drives both clients; Inter with
+  tabular numerals; light + dark; WCAG AA contrast enforced by a test (≥4.5:1 text, ≥3:1 chart colors); keyboard
+  and screen-reader support; purposeful 150–200 ms motion that respects reduced-motion; skeletons that match final
+  layout; consistent category colors across tables, charts and badges; Lighthouse dashboard targets A11y ≥ 95,
+  Perf ≥ 90, Best Practices ≥ 95; a dedicated critique/audit/polish pass before release.
 * **Auth**: Firebase proves identity; the backend owns roles. First Google login creates a CUSTOMER `app_user`
   linked to a synthetic profile (deterministic by uid); `ADMIN_EMAILS` get ADMIN. Local JWT login (seeded demo
   users, password from env) works with no Firebase project, so reviewers can run everything offline.

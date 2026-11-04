@@ -28,11 +28,23 @@ dio, go_router, fl_chart, flutter_secure_storage, intl.
 - Every screen has loading (skeleton), empty and error (with retry) states.
 - Commit messages end with exactly `Authored-By: vbs-0`; no AI attribution trailers. No `git push` without the user's explicit go-ahead in that message.
 
+**UI quality bar (the frontend is a first-class deliverable, judged as hard as the backend):**
+- One design system shared by web and mobile: `design/tokens.json` (brand, semantic colors, category palette, light + dark) is the only place colors are defined; web reads it into CSS variables, mobile into `ThemeExtension`.
+- Typography: Inter (self-hosted, no CDN) on web and mobile; `font-variant-numeric: tabular-nums` / `FontFeature.tabularFigures()` for every amount so columns align.
+- Light and dark themes on both clients, following the OS setting with a manual toggle on web.
+- Accessibility: text contrast ≥ 4.5:1, chart/category colors ≥ 3:1 against the surface (enforced by a test), visible focus rings, every icon-only button labelled, full keyboard navigation on web, Flutter `Semantics` on custom widgets, layouts survive 130% text scale.
+- Motion: 150–200 ms ease-out transitions only where they explain a change (drawer/sheet open, month switch, list insert); disabled under `prefers-reduced-motion` / `MediaQuery.disableAnimations`.
+- No layout shift: skeletons match final layout; numbers never reflow when loaded.
+- Charts follow the `dataviz` skill (load it before writing chart code): direct labels over legends where possible, no 3D/pies for comparisons, consistent category colors across every view.
+- Design execution uses the `impeccable` skill: direction before W1 (Task W0) and a critique/audit/polish pass at the end (Task W6). Lighthouse on the dashboard: Accessibility ≥ 95, Performance ≥ 90, Best Practices ≥ 95.
+
 ## File Map
 
 ```
+design/tokens.json                      (single source of colors/radii/motion for web + mobile)
 web/
   package.json vite.config.ts tsconfig*.json index.html components.json .env.example Dockerfile nginx.conf security-headers.conf
+  src/styles/tokens.css  src/lib/tokens.ts  src/lib/contrast.ts  src/pages/dev/Styleguide.tsx
   src/main.tsx App.tsx index.css
   src/lib/{api.ts,schema.d.ts,money.ts,firebase.ts,auth.tsx,nav.ts,month.ts,utils.ts}
   src/components/ui/* (shadcn)  src/components/{AppShell,MonthPicker,DataTable,StatCard,StatusBadge,QueryState,CategorySelect}.tsx
@@ -45,11 +57,69 @@ mobile/
   pubspec.yaml  android/app/src/main/AndroidManifest.xml  android/app/src/main/res/xml/network_security_config.xml
   lib/{main.dart,config.dart,router.dart,theme.dart}
   lib/api/{client.dart,models.dart}  lib/auth/auth_controller.dart  lib/state/providers.dart
-  lib/ui/{money.dart,month_bar.dart,async_view.dart}
+  lib/ui/{money.dart,month_bar.dart,async_view.dart,tokens.dart,skeleton.dart}  assets/fonts/Inter-*.ttf  assets/tokens.json (copied from design/)
   lib/screens/{login_screen,shell,home_screen,transactions_screen,txn_detail_sheet,recurring_screen,insights_screen}.dart
   test/{money_test.dart,models_test.dart}
 README.md  docs/{ai-usage.md,decisions.md,provenance.md,verification.md}  prompts/
 ```
+
+---
+
+### Task W0: Visual direction and shared design tokens
+
+**Files:**
+- Create: `design/tokens.json`, `design/DESIGN.md` (direction: audience, tone, layout principles, do/don't with reasons), `web/src/lib/contrast.ts`
+- Test: `web/src/lib/contrast.test.ts`
+
+**Interfaces:**
+- Produces: `design/tokens.json` with keys `brand`, `radius` (`sm 6, md 10, lg 14` px), `motion` (`fast 150, base 200` ms, `easing "cubic-bezier(0.2, 0, 0, 1)"`), `light` and `dark` objects (`bg, surface, surfaceRaised, text, muted, border, focus, success, warning, danger, info`), `category.light` and `category.dark` (one color per active EXPENSE/INCOME category code + `UNCATEGORIZED`), `status` mapping (`UNDER→success, NEAR→warning, OVER→danger, NO_BUDGET→muted, MISSED→danger, ACTIVE→success, ENDED→muted, ALERT→danger, WARN→warning, INFO→info`);
+  `contrast.ts`: `luminance(hex) -> number`, `contrastRatio(a, b) -> number` (WCAG 2.x formula).
+
+- [ ] **Step 1: Set direction** — invoke the `impeccable` skill (shape/direction mode) with this brief: "Desktop-first finance operations console for Indian households and back-office roles; calm, trustworthy, data-dense but readable; numbers are the hero; INR with Indian grouping; four roles with different jobs; light and dark." Record the chosen direction, type scale, spacing scale (4 px base), table density and component inventory in `design/DESIGN.md`. Load the `dataviz` skill and produce the category palette with its validator; put the result in `tokens.json`.
+- [ ] **Step 2: Failing test** — `web/src/lib/contrast.test.ts`:
+```ts
+import { describe, expect, it } from "vitest";
+import tokens from "../../../design/tokens.json";
+import { contrastRatio } from "./contrast";
+
+const themes = ["light", "dark"] as const;
+
+describe("design tokens", () => {
+  it("computes WCAG contrast", () => {
+    expect(contrastRatio("#000000", "#FFFFFF")).toBeCloseTo(21, 1);
+    expect(contrastRatio("#777777", "#FFFFFF")).toBeCloseTo(4.48, 1);
+  });
+  for (const t of themes) {
+    it(`${t}: text and semantic colors meet AA on surface`, () => {
+      const c = tokens[t];
+      for (const key of ["text", "muted", "success", "warning", "danger", "info"] as const) {
+        expect(contrastRatio(c[key], c.surface), `${t}.${key}`).toBeGreaterThanOrEqual(4.5);
+      }
+    });
+    it(`${t}: every category color is >= 3:1 on surface`, () => {
+      for (const [code, hex] of Object.entries(tokens.category[t])) {
+        expect(contrastRatio(hex as string, tokens[t].surface), `${t}.${code}`).toBeGreaterThanOrEqual(3);
+      }
+    });
+  }
+});
+```
+- [ ] **Step 3: Implement** `contrast.ts`:
+```ts
+const channel = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+export function luminance(hex: string): number {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((x) => channel(x / 255));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+```
+  (Run this task's test after W1 Step 1 creates `web/`; until then keep the files staged.)
+- [ ] **Step 4: Run, expect PASS** — adjust token values (never the thresholds) until it passes.
+- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(design): shared design tokens with enforced contrast and visual direction" -m "Authored-By: vbs-0"`
 
 ---
 
@@ -67,8 +137,8 @@ README.md  docs/{ai-usage.md,decisions.md,provenance.md,verification.md}  prompt
 
 ```bash
 cd /c/Users/chbha/Desktop/YottaFlex/kharcha && npm create vite@latest web -- --template react-ts
-cd web && npm i @tanstack/react-query @tanstack/react-table react-router recharts firebase openapi-fetch clsx tailwind-merge lucide-react sonner
-npm i -D tailwindcss @tailwindcss/vite openapi-typescript vitest jsdom @testing-library/react @testing-library/jest-dom
+cd web && npm i @tanstack/react-query @tanstack/react-table react-router recharts firebase openapi-fetch clsx tailwind-merge lucide-react sonner @fontsource-variable/inter
+npm i -D tailwindcss @tailwindcss/vite openapi-typescript vitest jsdom @testing-library/react @testing-library/jest-dom vitest-axe
 npx shadcn@latest init -d
 npx shadcn@latest add button card table badge dialog sheet select input tabs dropdown-menu skeleton sonner separator label textarea tooltip
 ```
@@ -226,7 +296,14 @@ export async function unwrap<T>(p: Promise<{ data?: T; error?: unknown; response
 `web/src/App.tsx` — routes from the File Map, each wrapped in `RequireRole` with the `NAV` roles (`/ops/transactions/:id` → ANALYST, REVIEWER, ADMIN); `/` → `homeFor(me.role)`; pages lazy-loaded with `React.lazy` + `Suspense` (code-splitting per role).
 `web/src/components/AppShell.tsx` — left sidebar (`navFor(me.role)`, active link highlight, lucide icons), top bar with `MonthPicker` (prev/next buttons + select of 2026-01..2026-12), user menu (email, role badge, logout). Min width 1024px layout; sidebar collapses under 1280px.
 `web/src/components/QueryState.tsx` — renders `Skeleton` while loading, an error card with "Retry" (`query.refetch()`), an empty message when data is an empty array, else children.
-`web/src/pages/Login.tsx` — "Continue with Google" button (hidden when `!firebaseEnabled`) and an email/password form for demo accounts with a hint listing the 4 demo emails (no passwords).
+`web/src/pages/Login.tsx` — "Continue with Google" button (hidden when `!firebaseEnabled`) and an email/password form for demo accounts with a hint listing the 4 demo emails (no passwords). Split layout: brand panel with product one-liner and three proof points (categorize, recurring, budgets) left, form right; form errors inline under the field, submit button shows a spinner and stays the same width.
+
+Design system wiring (from Task W0):
+- `web/src/styles/tokens.css`: `:root` = `tokens.light`, `[data-theme="dark"]` and `@media (prefers-color-scheme: dark) :root:not([data-theme="light"])` = `tokens.dark`, as CSS variables (`--bg`, `--surface`, `--text`, `--muted`, `--border`, `--focus`, `--success`, …, `--radius-md`, `--motion-base`, `--ease`); a `@media (prefers-reduced-motion: reduce)` block sets `--motion-*: 0ms`. Map shadcn's variables (`--background`, `--foreground`, `--primary`, `--ring`, …) onto these so shadcn components inherit the system. Generate this file from `design/tokens.json` with `scripts/tokens.mjs` (`npm run tokens`, also run in `prebuild`) so the JSON stays the single source.
+- `web/src/lib/tokens.ts`: `categoryColor(code, theme)`, `statusTone(status)` read from the JSON (used by badges and charts so a category has the same color everywhere).
+- `index.css`: `@import "@fontsource-variable/inter";` `body { font-family: "Inter Variable", system-ui, sans-serif; }` `.num { font-variant-numeric: tabular-nums; }`; global `:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }`.
+- Theme toggle (light / dark / system) in the user menu, persisted in `localStorage` (wrapped in `try/catch`), applied as `data-theme` on `<html>` before first paint via an inline script in `index.html` (no flash).
+- `web/src/pages/dev/Styleguide.tsx` at `/styleguide` (only when `import.meta.env.DEV`): every component, badge, status, category chip, chart sample and empty/error/loading state in both themes, used for visual review and screenshots.
 
 - [ ] **Step 4: Generate types and verify** — with the API running: `npm run gen:api && npm test && npm run build`. Expected: tests pass; build succeeds; `npm run dev` → log in as `customer@kharcha.test` lands on `/dashboard` (empty page shell).
 - [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(web): scaffold console with typed API client, Firebase/demo auth and role navigation" -m "Authored-By: vbs-0"`
@@ -327,6 +404,20 @@ Page behaviour:
 
 - [ ] **Step 1: Verify by hand** (no new pure logic): run each job from the UI on the starter scale; confirm statuses move QUEUED→RUNNING→SUCCEEDED and Validation/Exports pages update. `npm run build` passes.
 - [ ] **Step 2: Commit** — `git add -A && git commit -m "feat(web): admin jobs, validation, exports and user management" -m "Authored-By: vbs-0"`
+
+---
+
+### Task W6: UI critique, accessibility audit and polish
+
+**Files:**
+- Modify: any `web/src/**` file flagged by the audit
+- Test: `web/src/a11y.test.tsx`
+
+- [ ] **Step 1: Failing a11y test** — `web/src/a11y.test.tsx` renders `StatusBadge`, `DataTable` (3 sample rows), `MonthPicker`, `CategorySelect`, the Login form and the TxnDrawer content with mocked data inside the providers, and asserts `expect(await axe(container)).toHaveNoViolations()` (`vitest-axe`). Run → fix every violation (labels, roles, contrast, button names).
+- [ ] **Step 2: Critique and polish** — invoke the `impeccable` skill in critique → audit → polish mode on the running app (`npm run dev`, every role's pages, light and dark, 1280 px and 1920 px widths). Fix, in priority order: hierarchy (one primary action per view, numbers dominant), alignment and spacing to the 4 px scale, tabular numerals everywhere amounts appear, consistent category colors across table/chart/badge, empty/error/loading states on every query, truncation with tooltip for long descriptors, keyboard flow (Tab order, Esc closes drawers/dialogs, Enter submits), focus return after a drawer closes, toasts that say what changed ("Moved ₹499.00 to Subscriptions").
+- [ ] **Step 3: Measure** — `npm run build && npx vite preview --port 4173`, then `npx lighthouse http://localhost:4173/login --only-categories=performance,accessibility,best-practices --output=json --output-path=../reports/lighthouse-login.json` and the same for `/dashboard` with an authenticated session (Lighthouse `--extra-headers` is not enough for SPA auth — instead run it from Chrome DevTools on the logged-in page and save the report). Targets: Accessibility ≥ 95, Performance ≥ 90, Best Practices ≥ 95. Record scores in `docs/verification.md`.
+- [ ] **Step 4: Screenshots** — light and dark of Dashboard, Transactions + drawer, Budgets, Exceptions, Metrics, Anomalies, Jobs into `docs/screenshots/` for the README.
+- [ ] **Step 5: Commit** — `git add -A && git commit -m "fix(web): accessibility and visual polish from UI audit" -m "Authored-By: vbs-0"`
 
 ---
 
@@ -506,7 +597,7 @@ class ApiClient {
   // getMe, getSummary, getBudgets, getTxn, setCategory, getRecurring, getInsights, getCategories follow the same shape
 }
 ```
-Implement the remaining methods explicitly (one `dio.get`/`dio.post` each, mapping to the models). `AuthController`: on build, try `Firebase.initializeApp()` inside `try/catch` (absent `google-services.json` → Firebase disabled, Google button hidden); restore a stored demo token from `FlutterSecureStorage`; `signInWithGoogle` = `GoogleSignIn().signIn()` → `GoogleAuthProvider.credential(idToken, accessToken)` → `FirebaseAuth.instance.signInWithCredential` → `getMe()`; `token()` returns the demo token or `FirebaseAuth.instance.currentUser?.getIdToken()` (SDK refreshes automatically); a non-CUSTOMER role shows "This app is for customers — use the web console" and signs out. `router.dart`: go_router with `redirect` to `/login` when signed out; shell route with bottom `NavigationBar` (Home, Transactions, Recurring, Insights). `theme.dart`: Material 3, `ColorScheme.fromSeed(seedColor: Color(0xFF0F766E))`, light + dark.
+Implement the remaining methods explicitly (one `dio.get`/`dio.post` each, mapping to the models). `AuthController`: on build, try `Firebase.initializeApp()` inside `try/catch` (absent `google-services.json` → Firebase disabled, Google button hidden); restore a stored demo token from `FlutterSecureStorage`; `signInWithGoogle` = `GoogleSignIn().signIn()` → `GoogleAuthProvider.credential(idToken, accessToken)` → `FirebaseAuth.instance.signInWithCredential` → `getMe()`; `token()` returns the demo token or `FirebaseAuth.instance.currentUser?.getIdToken()` (SDK refreshes automatically); a non-CUSTOMER role shows "This app is for customers — use the web console" and signs out. `router.dart`: go_router with `redirect` to `/login` when signed out; shell route with bottom `NavigationBar` (Home, Transactions, Recurring, Insights). `theme.dart`: Material 3 light + dark built from `assets/tokens.json` (copied from `design/tokens.json` by a `tool/sync_tokens.dart` script; never hand-edited): `ColorScheme.fromSeed(seedColor: brand)` with `surface`/`error`/semantic colors overridden from the tokens, a `KharchaColors` `ThemeExtension` exposing `success, warning, danger, info, muted, categoryColor(code)`, Inter bundled under `assets/fonts/` (no runtime download), `TextTheme` with `FontFeature.tabularFigures()` on the numeric styles, `ThemeMode.system`.
 
 - [ ] **Step 4: Run tests, expect PASS** — `/c/flutter/bin/flutter test && /c/flutter/bin/flutter analyze`.
 - [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(mobile): Flutter app scaffold with Firebase Google sign-in, demo login and typed API client" -m "Authored-By: vbs-0"`
@@ -527,6 +618,14 @@ Screen behaviour (smoothness rules: `const` widgets where possible, `ListView.bu
 - **Transactions**: search field (300 ms debounce), category filter chip opening a bottom sheet, infinite list (`loadMore` when within 5 items of the end), sticky date headers, amount colored by sign; tap → `TxnDetailSheet` (descriptor, merchant, category, confidence, decision, "Change category" dropdown → `setCategory` → snackbar → invalidate budgets/summary and patch the item in place).
 - **Recurring**: sections MISSED / ACTIVE / ENDED with amount, cadence, next expected date.
 - **Insights**: cards by severity with icon and color.
+
+Feel and polish (part of done, not optional):
+- Skeleton placeholders (`lib/ui/skeleton.dart`, a single shimmer `AnimationController` shared via `InheritedWidget`) shaped like the final rows/cards; no spinners on full screens.
+- Month switch uses `AnimatedSwitcher` (200 ms fade + 8 px slide) on the content; budget bars animate width with `TweenAnimationBuilder`; all durations read from tokens and drop to zero when `MediaQuery.disableAnimationsOf(context)` is true.
+- Transaction row → detail uses a `Hero` on the amount; category change gives `HapticFeedback.selectionClick()` and a snackbar naming the move ("₹499.00 moved to Subscriptions") with Undo (re-posts the previous category).
+- Empty states with an icon and one-line guidance; offline/error state with Retry; pull-to-refresh on every list.
+- Accessibility: `Semantics(label: …)` on amount/status widgets ("Debit ₹499.00, Subscriptions, 5 March"), tap targets ≥ 48 dp, verified at 130% text scale (no overflow stripes) in light and dark.
+- Widget test `mobile/test/home_golden_test.dart`: pump `HomeScreen` with a fake `ApiClient` (override providers) in light and dark at 130% text scale and assert no overflow (`tester.takeException()` is null) and that the budget row exposes its semantics label.
 
 - [ ] **Step 1: Implement screens.**
 - [ ] **Step 2: Verify on emulator** — `cd mobile && /c/flutter/bin/flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000` (backend on host port 8000): demo login as `customer@kharcha.test`, scroll 100+ transactions without jank (`flutter run --profile` → DevTools frame chart has no red frames during scroll), change a category and see the Home budget bar update, switch months back and forth instantly. Save screenshots to `docs/screenshots/mobile-*.png`.
@@ -567,6 +666,8 @@ Screen behaviour (smoothness rules: `const` widgets where possible, `ListView.bu
 
 ## Self-review
 
+- Execution order: W0 → W1 → W2 → W3 → W4 → W6 → W5 → M1 → M2 → M3 → D1 → D2 (polish W6 before containerizing so the image ships the polished build).
+- UI quality bar → W0 (tokens, direction, contrast test), W1 (theme, font, focus, styleguide), W2/W3 (states, consistent colors), W6 (axe, impeccable audit, Lighthouse, screenshots), M1/M2 (shared tokens, motion, semantics, text-scale test).
 - Spec §2 features: customer (W2, M2), analyst (W3), reviewer (W3), admin (W4) — covered. §10 Firebase + demo login (W1, M1, M3). §12 performance (keyset infinite lists, query caching, code-splitting, nginx caching) — W1/W2/W5/M2.
 - Submission requirements (README, run steps, prompt history, AI disclosure, verification, lawful provenance, public repo) — D1, D2.
 - Names consistent with backend plan routes: `/api/v1/auth/*`, `/me/*`, `/analyst/*`, `/review/*`, `/ops/transactions/{id}`, `/admin/*`, `/categories`.
