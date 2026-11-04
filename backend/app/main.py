@@ -1,9 +1,9 @@
-from fastapi import Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from starlette.middleware.gzip import GZipMiddleware
 
-from app.api import auth, errors
+from app.api import auth, errors, me
 from app.config import settings
 from app.db import get_conn
 from app.logging import RequestIdMiddleware, setup_logging
@@ -19,7 +19,10 @@ def create_app() -> FastAPI:
                        allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Request-ID"])
     app.add_middleware(RequestIdMiddleware)
     errors.install(app)
-    app.include_router(auth.router)
+    v1 = APIRouter(prefix="/api/v1")
+    for r in (auth.router, me.router):
+        v1.include_router(r)
+    app.include_router(v1)
 
     @app.get("/healthz", tags=["ops"])
     def healthz():

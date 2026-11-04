@@ -105,18 +105,18 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 
 | ID | Scenario | Expected handling | Where | Test | Status |
 |---|---|---|---|---|---|
-| A01 | Customer requests another household's txn | 404 (no existence leak) | api/me.py | test_cannot_read_other_users_txn | planned |
+| A01 | Customer requests another household's txn, account list or override | 404, same as a missing id (no existence leak) | api/me.py | test_me::test_cannot_read_other_users_txn | done |
 | A02 | Expired, forged, `alg: none`, garbage tokens | 401 | api/deps.py | test_security::test_algorithm_confusion_rejected, test_local_token_roundtrip_and_failures; API: test_expired_and_forged_tokens_rejected | planned |
 | A03 | Token says ADMIN but DB says CUSTOMER; demotion while a token is live | DB read on every request wins; unknown login id → 401 | api/deps.py | test_auth::test_login_me_and_role_from_db, test_disabled_and_deleted_logins | done |
 | A04 | Disabled user with a valid token, or logging in | 403 (signed in, but not allowed) | api/deps.py, api/auth.py | test_auth::test_disabled_and_deleted_logins | done |
 | A05 | Firebase token with wrong aud / iss / unknown kid | 401 | security.py | test_security::test_firebase_bad_claims_rejected, test_firebase_unknown_kid_and_other_signer | done |
 | A06 | Two first-time Google logins race | Transaction-scoped advisory lock around find-or-create → one app_user | api/auth.py | test_auth::test_google_signup_link_and_conflicts (idempotent re-login) | done |
-| A07 | Override with retired / UNKNOWN / non-existent category | 422 | api/me.py | test_invalid_category_rejected | planned |
-| A08 | Invalid month (`2026-13`, `26-1`) | 422 | api/common.py | test_summary_recurring_insights_shapes | planned |
-| A09 | Tampered or malformed cursor | 400 | api/common.py | test_bad_cursor_rejected | planned |
-| A10 | `limit` 0 or 10,000 | 422 (bounds 1..100) | api/me.py | test_limit_bounds | planned |
-| A11 | Search containing `%` or `_` | Escaped, matched literally | api/me.py | test_search_escapes_wildcards | planned |
-| A12 | No successful pipeline run yet | 409 with a clear message | api/common.py | test_no_run_409 | planned |
+| A07 | Override with retired / UNKNOWN / non-existent category | 422; a retired code names its replacement | api/me.py | test_me::test_invalid_category_rejected | done |
+| A08 | Invalid month (`2026-13`, `26-1`, `2026-3`) | 422 | api/common.py | test_me::test_summary_recurring_insights_shapes | done |
+| A09 | Tampered or malformed cursor | 400 with "start again" message | api/common.py | test_me::test_bad_cursor_limit_and_search | done |
+| A10 | `limit` 0 or 10,000 | 422 (bounds 1..100) | api/common.py | test_me::test_bad_cursor_limit_and_search | done |
+| A11 | Search containing `%` or `_` | Escaped, matched literally | api/common.py | test_me::test_bad_cursor_limit_and_search | done |
+| A12 | No successful pipeline run yet | 409 telling an admin to run the pipeline | api/common.py | test_me::test_no_run_409 | done |
 | A13 | Invalid / concurrent exception transition | 409 | api/analyst.py | test_exception_lifecycle_and_invalid_transition | planned |
 | A14 | Rule with invalid regex, > 200 chars, or no condition | 422 | api/analyst.py | test_rule_versioning_and_tester | planned |
 | A15 | Second dataset job while one runs | 409; a dead worker's job becomes FAILED | jobs/runner.py | test_admin_job_lifecycle | planned |
@@ -132,6 +132,11 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A25 | Google account with an unverified email | 403, never matched to an existing login by email | api/auth.py | test_auth::test_google_signup_link_and_conflicts | done |
 | A26 | Password guessing | 5 failures per email in 15 min → 429 with minutes to wait (per process) | api/auth.py | test_auth::test_lockout_after_repeated_failures | done |
 | A27 | Unhandled server error | problem+json 500 with request id; no exception text leaks | api/errors.py | test_auth::test_unhandled_error_is_generic_500 | done |
+| A28 | Joint account (second holder) | Its transactions are visible to both holders; totals and budgets count them for the owner's household only, like the engine (no double counting) | api/me.py | test_me::test_transactions_keyset_pagination_and_isolation | done |
+| A29 | Override made after the latest run | Shown at once in lists, detail, budgets and summary (latest override applied on read); the next run bakes it in | api/common.py EFFECTIVE | test_me::test_override_changes_budget_actual_immediately | done |
+| A30 | Customer fixes an uncategorized txn | Open UNCATEGORIZED exception closes with an event naming the override | api/me.py | test_me::test_override_resolves_uncategorized_exception | done |
+| A31 | Staff opens a customer page | ANALYST/REVIEWER 403; ADMIN must name `?user_id=` (support view), unknown id 404 | api/common.py | test_me::test_roles_and_admin_support_view | done |
+| A32 | Login not linked to a household | 409 asking an admin to link it | api/common.py | (covered by household()) | done |
 
 ## Web console (U)
 

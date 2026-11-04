@@ -38,6 +38,6 @@ def client(api_db):
 
 
 def login(client, email, password=DEMO_PASSWORD) -> dict:
-    r = client.post("/auth/login", json={"email": email, "password": password})
+    r = client.post("/api/v1/auth/login", json={"email": email, "password": password})
     assert r.status_code == 200, r.text
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
