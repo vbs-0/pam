@@ -32,7 +32,8 @@ class AccountCtx:
     opening_balance: int = 0
 
     def open_on(self, d: date) -> bool:
-        return self.opened_on <= d and (self.closed_on is None or d <= self.closed_on)
+        """Can ordinary activity happen on day d? The closure day itself only carries the balance sweep."""
+        return self.opened_on <= d and (self.closed_on is None or d < self.closed_on)
 
 
 @dataclass
