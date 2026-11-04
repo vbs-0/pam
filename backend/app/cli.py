@@ -79,6 +79,9 @@ def cmd_docs(a) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
+    for stream in (sys.stdout, sys.stderr):      # Windows consoles default to cp1252, which has no ₹
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(prog="pam", description="PAM data and pipeline commands")
     sub = ap.add_subparsers(dest="command", required=True)
     for name, fn, help_ in [("generate", cmd_generate, "generate the synthetic dataset (CSV + manifest)"),
