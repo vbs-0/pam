@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from starlette.middleware.gzip import GZipMiddleware
 
+from app.api import auth, errors
 from app.config import settings
 from app.db import get_conn
 from app.logging import RequestIdMiddleware, setup_logging
@@ -17,6 +18,8 @@ def create_app() -> FastAPI:
     app.add_middleware(CORSMiddleware, allow_origins=[o for o in settings.cors_origins.split(",") if o],
                        allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Request-ID"])
     app.add_middleware(RequestIdMiddleware)
+    errors.install(app)
+    app.include_router(auth.router)
 
     @app.get("/healthz", tags=["ops"])
     def healthz():

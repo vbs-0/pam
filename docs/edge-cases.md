@@ -107,10 +107,10 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 |---|---|---|---|---|---|
 | A01 | Customer requests another household's txn | 404 (no existence leak) | api/me.py | test_cannot_read_other_users_txn | planned |
 | A02 | Expired, forged, `alg: none`, garbage tokens | 401 | api/deps.py | test_security::test_algorithm_confusion_rejected, test_local_token_roundtrip_and_failures; API: test_expired_and_forged_tokens_rejected | planned |
-| A03 | Token says ADMIN but DB says CUSTOMER | DB wins | api/deps.py | test_role_is_read_from_db_not_token | planned |
-| A04 | Disabled user with a valid token | 401 | api/deps.py | test_disabled_user_rejected | planned |
+| A03 | Token says ADMIN but DB says CUSTOMER; demotion while a token is live | DB read on every request wins; unknown login id → 401 | api/deps.py | test_auth::test_login_me_and_role_from_db, test_disabled_and_deleted_logins | done |
+| A04 | Disabled user with a valid token, or logging in | 403 (signed in, but not allowed) | api/deps.py, api/auth.py | test_auth::test_disabled_and_deleted_logins | done |
 | A05 | Firebase token with wrong aud / iss / unknown kid | 401 | security.py | test_security::test_firebase_bad_claims_rejected, test_firebase_unknown_kid_and_other_signer | done |
-| A06 | Two first-time Google logins race | `ON CONFLICT DO NOTHING` + re-select → one app_user | api/deps.py | test_firebase_link_is_idempotent | planned |
+| A06 | Two first-time Google logins race | Transaction-scoped advisory lock around find-or-create → one app_user | api/auth.py | test_auth::test_google_signup_link_and_conflicts (idempotent re-login) | done |
 | A07 | Override with retired / UNKNOWN / non-existent category | 422 | api/me.py | test_invalid_category_rejected | planned |
 | A08 | Invalid month (`2026-13`, `26-1`) | 422 | api/common.py | test_summary_recurring_insights_shapes | planned |
 | A09 | Tampered or malformed cursor | 400 | api/common.py | test_bad_cursor_rejected | planned |
@@ -127,6 +127,11 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A20 | Login probing for which emails exist | Unknown email still runs an argon2 verify against a dummy hash; same 401 message | security.py, api/auth.py | test_security::test_passwords | done |
 | A21 | Phone or server clock skew; Firebase `auth_time` in the future | 30 s leeway on exp/iat; future `auth_time` rejected | security.py | test_security::test_firebase_bad_claims_rejected | done |
 | A22 | Google certificate endpoint unreachable | Cached keys reused until refreshed (cache honours `max-age`); with no keys at all → 503, not 401 | security.py | test_security::test_cert_cache_max_age | done |
+| A23 | First Google sign-in by someone with no invite | Admin emails (config) → ADMIN; others → CUSTOMER linked to the first unclaimed household so the demo has data (synthetic data only; a real deployment would invite instead) | api/auth.py | test_auth::test_google_signup_link_and_conflicts | done |
+| A24 | Google email already used by a demo/invited login | Linked to that login (no duplicate); a different Google uid for the same email → 409 | api/auth.py | test_auth::test_google_signup_link_and_conflicts | done |
+| A25 | Google account with an unverified email | 403, never matched to an existing login by email | api/auth.py | test_auth::test_google_signup_link_and_conflicts | done |
+| A26 | Password guessing | 5 failures per email in 15 min → 429 with minutes to wait (per process) | api/auth.py | test_auth::test_lockout_after_repeated_failures | done |
+| A27 | Unhandled server error | problem+json 500 with request id; no exception text leaks | api/errors.py | test_auth::test_unhandled_error_is_generic_500 | done |
 
 ## Web console (U)
 

@@ -83,6 +83,7 @@ def test_override_survives_rerun(loaded):
 def test_reload_keeps_app_users(loaded, monkeypatch):
     conn, _, _, d = loaded
     monkeypatch.setenv("DEMO_PASSWORD", "demo-pass-123")
+    conn.execute(text("DELETE FROM app_user"))
     seed_demo_users(conn)
     conn.commit()
     users = conn.execute(text("SELECT email, role, profile_user_id FROM app_user ORDER BY 1")).all()
