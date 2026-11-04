@@ -106,10 +106,10 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | ID | Scenario | Expected handling | Where | Test | Status |
 |---|---|---|---|---|---|
 | A01 | Customer requests another household's txn | 404 (no existence leak) | api/me.py | test_cannot_read_other_users_txn | planned |
-| A02 | Expired, forged, `alg: none`, garbage tokens | 401 | api/deps.py | test_expired_and_forged_tokens_rejected | planned |
+| A02 | Expired, forged, `alg: none`, garbage tokens | 401 | api/deps.py | test_security::test_algorithm_confusion_rejected, test_local_token_roundtrip_and_failures; API: test_expired_and_forged_tokens_rejected | planned |
 | A03 | Token says ADMIN but DB says CUSTOMER | DB wins | api/deps.py | test_role_is_read_from_db_not_token | planned |
 | A04 | Disabled user with a valid token | 401 | api/deps.py | test_disabled_user_rejected | planned |
-| A05 | Firebase token with wrong aud / iss / unknown kid | 401 | security.py | test_security | planned |
+| A05 | Firebase token with wrong aud / iss / unknown kid | 401 | security.py | test_security::test_firebase_bad_claims_rejected, test_firebase_unknown_kid_and_other_signer | done |
 | A06 | Two first-time Google logins race | `ON CONFLICT DO NOTHING` + re-select → one app_user | api/deps.py | test_firebase_link_is_idempotent | planned |
 | A07 | Override with retired / UNKNOWN / non-existent category | 422 | api/me.py | test_invalid_category_rejected | planned |
 | A08 | Invalid month (`2026-13`, `26-1`) | 422 | api/common.py | test_summary_recurring_insights_shapes | planned |
@@ -123,6 +123,10 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A16 | Export path traversal (`..%2F`) | 400/404 | api/admin.py | test_export_path_traversal_blocked | planned |
 | A17 | Admin demotes/disables themself | 409 | api/admin.py | test_admin_cannot_demote_self | planned |
 | A18 | Dataset reload | App users survive (soft profile reference, no FK cascade) | jobs/load.py | test_reload_keeps_app_users | planned |
+| A19 | Algorithm confusion: HS256 token signed with Google's public certificate, or `alg: none` | Algorithm pinned per token kind (HS256 local, RS256 Firebase); anything else rejected | security.py | test_security::test_algorithm_confusion_rejected | done |
+| A20 | Login probing for which emails exist | Unknown email still runs an argon2 verify against a dummy hash; same 401 message | security.py, api/auth.py | test_security::test_passwords | done |
+| A21 | Phone or server clock skew; Firebase `auth_time` in the future | 30 s leeway on exp/iat; future `auth_time` rejected | security.py | test_security::test_firebase_bad_claims_rejected | done |
+| A22 | Google certificate endpoint unreachable | Cached keys reused until refreshed (cache honours `max-age`); with no keys at all → 503, not 401 | security.py | test_security::test_cert_cache_max_age | done |
 
 ## Web console (U)
 
