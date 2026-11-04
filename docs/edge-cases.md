@@ -76,7 +76,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | E11 | Over-refund (more than remaining) | Orphan refund + exception | refunds.py | test_transfers_refunds::test_partial_refunds_link_and_net | done |
 | E12 | Orphan refund from a non-expense category | Category UNCATEGORIZED, still reduces spend bucket | refunds.py | test_transfers_refunds::test_orphan_refund_non_expense_becomes_uncategorized | done |
 | E13 | Refund in a later month | Reduces spend in the refund's month (cash basis, documented) | budgets.py | test_budgets_insights::test_spend_partition_refund_nets_transfer_excluded | done |
-| E14 | User/analyst override | Locked: pairing, refunds, rent inference never change it; survives reruns | pipeline.py | test_pipeline::test_override_locks_decision, test_transfers_refunds::test_locked_items_untouched; DB rerun part: B15 | planned |
+| E14 | User/analyst override | Locked: pairing, refunds, rent inference never change it; survives reruns | pipeline.py | test_pipeline::test_override_locks_decision, test_transfers_refunds::test_locked_items_untouched, jobs::test_override_survives_rerun | done |
 | E15 | Two consecutive skips | Two MISSED events | recurring.py | test_recurring::test_double_skip_two_missed | done |
 | E16 | One-step price change (salary hike, rent increase, plan upgrade) | Series kept; AMOUNT_CHANGED event; typical = recent median | recurring.py | test_recurring::test_price_change_allowed_and_logged | done |
 | E17 | Variable bills (electricity, interest) | Wider amount tolerance; no AMOUNT_CHANGED noise | recurring.py | test_recurring::test_quarterly_interest_with_varying_amounts | done |
@@ -89,10 +89,10 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | E24 | Budget amount 0 | OVER if any spend, else UNDER | budgets.py | test_budgets_insights::test_status_thresholds_and_lines | done |
 | E25 | Uncategorized debits | Counted in spend under UNCATEGORIZED (never silently dropped) | budgets.py | test_budgets_insights::test_spend_partition_refund_nets_transfer_excluded | done |
 | E26 | Ledger partition | Σ amounts = income − spend + transfers + reversals, per user | pipeline.py, outputs_validate.py | test_pipeline::test_pipeline_end_to_end_partition_and_exceptions | done |
-| E27 | Rerun the pipeline | Same REC-/EXC- ids; resolved exceptions stay resolved; history kept per run | jobs/pipeline_job.py | test_outputs_validate_and_rerun_keeps_ids | planned |
+| E27 | Rerun the pipeline | Same REC-/EXC- ids; resolved exceptions stay resolved; history kept per run | jobs/pipeline_job.py | test_outputs_validate_and_rerun_keeps_ids | done |
 | E28 | Spend spike with < 3 prior months | No SPEND_SPIKE insight | insights.py | test_budgets_insights::test_spike_needs_three_prior_months | done |
 | E29 | Month with zero income | LOW_SAVINGS skipped (no divide by zero) | insights.py | test_budgets_insights::test_low_savings_zero_income | done |
-| E30 | Pipeline fails halfway | Run marked FAILED, outputs rolled back, readers keep using last SUCCEEDED run | jobs/pipeline_job.py | test_failed_run_is_invisible | planned |
+| E30 | Pipeline fails halfway | Run marked FAILED, outputs rolled back, readers keep using last SUCCEEDED run | jobs/pipeline_job.py | test_failed_run_is_invisible | done |
 | E31 | Series on an account that closed mid-year (interest stops after the last quarter before closure) | Status ENDED because the account is CLOSED, even if the gap is still short | recurring.py | test_recurring::test_series_on_closed_account_ends | done |
 | E32 | One merchant, two series (see D30) | Kept as two series; neither reports AMOUNT_CHANGED because of the other | recurring.py | test_recurring::test_same_merchant_two_series | done |
 | E33 | Budget code typed with spaces, hyphens or lower case (`food-dining`, ` food dining `) | Canonicalised (upper, `_` separators) then REMAPPED_CASE, or REMAPPED_RETIRED if the canonical code is retired | budgets.py | test_budgets_insights::test_resolution_paths | done |
@@ -122,7 +122,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A15 | Second dataset job while one runs | 409; a dead worker's job becomes FAILED | jobs/runner.py | test_admin_job_lifecycle | planned |
 | A16 | Export path traversal (`..%2F`) | 400/404 | api/admin.py | test_export_path_traversal_blocked | planned |
 | A17 | Admin demotes/disables themself | 409 | api/admin.py | test_admin_cannot_demote_self | planned |
-| A18 | Dataset reload | App users survive (soft profile reference, no FK cascade) | jobs/load.py | test_reload_keeps_app_users | planned |
+| A18 | Dataset reload | App users survive (soft profile reference, no FK cascade) | jobs/load.py | test_reload_keeps_app_users | done |
 | A19 | Algorithm confusion: HS256 token signed with Google's public certificate, or `alg: none` | Algorithm pinned per token kind (HS256 local, RS256 Firebase); anything else rejected | security.py | test_security::test_algorithm_confusion_rejected | done |
 | A20 | Login probing for which emails exist | Unknown email still runs an argon2 verify against a dummy hash; same 401 message | security.py, api/auth.py | test_security::test_passwords | done |
 | A21 | Phone or server clock skew; Firebase `auth_time` in the future | 30 s leeway on exp/iat; future `auth_time` rejected | security.py | test_security::test_firebase_bad_claims_rejected | done |

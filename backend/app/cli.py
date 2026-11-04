@@ -6,6 +6,8 @@ import tempfile
 import time
 from pathlib import Path
 
+from sqlalchemy import text
+
 from app.datagen.generator import SCALES, GenParams, generate
 from app.datagen.writer import export_json, export_sql, repro, write_dataset
 
@@ -78,12 +80,18 @@ def cmd_evaluate(a) -> None:
     from app.evaluation import evaluate, from_engine, render_markdown
     out, reports = _out(a), _reports(a)
     t = time.perf_counter()
-    d = Data(out)
-    result = run_engine(input_from_rows(d.rows))
-    decided, events, resolutions, exceptions = from_engine(result)
-    m = evaluate(decided, d.rows["txn_label"], d.rows["recurring_truth"], d.rows["anomaly"], events, resolutions,
-                 exceptions)
-    m["engine_stats"] = result.stats
+    if a.db:
+        from app.jobs.evaluate_job import run_evaluation
+        with _conn() as conn:
+            m = run_evaluation(conn)
+            conn.commit()
+    else:
+        d = Data(out)
+        result = run_engine(input_from_rows(d.rows))
+        decided, events, resolutions, exceptions = from_engine(result)
+        m = evaluate(decided, d.rows["txn_label"], d.rows["recurring_truth"], d.rows["anomaly"], events,
+                     resolutions, exceptions)
+        m["engine_stats"] = result.stats
     reports.mkdir(parents=True, exist_ok=True)
     (reports / "evaluation.json").write_text(json.dumps(m, indent=2, default=str) + "\n", encoding="utf-8",
                                              newline="\n")
@@ -94,6 +102,73 @@ def cmd_evaluate(a) -> None:
     print(f"{time.perf_counter() - t:.1f}s -> {reports}")
     if not m["all_pass"]:
         sys.exit(1)
+
+
+def _conn():
+    from app.db import engine
+    return engine.connect()
+
+
+def cmd_load(a) -> None:
+    from app.jobs.load import load_dataset, seed_demo_users
+    t = time.perf_counter()
+    with _conn() as conn:
+        counts = load_dataset(conn, _out(a), _out(a).name)
+        seeded = seed_demo_users(conn)
+        conn.commit()
+    print(f"loaded {counts['txn']:,} transactions ({sum(counts.values()):,} rows), {seeded} demo logins created "
+          f"in {time.perf_counter() - t:.1f}s")
+
+
+def cmd_seed_users(a) -> None:
+    from app.jobs.load import seed_demo_users
+    with _conn() as conn:
+        n = seed_demo_users(conn)
+        conn.commit()
+    print(f"{n} demo logins created" if n else "nothing to do (DEMO_PASSWORD unset or users exist)")
+
+
+def cmd_pipeline(a) -> None:
+    from app.jobs.pipeline_job import run_pipeline
+    t = time.perf_counter()
+    with _conn() as conn:
+        run_id = run_pipeline(conn)
+        stats = conn.execute(text("SELECT stats FROM pipeline_run WHERE run_id = :r"),
+                             {"r": run_id}).scalar()
+    print(f"{run_id} succeeded in {time.perf_counter() - t:.1f}s: {json.dumps(stats)}")
+
+
+def cmd_validate_outputs(a) -> None:
+    from app.datagen.validate import render_markdown, to_json
+    from app.jobs.outputs_validate import validate_outputs
+    reports = _reports(a)
+    with _conn() as conn:
+        results = validate_outputs(conn)
+        conn.commit()
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "validation_outputs.json").write_text(to_json(results), encoding="utf-8", newline="\n")
+    (reports / "validation_outputs.md").write_text(render_markdown(results, "Pipeline output validation"),
+                                                   encoding="utf-8", newline="\n")
+    for r in results:
+        print(f"{r.status:4}  {r.name:34} violations={r.violations}")
+    if any(r.status == "FAIL" for r in results):
+        sys.exit(1)
+
+
+def cmd_all(a) -> None:
+    """generate -> validate dataset -> load -> pipeline -> evaluate -> validate outputs, timing every stage."""
+    perf = {}
+    a.db = True
+    for name, fn in [("generate", cmd_generate), ("validate_dataset", cmd_validate_dataset), ("load", cmd_load),
+                     ("pipeline", cmd_pipeline), ("evaluate", cmd_evaluate),
+                     ("validate_outputs", cmd_validate_outputs)]:
+        t = time.perf_counter()
+        print(f"== {name}")
+        fn(a)
+        perf[name] = round(time.perf_counter() - t, 1)
+    reports = _reports(a)
+    (reports / "perf.json").write_text(json.dumps(perf, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"done: {perf}")
 
 
 def cmd_docs(a) -> None:
@@ -113,7 +188,12 @@ def main(argv: list[str] | None = None) -> None:
                             ("export", cmd_export, "write JSON and the SQL seed next to the CSVs"),
                             ("repro", cmd_repro, "generate twice in fresh interpreters and compare checksums"),
                             ("validate-dataset", cmd_validate_dataset, "check keys, joins, dates, arithmetic, labels"),
-                            ("evaluate", cmd_evaluate, "run the engine on the files and score it (no DB)"),
+                            ("evaluate", cmd_evaluate, "score the engine: on the files, or the latest DB run (--db)"),
+                            ("load", cmd_load, "reset the database to this dataset (COPY) and seed demo logins"),
+                            ("seed-users", cmd_seed_users, "create demo logins from DEMO_PASSWORD"),
+                            ("pipeline", cmd_pipeline, "run the decision pipeline against the database"),
+                            ("validate-outputs", cmd_validate_outputs, "check the latest run's outputs"),
+                            ("all", cmd_all, "generate, validate, load, run, evaluate and validate outputs"),
                             ("docs", cmd_docs, "regenerate docs/data-dictionary.md from the schema")]:
         s = sub.add_parser(name, help=help_)
         s.set_defaults(fn=fn)
@@ -125,6 +205,8 @@ def main(argv: list[str] | None = None) -> None:
         s.add_argument("--reports", help="report directory (default ../reports/<scale>)")
         if name == "repro":
             s.add_argument("--report", help="also write the result JSON here")
+        if name == "evaluate":
+            s.add_argument("--db", action="store_true", help="score the latest pipeline run in the database")
     a = ap.parse_args(argv)
     a.fn(a)
 
