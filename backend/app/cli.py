@@ -1,0 +1,82 @@
+"""Command line: ``python -m app.cli <command>``. Run from ``backend/``; output paths default to ``../data/<scale>``."""
+import argparse
+import json
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+from app.datagen.generator import SCALES, GenParams, generate
+from app.datagen.writer import export_json, export_sql, repro, write_dataset
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _params(a) -> GenParams:
+    users, txns = SCALES[a.scale]
+    return GenParams(a.users or users, a.transactions or txns, a.seed)
+
+
+def _out(a) -> Path:
+    if a.out:
+        return Path(a.out)
+    return ROOT / "data" / (a.scale if not (a.users or a.transactions) else "tmp-custom")
+
+
+def cmd_generate(a) -> None:
+    p, out = _params(a), _out(a)
+    t = time.perf_counter()
+    m = write_dataset(generate(p), out)
+    print(f"generated {m['files']['inputs/txn.csv']['rows']:,} transactions for {p.users:,} households "
+          f"(seed {p.seed}) in {time.perf_counter() - t:.1f}s -> {out}")
+
+
+def cmd_export(a) -> None:
+    out = _out(a)
+    if not (out / "manifest.json").exists():
+        sys.exit(f"no dataset at {out}; run `generate` first")
+    export_json(out)
+    export_sql(out)
+    print(f"wrote {out / 'json'} and {out / 'seed.sql'}")
+
+
+def cmd_repro(a) -> None:
+    with tempfile.TemporaryDirectory(prefix="pam-repro-") as tmp:
+        result = repro(_params(a), Path(tmp))
+    print(json.dumps(result, indent=2))
+    if a.report:
+        Path(a.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(a.report).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8", newline="\n")
+    if not result["match"]:
+        sys.exit(1)
+
+
+def cmd_docs(a) -> None:
+    from app.docs_gen import render_data_dictionary
+    path = ROOT / "docs" / "data-dictionary.md"
+    path.write_text(render_data_dictionary(), encoding="utf-8", newline="\n")
+    print(f"wrote {path}")
+
+
+def main(argv: list[str] | None = None) -> None:
+    ap = argparse.ArgumentParser(prog="pam", description="PAM data and pipeline commands")
+    sub = ap.add_subparsers(dest="command", required=True)
+    for name, fn, help_ in [("generate", cmd_generate, "generate the synthetic dataset (CSV + manifest)"),
+                            ("export", cmd_export, "write JSON and the SQL seed next to the CSVs"),
+                            ("repro", cmd_repro, "generate twice in fresh interpreters and compare checksums"),
+                            ("docs", cmd_docs, "regenerate docs/data-dictionary.md from the schema")]:
+        s = sub.add_parser(name, help=help_)
+        s.set_defaults(fn=fn)
+        s.add_argument("--scale", choices=sorted(SCALES), default="starter")
+        s.add_argument("--users", type=int)
+        s.add_argument("--transactions", type=int)
+        s.add_argument("--seed", type=int, default=20261022)
+        s.add_argument("--out", help="dataset directory (default ../data/<scale>)")
+        if name == "repro":
+            s.add_argument("--report", help="also write the result JSON here")
+    a = ap.parse_args(argv)
+    a.fn(a)
+
+
+if __name__ == "__main__":
+    main()
