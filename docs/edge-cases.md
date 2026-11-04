@@ -12,10 +12,10 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | D02 | Account opened during 2026 | No transaction before `opened_on`; opening balance 0 for cards | datagen/spending.py, ledger.py, schedules.py | test_generator::test_fk_and_owner_consistency, test_card_bills_follow_statements | done |
 | D03 | Account closed mid-year | Balance swept to primary on `closed_on` (IMPS self pair), closing balance exactly 0, CLOSED event, no later txns | datagen/ledger.py | test_generator::test_balances_reconcile_and_savings_never_negative, test_fk_and_owner_consistency | done |
 | D04 | Spending would overdraw a savings account | Opening balance raised (derived) so the running balance never goes below 0 | datagen/ledger.py | test_generator::test_balances_reconcile_and_savings_never_negative | done |
-| D05 | Credit-card statement is zero or negative (only refunds) | No bill payment generated for that month | datagen/ledger.py | validate::cc_payments | planned |
-| D06 | December card statement | Unpaid inside the data window (paid Jan 2027); card closing balance = −Dec statement | datagen/ledger.py | validate::cc_payments | planned |
-| D07 | Card opened before 2026 has a December 2025 statement | Opening outstanding is paid in January | datagen/ledger.py | validate::cc_payments | planned |
-| D08 | Savings interest rounds to < ₹1 or account closed mid-quarter | Minimum ₹1 credit; no interest for the quarter in which the account closed | datagen/ledger.py | validate::interest_derivation | planned |
+| D05 | Credit-card statement is zero or negative (only refunds) | No bill payment generated for that month | datagen/ledger.py | test_validate::test_clean_dataset_passes (cc_payments: no payment when statement ≤ 0) | done |
+| D06 | December card statement | Unpaid inside the data window (paid Jan 2027); card closing balance = −Dec statement | datagen/ledger.py | test_validate::test_clean_dataset_passes (cc_payments: payments only for Jan–Nov statements) | done |
+| D07 | Card opened before 2026 has a December 2025 statement | Opening outstanding is paid in January | datagen/ledger.py | test_validate::test_clean_dataset_passes (cc_payments: January payment = opening outstanding) | done |
+| D08 | Savings interest rounds to < ₹1 or account closed mid-quarter | Minimum ₹1 credit; no interest for the quarter in which the account closed | datagen/ledger.py | test_validate::test_clean_dataset_passes (interest_derivation recomputes every quarter) | done |
 | D09 | Exact volume required (500,000) | Count adjusted only via standalone savings UPI debits; total is exact | datagen/generator.py | test_generator::test_exact_counts_and_chronological_ids | done |
 | D10 | Reference numbers | Unique per event, shared by the two legs of a transfer and by a reversal | datagen/descriptors.py | test_generator::test_references_unique_except_transfer_legs_and_reversals | done |
 | D11 | 00:10 IST on 1 Jan 2026 is 2025 in UTC | Txn id year uses the IST year (`TXN-2026-…`) | datagen/generator.py | test_generator::test_exact_counts_and_chronological_ids (first row is 2025 in UTC, id says 2026) | done |
@@ -28,7 +28,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | D18 | Refund whose purchase was in Dec 2025 | Orphan refund, truth link empty | datagen/spending.py | test_generator::test_coverage_of_required_phenomena | done |
 | D19 | Local merchant not in the merchant master | `true_merchant_id` null; keyword fallback or UNCATEGORIZED | datagen/spending.py | test_generator::test_coverage_of_required_phenomena | done |
 | D20 | "ENTERPRISES"/"TRADERS" shops sell anything | True category varies; rules cannot know → exception queue | datagen/catalog.py | evaluation per-class F1 | planned |
-| D21 | Two identical purchases same merchant, same day, same amount | Not duplicates (different RRN) | datagen, validate::duplicates | validate::duplicates | planned |
+| D21 | Two identical purchases same merchant, same day, same amount | Not duplicates (different RRN) | datagen, validate::duplicates | test_validate::test_clean_dataset_passes (duplicates on account+RRN+amount+time), test_detects_duplicate_pk_bad_fk_bad_enum | done |
 | D22 | Household with no budgets (5%) | Budget page shows NO_BUDGET lines; no insights crash | datagen/budgets.py, engine | api test_summary_recurring_insights_shapes | planned |
 | D23 | Budget revised mid-month | Version 2 effective; v1 kept as history | datagen/budgets.py | test_budgets_insights::test_latest_version_wins | planned |
 | D24 | Self-employed irregular income | No salary series; NEFT credits → OTHER_INCOME | datagen/schedules.py | evaluation recurring precision | planned |
@@ -41,7 +41,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | D31 | Interest on an account closed in Q2 has only 1–2 postings | A truth series needs ≥ 3 occurrences; fewer are labelled INTEREST without a series | datagen/generator.py | test_generator::test_labels_complete_linked_and_truth_month_is_ist | done |
 | D32 | Refund or reversal would land after the account closed | Dropped (the credit cannot post to a closed account) | datagen/spending.py | test_generator::test_fk_and_owner_consistency | done |
 | D33 | Self transfer close to midnight before a closure day | Transfers only 08:00–21:59 and only while both accounts are open, so no leg lands on the closure day after the sweep | datagen/ledger.py | test_generator::test_balances_reconcile_and_savings_never_negative | done |
-| D34 | Card purchase at 00:30 IST on the 1st | Belongs to the new month's statement (statements use the IST month, not UTC) | datagen/ledger.py | validate::cc_payments | planned |
+| D34 | Card purchase at 00:30 IST on the 1st | Belongs to the new month's statement (statements use the IST month, not UTC) | datagen/ledger.py | test_validate::test_clean_dataset_passes (cc_payments groups by IST month) | done |
 | D35 | Requested volume too small for the households' fixed bills | Generator refuses with a clear error instead of silently producing fewer rows | datagen/generator.py | test_generator::test_too_few_transactions_rejected | done |
 | D36 | Subscription on a credit card opened during 2026 | Card subscriptions only use cards opened before 2026, so no charge predates the card | datagen/schedules.py | test_generator::test_fk_and_owner_consistency | done |
 | D37 | Partial refunds of the same order | Linked to the same purchase; second refund 1–5 days after the first; total ≤ original | datagen/spending.py | test_generator::test_refunds_never_exceed_their_purchase | done |
@@ -56,7 +56,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | ★A3 | Recurring series skips incorrectly (one occurrence missing) | MISSED event at the expected date ±7 days, then RESUMED | engine/recurring.py | test_anomalies::test_skip_really_missing_and_decoy_present; engine: test_recurring::test_true_skip_emits_missed_and_resumed | injected |
 | ★A3b | Decoys: retry 2–4 days late, holiday shift, month-end clamp, cancellation | No MISSED event (cancellation → ENDED) | engine/recurring.py | test_anomalies::test_skip_really_missing_and_decoy_present; engine: test_shift_and_month_end_clamp_are_not_skips, test_cancelled_series_ends | injected |
 | ★A4 | Transaction date crosses timezone boundary (00:00–05:29 IST on the 1st) | Business month = IST month | engine/pipeline.py, timeutil.py | test_anomalies::test_tz_boundary_utc_month_differs; engine: test_primitives::test_local_date_crosses_utc_boundary | injected |
-| ★A5 | Budget categories do not match taxonomy (retired, lowercase, synonym, unknown) | Remap retired/case/synonym; unknown → UNMAPPED exception + insight | engine/budgets.py | test_anomalies::test_budget_mismatch_only_where_labelled; engine: test_budgets_insights::test_resolution_paths | injected |
+| ★A5 | Budget categories do not match taxonomy (retired, lowercase, synonym, unknown) | Remap retired/case/synonym; unknown → UNMAPPED exception + insight | engine/budgets.py | test_anomalies::test_budget_mismatch_only_where_labelled, test_validate::test_detects_unlabelled_taxonomy_violation; engine: test_budgets_insights::test_resolution_paths | injected |
 
 ## Decision engine (E)
 

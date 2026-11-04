@@ -51,6 +51,26 @@ def cmd_repro(a) -> None:
         sys.exit(1)
 
 
+def _reports(a) -> Path:
+    return Path(a.reports) if a.reports else ROOT / "reports" / _out(a).name
+
+
+def cmd_validate_dataset(a) -> None:
+    from app.datagen.validate import render_markdown, to_json, validate_dataset
+    out, reports = _out(a), _reports(a)
+    t = time.perf_counter()
+    results = validate_dataset(out)
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "validation_dataset.json").write_text(to_json(results), encoding="utf-8", newline="\n")
+    (reports / "validation_dataset.md").write_text(render_markdown(results, f"Dataset validation — {out.name}"),
+                                                   encoding="utf-8", newline="\n")
+    for r in results:
+        print(f"{r.status:4}  {r.name:22} violations={r.violations:<6} labelled={r.labelled}")
+    print(f"{time.perf_counter() - t:.1f}s -> {reports}")
+    if any(r.status == "FAIL" for r in results):
+        sys.exit(1)
+
+
 def cmd_docs(a) -> None:
     from app.docs_gen import render_data_dictionary
     path = ROOT / "docs" / "data-dictionary.md"
@@ -64,6 +84,7 @@ def main(argv: list[str] | None = None) -> None:
     for name, fn, help_ in [("generate", cmd_generate, "generate the synthetic dataset (CSV + manifest)"),
                             ("export", cmd_export, "write JSON and the SQL seed next to the CSVs"),
                             ("repro", cmd_repro, "generate twice in fresh interpreters and compare checksums"),
+                            ("validate-dataset", cmd_validate_dataset, "check keys, joins, dates, arithmetic, labels"),
                             ("docs", cmd_docs, "regenerate docs/data-dictionary.md from the schema")]:
         s = sub.add_parser(name, help=help_)
         s.set_defaults(fn=fn)
@@ -72,6 +93,7 @@ def main(argv: list[str] | None = None) -> None:
         s.add_argument("--transactions", type=int)
         s.add_argument("--seed", type=int, default=20261022)
         s.add_argument("--out", help="dataset directory (default ../data/<scale>)")
+        s.add_argument("--reports", help="report directory (default ../reports/<scale>)")
         if name == "repro":
             s.add_argument("--report", help="also write the result JSON here")
     a = ap.parse_args(argv)
