@@ -1,8 +1,8 @@
-# Kharcha — Household Spend Intelligence: Design Spec
+# PAM — Payment Account Manager: Design Spec
 
 Date: 2026-11-04 · Status: approved in chat, pending written review · Owner: vbs-0
 
-Kharcha categorizes bank transactions, maps recurring payments, and compares household
+PAM categorizes bank transactions, maps recurring payments, and compares household
 spending against budgets for Indian (INR / UPI) households. It ships as one FastAPI backend,
 a desktop web console (4 roles) and a customer Android app, all reading one Postgres database.
 All data is synthetic, generated with a fixed seed and labelled ground truth.

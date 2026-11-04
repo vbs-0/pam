@@ -1,4 +1,4 @@
-# Kharcha Web Console, Android App and Submission Docs — Implementation Plan
+# PAM Web Console, Android App and Submission Docs — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -15,7 +15,7 @@ Table v8, React Router v7, Recharts, Firebase JS SDK v11, openapi-fetch + openap
 Android — Flutter stable (dev box: `C:\flutter\bin`), firebase_core, firebase_auth, google_sign_in ^6.2, flutter_riverpod,
 dio, go_router, fl_chart, flutter_secure_storage, intl.
 
-**Spec:** `docs/superpowers/specs/2026-11-04-kharcha-design.md` (§2 features, §10 clients, §12 performance).
+**Spec:** `docs/superpowers/specs/2026-11-04-pam-design.md` (§2 features, §10 clients, §12 performance).
 
 ## Global Constraints
 
@@ -136,7 +136,7 @@ export function contrastRatio(a: string, b: string): number {
 - [ ] **Step 1: Scaffold**
 
 ```bash
-cd /c/Users/chbha/Desktop/YottaFlex/kharcha && npm create vite@latest web -- --template react-ts
+cd /c/Users/chbha/Desktop/YottaFlex/pam && npm create vite@latest web -- --template react-ts
 cd web && npm i @tanstack/react-query @tanstack/react-table react-router recharts firebase openapi-fetch clsx tailwind-merge lucide-react sonner @fontsource-variable/inter
 npm i -D tailwindcss @tailwindcss/vite openapi-typescript vitest jsdom @testing-library/react @testing-library/jest-dom vitest-axe
 npx shadcn@latest init -d
@@ -257,7 +257,7 @@ import createClient, { type Middleware } from "openapi-fetch";
 import { fbAuth } from "./firebase";
 import type { paths } from "./schema";
 
-const KEY = "kharcha.token";
+const KEY = "pam.token";
 export const tokenStore = {
   get: () => sessionStorage.getItem(KEY),
   set: (t: string) => sessionStorage.setItem(KEY, t),
@@ -305,7 +305,7 @@ Design system wiring (from Task W0):
 - Theme toggle (light / dark / system) in the user menu, persisted in `localStorage` (wrapped in `try/catch`), applied as `data-theme` on `<html>` before first paint via an inline script in `index.html` (no flash).
 - `web/src/pages/dev/Styleguide.tsx` at `/styleguide` (only when `import.meta.env.DEV`): every component, badge, status, category chip, chart sample and empty/error/loading state in both themes, used for visual review and screenshots.
 
-- [ ] **Step 4: Generate types and verify** — with the API running: `npm run gen:api && npm test && npm run build`. Expected: tests pass; build succeeds; `npm run dev` → log in as `customer@kharcha.test` lands on `/dashboard` (empty page shell).
+- [ ] **Step 4: Generate types and verify** — with the API running: `npm run gen:api && npm test && npm run build`. Expected: tests pass; build succeeds; `npm run dev` → log in as `customer@pam.test` lands on `/dashboard` (empty page shell).
 - [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(web): scaffold console with typed API client, Firebase/demo auth and role navigation" -m "Authored-By: vbs-0"`
 
 ---
@@ -495,7 +495,7 @@ server {
 - [ ] **Step 1: Create project and dependencies**
 
 ```bash
-cd /c/Users/chbha/Desktop/YottaFlex/kharcha && /c/flutter/bin/flutter create --org in.kharcha --platforms android mobile
+cd /c/Users/chbha/Desktop/YottaFlex/pam && /c/flutter/bin/flutter create --org in.pam --platforms android mobile
 cd mobile && /c/flutter/bin/flutter pub add firebase_core firebase_auth google_sign_in:^6.2.1 flutter_riverpod dio go_router fl_chart flutter_secure_storage intl
 /c/flutter/bin/flutter doctor
 ```
@@ -513,7 +513,7 @@ const demoLoginEnabled = bool.fromEnvironment('DEMO_LOGIN', defaultValue: true);
 `mobile/test/money_test.dart`:
 ```dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kharcha/ui/money.dart';
+import 'package:pam/ui/money.dart';
 
 void main() {
   test('Indian grouping', () {
@@ -525,7 +525,7 @@ void main() {
 `mobile/test/models_test.dart`:
 ```dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kharcha/api/models.dart';
+import 'package:pam/api/models.dart';
 
 void main() {
   test('TxnPage parses items and cursor', () {
@@ -597,7 +597,7 @@ class ApiClient {
   // getMe, getSummary, getBudgets, getTxn, setCategory, getRecurring, getInsights, getCategories follow the same shape
 }
 ```
-Implement the remaining methods explicitly (one `dio.get`/`dio.post` each, mapping to the models). `AuthController`: on build, try `Firebase.initializeApp()` inside `try/catch` (absent `google-services.json` → Firebase disabled, Google button hidden); restore a stored demo token from `FlutterSecureStorage`; `signInWithGoogle` = `GoogleSignIn().signIn()` → `GoogleAuthProvider.credential(idToken, accessToken)` → `FirebaseAuth.instance.signInWithCredential` → `getMe()`; `token()` returns the demo token or `FirebaseAuth.instance.currentUser?.getIdToken()` (SDK refreshes automatically); a non-CUSTOMER role shows "This app is for customers — use the web console" and signs out. `router.dart`: go_router with `redirect` to `/login` when signed out; shell route with bottom `NavigationBar` (Home, Transactions, Recurring, Insights). `theme.dart`: Material 3 light + dark built from `assets/tokens.json` (copied from `design/tokens.json` by a `tool/sync_tokens.dart` script; never hand-edited): `ColorScheme.fromSeed(seedColor: brand)` with `surface`/`error`/semantic colors overridden from the tokens, a `KharchaColors` `ThemeExtension` exposing `success, warning, danger, info, muted, categoryColor(code)`, Inter bundled under `assets/fonts/` (no runtime download), `TextTheme` with `FontFeature.tabularFigures()` on the numeric styles, `ThemeMode.system`.
+Implement the remaining methods explicitly (one `dio.get`/`dio.post` each, mapping to the models). `AuthController`: on build, try `Firebase.initializeApp()` inside `try/catch` (absent `google-services.json` → Firebase disabled, Google button hidden); restore a stored demo token from `FlutterSecureStorage`; `signInWithGoogle` = `GoogleSignIn().signIn()` → `GoogleAuthProvider.credential(idToken, accessToken)` → `FirebaseAuth.instance.signInWithCredential` → `getMe()`; `token()` returns the demo token or `FirebaseAuth.instance.currentUser?.getIdToken()` (SDK refreshes automatically); a non-CUSTOMER role shows "This app is for customers — use the web console" and signs out. `router.dart`: go_router with `redirect` to `/login` when signed out; shell route with bottom `NavigationBar` (Home, Transactions, Recurring, Insights). `theme.dart`: Material 3 light + dark built from `assets/tokens.json` (copied from `design/tokens.json` by a `tool/sync_tokens.dart` script; never hand-edited): `ColorScheme.fromSeed(seedColor: brand)` with `surface`/`error`/semantic colors overridden from the tokens, a `PamColors` `ThemeExtension` exposing `success, warning, danger, info, muted, categoryColor(code)`, Inter bundled under `assets/fonts/` (no runtime download), `TextTheme` with `FontFeature.tabularFigures()` on the numeric styles, `ThemeMode.system`.
 
 - [ ] **Step 4: Run tests, expect PASS** — `/c/flutter/bin/flutter test && /c/flutter/bin/flutter analyze`.
 - [ ] **Step 5: Commit** — `git add -A && git commit -m "feat(mobile): Flutter app scaffold with Firebase Google sign-in, demo login and typed API client" -m "Authored-By: vbs-0"`
@@ -628,7 +628,7 @@ Feel and polish (part of done, not optional):
 - Widget test `mobile/test/home_golden_test.dart`: pump `HomeScreen` with a fake `ApiClient` (override providers) in light and dark at 130% text scale and assert no overflow (`tester.takeException()` is null) and that the budget row exposes its semantics label.
 
 - [ ] **Step 1: Implement screens.**
-- [ ] **Step 2: Verify on emulator** — `cd mobile && /c/flutter/bin/flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000` (backend on host port 8000): demo login as `customer@kharcha.test`, scroll 100+ transactions without jank (`flutter run --profile` → DevTools frame chart has no red frames during scroll), change a category and see the Home budget bar update, switch months back and forth instantly. Save screenshots to `docs/screenshots/mobile-*.png`.
+- [ ] **Step 2: Verify on emulator** — `cd mobile && /c/flutter/bin/flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000` (backend on host port 8000): demo login as `customer@pam.test`, scroll 100+ transactions without jank (`flutter run --profile` → DevTools frame chart has no red frames during scroll), change a category and see the Home budget bar update, switch months back and forth instantly. Save screenshots to `docs/screenshots/mobile-*.png`.
 - [ ] **Step 3: Commit** — `git add -A && git commit -m "feat(mobile): home budgets, infinite transactions with re-categorize, recurring and insights" -m "Authored-By: vbs-0"`
 
 ---
@@ -639,7 +639,7 @@ Feel and polish (part of done, not optional):
 - Create: `mobile/README.md`
 
 - [ ] **Step 1: Build** — `/c/flutter/bin/flutter build apk --release --dart-define=API_BASE_URL=http://10.0.2.2:8000` (debug signing config for the demo; note in README that a real release needs an upload keystore kept out of git). Record APK size.
-- [ ] **Step 2: Document Firebase setup** in `mobile/README.md`: create a Firebase project → add Android app `in.kharcha.kharcha` → add the debug SHA-1 (`cd android && ./gradlew signingReport`) → enable Google provider → download `google-services.json` into `android/app/` (git-ignored) → set backend `FIREBASE_PROJECT_ID` → first Google login becomes a CUSTOMER linked to a synthetic profile; admins listed in `ADMIN_EMAILS`.
+- [ ] **Step 2: Document Firebase setup** in `mobile/README.md`: create a Firebase project → add Android app `in.pam.pam` → add the debug SHA-1 (`cd android && ./gradlew signingReport`) → enable Google provider → download `google-services.json` into `android/app/` (git-ignored) → set backend `FIREBASE_PROJECT_ID` → first Google login becomes a CUSTOMER linked to a synthetic profile; admins listed in `ADMIN_EMAILS`.
 - [ ] **Step 3: Commit** — `git add -A && git commit -m "docs(mobile): release build and Firebase configuration guide" -m "Authored-By: vbs-0"`
 
 ---
@@ -649,7 +649,7 @@ Feel and polish (part of done, not optional):
 **Files:**
 - Create/Modify: `README.md`, `docs/ai-usage.md`, `docs/decisions.md` (append), `docs/provenance.md` (from B20), `docs/verification.md`, `prompts/README.md`, `prompts/claude-code-session.md`
 
-- [ ] **Step 1: README.md** with sections, in this order: one-paragraph problem statement and what Kharcha does; architecture diagram (from spec §3) and component list; quick start on Windows (native Postgres) and on Linux (Docker Compose) with exact commands: create DB → `uv sync` → `alembic upgrade head` → `python -m app.cli all --scale starter` → `uvicorn` → `npm run dev` → `flutter run`; demo accounts (emails only; password from your `.env`); generator command, seed `20261022`, scales, output layout, how to regenerate full data and verify checksums against `reports/full/manifest.json`; data model summary + link to `docs/data_dictionary.md`; business rules summary (link to spec §6); edge cases table (spec §7.5) with the measured outcome per issue type from `reports/full/metrics.md`; evaluation results (headline table: engine vs naive baseline); validation summary (link `reports/*/validation_*.md`); reproducibility result; performance numbers; assumptions; limitations; requirement traceability (link spec §1); AI usage summary (link `docs/ai-usage.md`); next steps (Linux deployment runbook, TLS, backups, ML categorizer experiment).
+- [ ] **Step 1: README.md** with sections, in this order: one-paragraph problem statement and what PAM does; architecture diagram (from spec §3) and component list; quick start on Windows (native Postgres) and on Linux (Docker Compose) with exact commands: create DB → `uv sync` → `alembic upgrade head` → `python -m app.cli all --scale starter` → `uvicorn` → `npm run dev` → `flutter run`; demo accounts (emails only; password from your `.env`); generator command, seed `20261022`, scales, output layout, how to regenerate full data and verify checksums against `reports/full/manifest.json`; data model summary + link to `docs/data_dictionary.md`; business rules summary (link to spec §6); edge cases table (spec §7.5) with the measured outcome per issue type from `reports/full/metrics.md`; evaluation results (headline table: engine vs naive baseline); validation summary (link `reports/*/validation_*.md`); reproducibility result; performance numbers; assumptions; limitations; requirement traceability (link spec §1); AI usage summary (link `docs/ai-usage.md`); next steps (Linux deployment runbook, TLS, backups, ML categorizer experiment).
 - [ ] **Step 2: docs/ai-usage.md** — tools used (Claude Code in the desktop app; list any other tool actually used), where AI accelerated (scaffolding, catalogue data, test authoring, docs), where it was relied on heavily, and what was personally reviewed/changed/validated (rules thresholds, edge-case semantics, metric definitions, every failing threshold investigation in `docs/decisions.md`). Written in the owner's voice; only facts that are true.
 - [ ] **Step 3: docs/verification.md** — the exact commands run and their outputs (pytest summary lines for backend/web/mobile, `cli all` timings, repro match, validation pass counts, manual UI checks with screenshots).
 - [ ] **Step 4: Prompt history** — export this Claude Code session transcript to `prompts/claude-code-session.md` (desktop app export, or `mcp__ccd_session_mgmt__export_transcript`), redact nothing but secrets (there should be none), and list every AI tool + session in `prompts/README.md` with dates; if a tool cannot export, say so there (FAQ #6).

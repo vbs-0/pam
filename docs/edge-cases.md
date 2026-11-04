@@ -1,0 +1,134 @@
+# Edge-Case Catalogue
+
+Living document. Every case is handled in code **and** covered by a test before it is marked done.
+Status: `planned` → `done` (with the test that proves it). Labelled anomaly types from the brief are marked ★.
+
+## Data generation and ledger integrity (D)
+
+| ID | Scenario | Expected handling | Where | Test | Status |
+|---|---|---|---|---|---|
+| D01 | Account id must embed its owner (`ACC-USR-000001-01`) but a joint holder is a different user | Owner = id prefix; joint holder only in `account_holder` (N:M bridge) | datagen/people.py | test_people::test_master_rows_integrity | planned |
+| D02 | Account opened during 2026 | No transaction before `opened_on`; opening balance 0 for cards | datagen/spending.py, ledger.py | test_generator::test_fk_and_owner_consistency, validate::date_order | planned |
+| D03 | Account closed mid-year | Balance swept to primary on `closed_on` (IMPS self pair), closing balance exactly 0, CLOSED event, no later txns | datagen/ledger.py | test_generator::test_balances_reconcile_and_savings_never_negative | planned |
+| D04 | Spending would overdraw a savings account | Opening balance raised (derived) so the running balance never goes below 0 | datagen/ledger.py | same as D03 | planned |
+| D05 | Credit-card statement is zero or negative (only refunds) | No bill payment generated for that month | datagen/ledger.py | validate::cc_payments | planned |
+| D06 | December card statement | Unpaid inside the data window (paid Jan 2027); card closing balance = −Dec statement | datagen/ledger.py | validate::cc_payments | planned |
+| D07 | Card opened before 2026 has a December 2025 statement | Opening outstanding is paid in January | datagen/ledger.py | validate::cc_payments | planned |
+| D08 | Savings interest rounds to < ₹1 or account closed mid-quarter | Minimum ₹1 credit; no interest for the quarter in which the account closed | datagen/ledger.py | validate::interest_derivation | planned |
+| D09 | Exact volume required (500,000) | Count adjusted only via standalone savings UPI debits; total is exact | datagen/generator.py | test_generator::test_exact_counts_and_chronological_ids | planned |
+| D10 | Reference numbers | Unique per event, shared by the two legs of a transfer and by a reversal | datagen/descriptors.py | validate::duplicates | planned |
+| D11 | 00:10 IST on 1 Jan 2026 is 2025 in UTC | Txn id year uses the IST year (`TXN-2026-…`) | datagen/generator.py | test_generator::test_labels_complete_and_truth_month_is_ist | planned |
+| D12 | Salary day falls on Sunday / 2nd or 4th Saturday / national holiday | Paid on the previous working day (RBI rules) | datagen/calendar.py | test_people::test_calendar_rules | planned |
+| D13 | Pension on the 1st is a holiday | Paid next working day | datagen/calendar.py | test_people::test_calendar_rules | planned |
+| D14 | Subscription billed on the 29th–31st | Clamped to month end in short months (natural decoy for skip detection) | datagen/schedules.py | engine test_shift_and_month_end_clamp_are_not_skips | planned |
+| D15 | 28-day mobile recharge | 13 charges in a calendar year, still one monthly series | datagen/schedules.py | engine test_detects_monthly_active_series | planned |
+| D16 | Refund date after 31 Dec 2026 | Refund dropped (outside window) | datagen/spending.py | validate::date_order | planned |
+| D17 | Multiple partial refunds of one order | Sum of refunds ≤ original | datagen/spending.py | engine test_partial_refunds_link_and_net | planned |
+| D18 | Refund whose purchase was in Dec 2025 | Orphan refund, truth link empty | datagen/spending.py | evaluation refunds | planned |
+| D19 | Local merchant not in the merchant master | `true_merchant_id` null; keyword fallback or UNCATEGORIZED | datagen/spending.py | test_generator::test_coverage_of_required_phenomena | planned |
+| D20 | "ENTERPRISES"/"TRADERS" shops sell anything | True category varies; rules cannot know → exception queue | datagen/catalog.py | evaluation per-class F1 | planned |
+| D21 | Two identical purchases same merchant, same day, same amount | Not duplicates (different RRN) | datagen, validate::duplicates | validate::duplicates | planned |
+| D22 | Household with no budgets (5%) | Budget page shows NO_BUDGET lines; no insights crash | datagen/budgets.py, engine | api test_summary_recurring_insights_shapes | planned |
+| D23 | Budget revised mid-month | Version 2 effective; v1 kept as history | datagen/budgets.py | test_budgets_insights::test_latest_version_wins | planned |
+| D24 | Self-employed irregular income | No salary series; NEFT credits → OTHER_INCOME | datagen/schedules.py | evaluation recurring precision | planned |
+| D25 | Retired household | Pension series (SALARY type), more health/grocery spend | datagen | test_generator coverage | planned |
+| D26 | Joint account | Spend counts toward the owner's budget; joint holder can view it | datagen/people.py, api/me.py | api test_transactions_keyset_pagination_and_isolation | planned |
+| D27 | Ground truth leaking into inputs | No `true_*` column in any input table or file | schema.py, validate | test_generator::test_ground_truth_not_in_inputs, validate::truth_isolation | planned |
+| D28 | Windows checkout rewrites CSV line endings | `.gitattributes` marks CSV/SQL/JSON `-text` so checksums hold | .gitattributes | repro check on a fresh clone | done |
+| D29 | Same seed, different Python version / OS | RNG uses only `random.random()`; manifest has no timestamps | datagen/rand.py, writer.py | test_writer::test_repro_identical | planned |
+
+## Labelled anomalies from the brief (★)
+
+| ID | Scenario | Expected handling | Where | Test | Status |
+|---|---|---|---|---|---|
+| ★A1 | Transfer counted as spending twice (UPI to own VPA with note "Payment"; credit leg 1–3 days later, maybe next month; card bill via CRED) | Own-VPA rule + pairing → both legs TRANSFER, excluded from spend | engine/pipeline.py, transfers.py | test_anomalies::test_transfer_double_count_shape, test_transfers_refunds::test_pairs_delayed_cross_month_transfer_and_not_other_users, integration anomaly recall | planned |
+| ★A2 | Refund treated as new expense (credit with no refund keyword) | Merchant credit → REFUND linked to original, nets the original category | engine/refunds.py | test_anomalies::test_refund_as_expense_has_no_keyword, test_refund_category_follows_original_and_reversal_by_rrn | planned |
+| ★A3 | Recurring series skips incorrectly (one occurrence missing) | MISSED event at the expected date ±7 days, then RESUMED | engine/recurring.py | test_recurring::test_true_skip_emits_missed_and_resumed | planned |
+| ★A3b | Decoys: retry 2–4 days late, holiday shift, month-end clamp, cancellation | No MISSED event (cancellation → ENDED) | engine/recurring.py | test_recurring::test_shift_and_month_end_clamp_are_not_skips, test_cancelled_series_ends | planned |
+| ★A4 | Transaction date crosses timezone boundary (00:00–05:29 IST on the 1st) | Business month = IST month | engine/pipeline.py, timeutil.py | test_primitives::test_local_date_crosses_utc_boundary, test_anomalies::test_tz_boundary_utc_month_differs | planned |
+| ★A5 | Budget categories do not match taxonomy (retired, lowercase, synonym, unknown) | Remap retired/case/synonym; unknown → UNMAPPED exception + insight | engine/budgets.py | test_budgets_insights::test_resolution_paths, test_validate::test_detects_unlabelled_taxonomy_violation | planned |
+
+## Decision engine (E)
+
+| ID | Scenario | Expected handling | Where | Test | Status |
+|---|---|---|---|---|---|
+| E01 | "amazon fresh" vs "amazon" | Longest alias wins; refinement rule → GROCERIES | engine/categorize.py | test_categorize::test_priority_and_refinement | planned |
+| E02 | VPA known but descriptor text misleading | VPA match beats alias | categorize.py | test_vpa_beats_alias_and_conditions | planned |
+| E03 | Same descriptor with different RRN | Cache hit (normalized text strips RRN) | normalize.py, categorize.py | test_cache_used | planned |
+| E04 | Rule direction/channel/account conditions | All non-null conditions must match | categorize.py | test_vpa_beats_alias_and_conditions | planned |
+| E05 | Equal amount moved to a different user | Never paired (pairing is per user) | transfers.py | test_pairs_delayed_cross_month_transfer_and_not_other_users | planned |
+| E06 | Debit and credit on the same account | Never a transfer | transfers.py | test_card_payment_and_window_and_same_account | planned |
+| E07 | Two identical transfers on one day | One-to-one greedy pairing by smallest gap | transfers.py | test_two_identical_transfers_pair_one_to_one | planned |
+| E08 | Credit leg posted before the debit (bank posting lag) | Window −1 day … +3 days | transfers.py | test_credit_before_debit_within_a_day | planned |
+| E09 | Transfer-categorized txn with no counterpart | Stays TRANSFER, exception UNMATCHED_TRANSFER | pipeline.py | test_pipeline | planned |
+| E10 | UPI debit failed and auto-reversed (same RRN) | Both legs REVERSAL, excluded from spend | refunds.py | test_refund_category_follows_original_and_reversal_by_rrn | planned |
+| E11 | Over-refund (more than remaining) | Orphan refund + exception | refunds.py | test_partial_refunds_link_and_net | planned |
+| E12 | Orphan refund from a non-expense category | Category UNCATEGORIZED, still reduces spend bucket | refunds.py | test_orphan_refund_non_expense_becomes_uncategorized | planned |
+| E13 | Refund in a later month | Reduces spend in the refund's month (cash basis, documented) | budgets.py | test_spend_partition_refund_nets_transfer_excluded | planned |
+| E14 | User/analyst override | Locked: pairing, refunds, rent inference never change it; survives reruns | pipeline.py | test_pipeline::test_override_locks_decision, test_locked_items_untouched | planned |
+| E15 | Two consecutive skips | Two MISSED events | recurring.py | test_double_skip_two_missed | planned |
+| E16 | One-step price change (salary hike, rent increase, plan upgrade) | Series kept; AMOUNT_CHANGED event; typical = recent median | recurring.py | test_price_change_allowed_and_logged | planned |
+| E17 | Variable bills (electricity, interest) | Wider amount tolerance; no AMOUNT_CHANGED noise | recurring.py | test_quarterly_interest_with_varying_amounts | planned |
+| E18 | Frequent merchant (Swiggy every few days) | Not a series (median gap outside cadence) | recurring.py | test_discretionary_noise_rejected | planned |
+| E19 | Rent paid by UPI to a person with no note | Monthly uncategorized P2P ≥ ₹5,000 inferred RENT (conf 0.7) | recurring.py | test_uncategorized_p2p_monthly_becomes_rent | planned |
+| E20 | Series last seen 1.6–2.5 cycles ago | Status MISSED (not yet ENDED) | recurring.py | test_tail_gap_is_missed_not_ended | planned |
+| E21 | Fewer than 3 occurrences | Not a series | recurring.py | test_two_occurrences_not_series | planned |
+| E22 | Budget submitted for an INCOME category | UNMAPPED | budgets.py | test_resolution_paths | planned |
+| E23 | Two budgets resolve to the same category | Amounts summed, both ids kept as evidence | budgets.py | test_status_thresholds_and_lines | planned |
+| E24 | Budget amount 0 | OVER if any spend, else UNDER | budgets.py | test_status_thresholds_and_lines | planned |
+| E25 | Uncategorized debits | Counted in spend under UNCATEGORIZED (never silently dropped) | budgets.py | test_spend_partition_refund_nets_transfer_excluded | planned |
+| E26 | Ledger partition | Σ amounts = income − spend + transfers + reversals, per user | pipeline.py, outputs_validate.py | test_pipeline_end_to_end_partition_and_exceptions | planned |
+| E27 | Rerun the pipeline | Same REC-/EXC- ids; resolved exceptions stay resolved; history kept per run | jobs/pipeline_job.py | test_outputs_validate_and_rerun_keeps_ids | planned |
+| E28 | Spend spike with < 3 prior months | No SPEND_SPIKE insight | insights.py | test_spike_needs_three_prior_months | planned |
+| E29 | Month with zero income | LOW_SAVINGS skipped (no divide by zero) | insights.py | test_low_savings_zero_income | planned |
+| E30 | Pipeline fails halfway | Run marked FAILED, outputs rolled back, readers keep using last SUCCEEDED run | jobs/pipeline_job.py | test_failed_run_is_invisible | planned |
+
+## API and security (A)
+
+| ID | Scenario | Expected handling | Where | Test | Status |
+|---|---|---|---|---|---|
+| A01 | Customer requests another household's txn | 404 (no existence leak) | api/me.py | test_cannot_read_other_users_txn | planned |
+| A02 | Expired, forged, `alg: none`, garbage tokens | 401 | api/deps.py | test_expired_and_forged_tokens_rejected | planned |
+| A03 | Token says ADMIN but DB says CUSTOMER | DB wins | api/deps.py | test_role_is_read_from_db_not_token | planned |
+| A04 | Disabled user with a valid token | 401 | api/deps.py | test_disabled_user_rejected | planned |
+| A05 | Firebase token with wrong aud / iss / unknown kid | 401 | security.py | test_security | planned |
+| A06 | Two first-time Google logins race | `ON CONFLICT DO NOTHING` + re-select → one app_user | api/deps.py | test_firebase_link_is_idempotent | planned |
+| A07 | Override with retired / UNKNOWN / non-existent category | 422 | api/me.py | test_invalid_category_rejected | planned |
+| A08 | Invalid month (`2026-13`, `26-1`) | 422 | api/common.py | test_summary_recurring_insights_shapes | planned |
+| A09 | Tampered or malformed cursor | 400 | api/common.py | test_bad_cursor_rejected | planned |
+| A10 | `limit` 0 or 10,000 | 422 (bounds 1..100) | api/me.py | test_limit_bounds | planned |
+| A11 | Search containing `%` or `_` | Escaped, matched literally | api/me.py | test_search_escapes_wildcards | planned |
+| A12 | No successful pipeline run yet | 409 with a clear message | api/common.py | test_no_run_409 | planned |
+| A13 | Invalid / concurrent exception transition | 409 | api/analyst.py | test_exception_lifecycle_and_invalid_transition | planned |
+| A14 | Rule with invalid regex, > 200 chars, or no condition | 422 | api/analyst.py | test_rule_versioning_and_tester | planned |
+| A15 | Second dataset job while one runs | 409; a dead worker's job becomes FAILED | jobs/runner.py | test_admin_job_lifecycle | planned |
+| A16 | Export path traversal (`..%2F`) | 400/404 | api/admin.py | test_export_path_traversal_blocked | planned |
+| A17 | Admin demotes/disables themself | 409 | api/admin.py | test_admin_cannot_demote_self | planned |
+| A18 | Dataset reload | App users survive (soft profile reference, no FK cascade) | jobs/load.py | test_reload_keeps_app_users | planned |
+
+## Web console (U)
+
+| ID | Scenario | Expected handling | Where | Test | Status |
+|---|---|---|---|---|---|
+| U01 | Loading / empty / error states | Skeleton matching layout, empty guidance, error + Retry on every query | QueryState.tsx | a11y.test.tsx + manual | planned |
+| U02 | Very long descriptors | Truncate with tooltip, full text in drawer | DataTable.tsx | manual + screenshot | planned |
+| U03 | Crore-scale amounts | `₹1,00,00,000.00` grouping, tabular numerals | money.ts | money.test.ts | planned |
+| U04 | Debit vs credit shown by color only | Sign and screen-reader text in addition to color | Amount component | a11y.test.tsx | planned |
+| U05 | Session expires mid-use | 401 → logout → login page with "Session expired" | api.ts, auth.tsx | manual | planned |
+| U06 | Firebase not configured | Google button hidden, demo login only | firebase.ts | manual | planned |
+| U07 | Rapid filter typing | 300 ms debounce; stale responses ignored by query keys | Transactions.tsx | manual | planned |
+| U08 | Double-click on submit | Button disabled while pending | dialogs | manual | planned |
+| U09 | Someone else changed the exception first | 409 → toast + refetch | Exceptions.tsx | manual | planned |
+| U10 | Reduced motion / dark mode / keyboard only | Respected / themed / fully operable | tokens.css, AppShell | a11y.test.tsx, Lighthouse | planned |
+| U11 | localStorage blocked (private mode) | Theme falls back to system, no crash | theme code | manual | planned |
+
+## Android app (M)
+
+| ID | Scenario | Expected handling | Where | Test | Status |
+|---|---|---|---|---|---|
+| M01 | No `google-services.json` | Firebase disabled, demo login only | auth_controller.dart | manual | planned |
+| M02 | Non-customer signs in | Message + sign-out | auth_controller.dart | manual | planned |
+| M03 | Offline / timeout | Error view with Retry; cached month data still shown | async_view.dart | manual | planned |
+| M04 | Token expired | Back to login | client.dart | manual | planned |
+| M05 | 130% text scale, dark mode | No overflow, readable | screens | home_golden_test.dart | planned |
+| M06 | Category changed by mistake | Undo in snackbar restores previous category | txn_detail_sheet.dart | manual | planned |
