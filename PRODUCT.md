@@ -23,8 +23,7 @@ web
 
 PAM (Payment Account Manager) categorizes household transactions, maps recurring payments, and compares spending
 against monthly budgets, so a household sees true spend (transfers between own accounts, refunds and reversals do not
-inflate it) and what needs attention. Built for the YottaFlex Round 2 72-hour challenge (deadline 2026-11-07 12:36
-UTC); success is a correct, explainable engine with evidence (validation, evaluation, reproducibility) and a
+inflate it) and what needs attention. Success is a correct, explainable engine with evidence (validation, evaluation, reproducibility) and a
 console people can actually use.
 
 ## Positioning

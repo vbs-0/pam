@@ -136,7 +136,7 @@ export function contrastRatio(a: string, b: string): number {
 - [ ] **Step 1: Scaffold**
 
 ```bash
-cd /c/Users/chbha/Desktop/YottaFlex/pam && npm create vite@latest web -- --template react-ts
+cd <repo-root> && npm create vite@latest web -- --template react-ts
 cd web && npm i @tanstack/react-query @tanstack/react-table react-router recharts firebase openapi-fetch clsx tailwind-merge lucide-react sonner @fontsource-variable/inter
 npm i -D tailwindcss @tailwindcss/vite openapi-typescript vitest jsdom @testing-library/react @testing-library/jest-dom vitest-axe
 npx shadcn@latest init -d
@@ -495,7 +495,7 @@ server {
 - [ ] **Step 1: Create project and dependencies**
 
 ```bash
-cd /c/Users/chbha/Desktop/YottaFlex/pam && /c/flutter/bin/flutter create --org in.pam --platforms android mobile
+cd <repo-root> && /c/flutter/bin/flutter create --org in.pam --platforms android mobile
 cd mobile && /c/flutter/bin/flutter pub add firebase_core firebase_auth google_sign_in:^6.2.1 flutter_riverpod dio go_router fl_chart flutter_secure_storage intl
 /c/flutter/bin/flutter doctor
 ```
@@ -660,7 +660,7 @@ Feel and polish (part of done, not optional):
 
 - [ ] **Step 1:** Ask the user for the repository name and explicit permission to create a **new public** GitHub repository and push (their global rules allow pushing only to the emplinx repos unless they say otherwise in that message).
 - [ ] **Step 2 (after "yes"):** `gh repo create vbs-0/<name> --public --source . --remote origin --push`; verify the repo page renders the README and that `data/full/` and secrets are absent.
-- [ ] **Step 3:** Keep the repo editable until the deadline (Sat 7 Nov 2026 12:36 UTC); the user submits the URL themselves on the YottaFlex portal.
+- [ ] **Step 3:** Keep the repo public and editable; the owner submits the URL themselves.
 
 ---
 

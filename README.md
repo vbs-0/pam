@@ -2,7 +2,7 @@
 
 PAM turns a household's bank and UPI transactions into answers to three questions: **what did we really spend, what repeats, and are we inside budget?** It categorizes every transaction, maps recurring payments (salary, rent, EMIs, subscriptions, bills), and compares spending with monthly budgets. Everything it decides is traceable to a rule, a version and a confidence, and every exception goes to a human queue.
 
-Built for the YottaFlex Round 2 72-hour challenge. Indian context throughout: UPI/IMPS/NEFT/card channels, amounts in integer **paise**, business dates in **IST**, UTC storage.
+Indian context throughout: UPI/IMPS/NEFT/card channels, amounts in integer **paise**, business dates in **IST**, UTC storage.
 
 **Live:** https://pam.is-cool.dev (web console) · https://pam.is-cool.dev/docs (API) · [Android APK](https://pam.is-cool.dev/downloads/pam.apk)
 Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample household, or create an account to get your own empty household and enter real data.
