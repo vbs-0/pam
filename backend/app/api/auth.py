@@ -14,9 +14,9 @@ from app import schema
 from app.api.deps import Caller, current_user
 from app.config import settings
 from app.db import get_conn
-from app.households import create_household
+from app.households import REAL_FROM, create_household
 from app.jobs.sql import next_number
-from app.security import AuthError, issue_local_token, verify_firebase_token, verify_password
+from app.security import AuthError, hash_password, issue_local_token, verify_firebase_token, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 MAX_FAILS, WINDOW_S = 5, 900
@@ -28,6 +28,12 @@ _fails_lock = threading.Lock()
 class LoginIn(BaseModel):
     email: str = Field(min_length=3, max_length=120)
     password: str = Field(min_length=1, max_length=200)
+
+
+class RegisterIn(BaseModel):
+    email: str = Field(min_length=5, max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
+    password: str = Field(min_length=10, max_length=128)
+    name: str = Field("", max_length=80)
 
 
 class FirebaseIn(BaseModel):
@@ -87,6 +93,35 @@ def login(body: LoginIn, request: Request, conn: Connection = Depends(get_conn))
     return _issue(conn, row, "password", request)
 
 
+SIGNUPS: dict[str, list[float]] = {}
+
+
+@router.post("/register", response_model=TokenOut, status_code=201)
+def register(body: RegisterIn, request: Request, conn: Connection = Depends(get_conn)):
+    """Email + password sign-up for a new, empty household (works without Google). 5 per hour per address.
+    ponytail: no email verification yet (needs outbound mail); a Google sign-in later takes the login over (A48)."""
+    if not settings.allow_signup:
+        raise AuthError("sign-up is closed on this server", status=403)
+    ip = request.client.host if request.client else "?"
+    now = time.time()
+    with _fails_lock:
+        recent = [t for t in SIGNUPS.get(ip, []) if now - t < 3600]
+        if len(recent) >= 5:
+            raise AuthError("too many sign-ups from this address; try again in an hour", status=429)
+        SIGNUPS[ip] = [*recent, now]
+    email = body.email.strip().lower()
+    conn.execute(text("SELECT pg_advisory_xact_lock(hashtext('app_user'))"))
+    if conn.execute(text("SELECT 1 FROM app_user WHERE email = :e"), {"e": email}).first():
+        raise AuthError("an account with this email already exists; sign in instead", status=409)
+    profile = create_household(conn, body.name.strip() or email.split("@")[0])
+    app_id = f"APP-{next_number(conn, schema.app_user, 'app_user_id'):06d}"
+    conn.execute(text("INSERT INTO app_user (app_user_id, email, role, profile_user_id, password_hash, firebase_uid, "
+                      "disabled, created_at) VALUES (:i, :e, 'CUSTOMER', :p, :h, NULL, false, now())"),
+                 {"i": app_id, "e": email, "p": profile, "h": hash_password(body.password)})
+    row = conn.execute(text(f"SELECT {USER_COLS} FROM app_user WHERE app_user_id = :i"), {"i": app_id}).first()
+    return _issue(conn, row, "register", request)
+
+
 @router.post("/firebase", response_model=TokenOut)
 def firebase(body: FirebaseIn, request: Request, conn: Connection = Depends(get_conn)):
     claims = verify_firebase_token(body.id_token)
@@ -100,8 +135,11 @@ def firebase(body: FirebaseIn, request: Request, conn: Connection = Depends(get_
         if row is not None and row.firebase_uid not in (None, uid):
             raise AuthError("this email is linked to a different Google account", status=409)
         if row is not None:      # existing invited/demo login: link it to this Google account
-            conn.execute(text("UPDATE app_user SET firebase_uid = :u WHERE app_user_id = :i"),
-                         {"u": uid, "i": row.app_user_id})
+            # a self-registered (unverified) email login hands over to the verified Google owner: drop its password
+            drop = row.profile_user_id is not None and row.profile_user_id >= REAL_FROM
+            conn.execute(text("UPDATE app_user SET firebase_uid = :u, password_hash = CASE WHEN :d THEN NULL "
+                              "ELSE password_hash END WHERE app_user_id = :i"),
+                         {"u": uid, "i": row.app_user_id, "d": drop})
         else:
             row = _create(conn, uid, email, (claims.get("name") or "").strip())
     if row.disabled:

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     admin_emails: str = ""
     demo_password: str | None = None
     household_password: str | None = None
+    allow_signup: bool = True
     cors_origins: str = "http://localhost:5173"
     data_dir: str = "../data"
     reports_dir: str = "../reports"

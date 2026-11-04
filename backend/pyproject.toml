@@ -37,3 +37,4 @@ ignore = ["E741", "B008"]  # B008: FastAPI Depends() defaults are idiomatic
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/versions/*" = ["E501"]  # rendered operations; long CHECK expressions
+"tests/**" = ["E501"]  # long literal payloads read better on one line

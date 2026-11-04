@@ -92,3 +92,27 @@ def test_unhandled_error_is_generic_500(client, monkeypatch):
     monkeypatch.setattr(auth, "verify_password", boom)
     r = client.post("/api/v1/auth/login", json={"email": "admin@pam.test", "password": "x"})
     assert r.status_code == 500 and "secret" not in r.text and r.json()["request_id"]
+
+
+def test_register_gives_own_empty_household_and_is_limited(client, api_db, google):
+    from app.api import auth
+    auth.SIGNUPS.clear()
+    r = client.post("/api/v1/auth/register", json={"email": "New.Owner@Mail.test", "password": "long-enough-pass", "name": "Asha"})
+    assert r.status_code == 201, r.text
+    u = r.json()["user"]
+    assert u["role"] == "CUSTOMER" and u["profile_user_id"] >= "USR-500001" and u["email"] == "new.owner@mail.test"
+    h = {"Authorization": f"Bearer {r.json()['access_token']}"}
+    assert client.get("/api/v1/me/transactions", headers=h).json()["items"] == []
+    assert client.post("/api/v1/auth/login", json={"email": "new.owner@mail.test", "password": "long-enough-pass"}).status_code == 200
+    dup = client.post("/api/v1/auth/register", json={"email": "new.owner@mail.test", "password": "long-enough-pass"})
+    assert dup.status_code == 409
+    for bad in ({"email": "nope", "password": "long-enough-pass"}, {"email": "a@b.test", "password": "short"}):
+        assert client.post("/api/v1/auth/register", json=bad).status_code == 422
+    # a later Google sign-in with the same email takes the account over and kills the unverified password (A48)
+    g = client.post("/api/v1/auth/firebase", json={"id_token": google("uid-owner", "new.owner@mail.test")})
+    assert g.status_code == 200 and g.json()["user"]["app_user_id"] == u["app_user_id"]
+    assert client.post("/api/v1/auth/login", json={"email": "new.owner@mail.test", "password": "long-enough-pass"}).status_code == 401
+    auth.SIGNUPS.clear()
+    codes = [client.post("/api/v1/auth/register", json={"email": f"x{i}@mail.test", "password": "long-enough-pass"}).status_code for i in range(6)]
+    assert codes == [201] * 5 + [429]
+    auth.SIGNUPS.clear()

@@ -7,6 +7,7 @@ interface AuthState {
   me: Me | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   expired: boolean;
 }
@@ -42,6 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMe(r.user);
   }, []);
 
-  const value = useMemo(() => ({ me, loading, login, logout, expired }), [me, loading, login, logout, expired]);
+  const register = useCallback(async (email: string, password: string, name: string) => {
+    const r = await post<LoginOut>("/auth/register", { email, password, name });
+    tokenStore.set(r.access_token);
+    setExpired(false);
+    setMe(r.user);
+  }, []);
+
+  const value = useMemo(() => ({ me, loading, login, register, logout, expired }), [me, loading, login, register, logout, expired]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
