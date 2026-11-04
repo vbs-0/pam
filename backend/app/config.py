@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     data_dir: str = "../data"
     reports_dir: str = "../reports"
+    max_job_transactions: int = 100_000      # admin jobs that generate data; the 1 GB server fits starter
 
     def check(self) -> None:
         if self.env == "prod" and (self.jwt_secret == DEFAULT_SECRET or len(self.jwt_secret) < 32):

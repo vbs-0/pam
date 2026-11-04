@@ -119,9 +119,9 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A12 | No successful pipeline run yet | 409 telling an admin to run the pipeline | api/common.py | test_me::test_no_run_409 | done |
 | A13 | Invalid or concurrent exception transition | 409: transition table, then `UPDATE … WHERE status = :from` so the slower of two analysts loses cleanly | api/analyst.py | test_analyst::test_exception_lifecycle_and_invalid_transition | done |
 | A14 | Rule with invalid regex, > 200 chars, no condition, retired category, unknown merchant | 422 | api/analyst.py | test_analyst::test_bad_rules_rejected | done |
-| A15 | Second dataset job while one runs | 409; a dead worker's job becomes FAILED | jobs/runner.py | test_admin_job_lifecycle | planned |
-| A16 | Export path traversal (`..%2F`) | 400/404 | api/admin.py | test_export_path_traversal_blocked | planned |
-| A17 | Admin demotes/disables themself | 409 | api/admin.py | test_admin_cannot_demote_self | planned |
+| A15 | Second dataset job while one runs; server restarts mid-job | 409; jobs left QUEUED/RUNNING are marked FAILED at next start | jobs/runner.py | test_review_admin::test_admin_jobs_lifecycle_and_single_flight | done |
+| A16 | Export path traversal (`..%2F`, `inputs/../..`), unknown file, unknown scale | 404: only manifest-listed files (+ seed.sql, json/*.json), resolved inside the scale dir | api/admin.py | test_review_admin::test_export_job_and_downloads | done |
+| A17 | Admin demotes/disables themself, or the last admin is removed | 409 | api/admin.py | test_review_admin::test_admin_user_management | done |
 | A18 | Dataset reload | App users survive (soft profile reference, no FK cascade) | jobs/load.py | test_reload_keeps_app_users | done |
 | A19 | Algorithm confusion: HS256 token signed with Google's public certificate, or `alg: none` | Algorithm pinned per token kind (HS256 local, RS256 Firebase); anything else rejected | security.py | test_security::test_algorithm_confusion_rejected | done |
 | A20 | Login probing for which emails exist | Unknown email still runs an argon2 verify against a dummy hash; same 401 message | security.py, api/auth.py | test_security::test_passwords | done |
@@ -149,6 +149,9 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A42 | Deleting a transaction that was paired as a transfer or linked as a refund | Links to it are cleared in every run, its exceptions removed, household re-run so the other side is re-decided | api/entry.py | test_entry::test_add_edit_delete_transaction_updates_budget | done |
 | A43 | Own UPI id already on another account; credit limit on a savings account; budget on an income category | 409 / 422 / 422 | api/entry.py | test_entry::test_ownership_closed_accounts_and_samples_read_only | done |
 | A44 | Staff password equal to the public sample-household password | Server refuses to start in prod | config.py | (startup check) | done |
+| A45 | Admin starts a full-scale generate on the 1 GB server | 422 with "generate the full scale offline with the CLI" (MAX_JOB_TRANSACTIONS, default 100k) | jobs/runner.py | test_review_admin::test_admin_jobs_lifecycle_and_single_flight | done |
+| A46 | Customer login switched to a missing household, or a customer with no household | 422 | api/admin.py | test_review_admin::test_admin_user_management | done |
+| A47 | Reviewer before any evaluation | 404 telling an admin to run one | api/review.py | (covered by _evaluated_run) | done |
 
 ## Web console (U)
 
