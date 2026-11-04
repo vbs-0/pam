@@ -1,0 +1,103 @@
+{
+  "title": "Choose the visual world for PAM's console",
+  "question": "The roll assigned the Hisaab Register. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Hisaab Register",
+      "kicker": "THE ROLL",
+      "lineage": "the ruled hisaab/khata notebook every Indian household and kirana shop keeps",
+      "thesis": "Your month as one ruled register page: dates in the red margin, rupees and paise in their own columns, transfers written as Contra and struck out of spend.",
+      "palette": ["#F7F9FC", "#1E3A8A", "#C8102E", "#9DB4D6", "#14171F"],
+      "materials": ["blue-ruled register paper", "ballpoint blue ink", "red margin rule", "rubber stamp", "carbon copy"],
+      "viewport": "One folio for the selected month: true-spend total written in ink at the head with the naive ledger figure struck through beside it, budget lines ruled under each category, and a red-margin date column running down the entry list.",
+      "risk": "If the paper metaphor is rendered literally (texture, handwriting fonts) it turns twee; it only works as ruling, columns and ink states.",
+      "raised": [
+        {"from": "challenger-ticket-wallet", "raise": "Nothing disappears, it cancels: reversals, deleted and superseded entries stay on the page struck through with their reason stamped."},
+        {"from": "challenger-centre-rail", "raise": "One ruling discipline: every rule, budget line and focus bracket drawn at one device pixel from the same three inks; states are printed marks, not glows."},
+        {"from": "challenger-split-flap", "raise": "Rows are live entities and columns never move: a job or exception changes state by restyling its row in place."}
+      ],
+      "comp": ".impeccable/mocks/decision/assigned.png"
+    },
+    {
+      "id": "model-pick",
+      "label": "Bank Passbook",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "printed savings passbooks updated at the branch kiosk",
+      "thesis": "Each account a passbook: dot-matrix entries, withdrawal / deposit / balance columns, the branch stamp on reconciled months.",
+      "palette": ["#FFFFFF", "#0F2A47", "#2F6B4F", "#B58A2C"],
+      "materials": ["passbook stock", "dot-matrix print", "branch seal"],
+      "viewport": "Account passbook spread with balance column and month stamp; budgets on the facing page.",
+      "risk": "The familiar banking look most finance apps already wear; it shows accounts well but hides budgets and transfers.",
+      "comp": ".impeccable/mocks/decision/model-pick.png"
+    },
+    {
+      "id": "challenger-centre-rail",
+      "label": "Centre-rail Reference",
+      "verdict": "declined",
+      "lineage": "wide-margin reference editions set by a ruling engine",
+      "thesis": "Debits and credits as twin columns around a vermilion rail of dates.",
+      "palette": ["#F3EFE6", "#141414", "#C2412D"],
+      "materials": ["ruling engine hairlines", "small caps apparatus"],
+      "viewport": "Two dense columns round a date rail, notes in the margin.",
+      "case": "Clear for accountants, foreign to households; loses audience identification and scanability.",
+      "risk": "Literary density slows a customer checking one number.",
+      "kept": "One-device-pixel ruling discipline and states as printed marks.",
+      "hero": "https://impeccable.style/worlds/cards/rw-centre-rail-reference-setting-hero.webp"
+    },
+    {
+      "id": "challenger-ticket-wallet",
+      "label": "Jet-age Ticket Wallet",
+      "verdict": "declined",
+      "lineage": "carbon-copy airline coupon books",
+      "thesis": "Recurring bills as coupons torn off month by month.",
+      "palette": ["#FFFFFF", "#1B2A52", "#C8102E", "#6B4C9A"],
+      "materials": ["coupon stock", "carbon numerals", "VOID stamp"],
+      "viewport": "A coupon book of this month's bills.",
+      "case": "Nice for recurring payments only; travel ephemera is not this audience's money world.",
+      "risk": "Breaks down for budgets and analyst queues.",
+      "kept": "Nothing disappears, it cancels.",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-jet-age-ticket-wallet-hero.webp"
+    },
+    {
+      "id": "challenger-split-flap",
+      "label": "Split-flap Concourse",
+      "verdict": "declined",
+      "lineage": "railway departure boards",
+      "thesis": "Bills and jobs as departures on a flap board.",
+      "palette": ["#111111", "#F5F5F5", "#F2A900", "#B22222"],
+      "materials": ["flap faces", "amber lamps"],
+      "viewport": "Upcoming bills as a departures board.",
+      "case": "Fits the admin job queue, not a household's month; loses both axes for customers.",
+      "risk": "Novelty over clarity.",
+      "kept": "Rows are live entities; columns never move.",
+      "hero": "https://impeccable.style/worlds/cards/signals-instruments-split-flap-concourse-hero.webp"
+    },
+    {
+      "id": "challenger-labanotation",
+      "label": "Labanotation Score",
+      "verdict": "declined",
+      "lineage": "dance notation",
+      "thesis": "Length encodes exact quantity on a vertical staff.",
+      "palette": ["#FFFFFF", "#000000", "#D9D9D9"],
+      "materials": ["score paper", "hatched blocks"],
+      "viewport": "Month as a rising staff of spend blocks.",
+      "case": "Unreadable to households; loses both axes.",
+      "risk": "Pure abstraction.",
+      "kept": "Bar length is exact: budget and spend bars share one true scale.",
+      "hero": "https://impeccable.style/worlds/cards/notation-diagram-systems-labanotation-hero.webp"
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code", "toggle": false},
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "A clean fintech dashboard: stat cards, charts, sidebar, executed impeccably.",
+    "palette": ["#FFFFFF", "#0F172A", "#4F46E5"],
+    "materials": ["clean grid", "cards", "charts"],
+    "viewport": "Stat cards row, budget bar chart, recent transactions table.",
+    "risk": "Indistinguishable from every finance dashboard by design."
+  },
+  "steer": true
+}

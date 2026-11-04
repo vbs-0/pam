@@ -1,0 +1,77 @@
+{
+  "currency": "INR (amounts in paise)",
+  "files": {
+    "ground_truth/anomaly.csv": {
+      "rows": 93,
+      "sha256": "45507311480af476463731dedebd3df4c9b0601b5e3434c524d4f779d7673163"
+    },
+    "ground_truth/recurring_truth.csv": {
+      "rows": 396,
+      "sha256": "95e4f54449be06b07203f8189eafe18a5bde02bf804134e1e9c03c17c71bdfe5"
+    },
+    "ground_truth/txn_label.csv": {
+      "rows": 25000,
+      "sha256": "33b7ef5c8393dffbcb650096a69f86123b60aae5646de1dc82feb7ec49f7962e"
+    },
+    "inputs/account.csv": {
+      "rows": 103,
+      "sha256": "f94fa20ccbd46fa6044eb3b50fb97bbe3b5d1173f5eaa85ed0a13a44d23f8aff"
+    },
+    "inputs/account_balance_monthly.csv": {
+      "rows": 1223,
+      "sha256": "5e4756ca3c7827dabe3356c7b5c9040b64dac3a2d64e339f162b76e44d6067f0"
+    },
+    "inputs/account_event.csv": {
+      "rows": 104,
+      "sha256": "bfd28a9b73d27aacc30d5a36296ca02e4f48d2e1c5c3ea4a70fe3bdc40e7f584"
+    },
+    "inputs/account_holder.csv": {
+      "rows": 104,
+      "sha256": "73bdd93f363a6fd6f59a102142f2563e9d042a080dc93b6d85a2eb6c8223d0b5"
+    },
+    "inputs/budget.csv": {
+      "rows": 4869,
+      "sha256": "226eb44134117a8e761d8126260d9f792317385312b3097321da4a3a710df4b7"
+    },
+    "inputs/category.csv": {
+      "rows": 24,
+      "sha256": "764a646d830cf6067137b3a89147c1ec30565afd9e3253776a072e0831ef0135"
+    },
+    "inputs/category_rule.csv": {
+      "rows": 90,
+      "sha256": "27b666f55c721f17dc055127311bc7cd4e0b3de6ea3434f60f4f7ac4c9e1378a"
+    },
+    "inputs/category_synonym.csv": {
+      "rows": 5,
+      "sha256": "60eda51d9117ca436d54d1a872089a16955e1d4f516c98bca0a0cac0d9eff5fe"
+    },
+    "inputs/merchant.csv": {
+      "rows": 65,
+      "sha256": "72056c269be5cf5afa8b119e15bbd3db959605c5b300438f902cf74ecb6bd7c1"
+    },
+    "inputs/merchant_alias.csv": {
+      "rows": 148,
+      "sha256": "4c4c34640ade2813d7e48931117217d5db5dc63163bd76c112e5f81ababc42ef"
+    },
+    "inputs/merchant_category.csv": {
+      "rows": 72,
+      "sha256": "48ccbb229353143d2ee83bdf42697d79a8ce18e94c50342e585b101dcb4f0b7b"
+    },
+    "inputs/txn.csv": {
+      "rows": 25000,
+      "sha256": "8772c48bfd0f8999e6876cec53c9eeef45cd343bc516c2bd67c8e3a4e9a96243"
+    },
+    "inputs/user_profile.csv": {
+      "rows": 50,
+      "sha256": "a3d5bcc7e99f7d4c44d858c76e08da844204c5715dd2b6a95661615c5cd7b617"
+    }
+  },
+  "generator": "pam-datagen/1",
+  "params": {
+    "transactions": 25000,
+    "users": 50,
+    "year": 2026
+  },
+  "seed": 20261022,
+  "timezone": "Asia/Kolkata"
+}

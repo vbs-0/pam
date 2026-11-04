@@ -1,0 +1,970 @@
+{
+  "headline": {
+    "category_accuracy": 0.981,
+    "transfer_f1": 1.0,
+    "refund_link_recall": 0.9358,
+    "tz_boundary_month_accuracy": 1.0,
+    "budget_mismatch_handling": 1.0,
+    "series_recall": 1.0,
+    "missed_precision": 1.0,
+    "missed_recall": 1.0,
+    "decoy_false_alarm_rate": 0.0
+  },
+  "thresholds": {
+    "category_accuracy": {
+      "value": 0.981,
+      "target": ">= 0.85",
+      "pass": true
+    },
+    "transfer_f1": {
+      "value": 1.0,
+      "target": ">= 0.95",
+      "pass": true
+    },
+    "refund_link_recall": {
+      "value": 0.9358,
+      "target": ">= 0.9",
+      "pass": true
+    },
+    "tz_boundary_month_accuracy": {
+      "value": 1.0,
+      "target": "== 1.0",
+      "pass": true
+    },
+    "budget_mismatch_handling": {
+      "value": 1.0,
+      "target": "== 1.0",
+      "pass": true
+    },
+    "series_recall": {
+      "value": 1.0,
+      "target": ">= 0.85",
+      "pass": true
+    },
+    "missed_precision": {
+      "value": 1.0,
+      "target": ">= 0.8",
+      "pass": true
+    },
+    "missed_recall": {
+      "value": 1.0,
+      "target": ">= 0.8",
+      "pass": true
+    },
+    "decoy_false_alarm_rate": {
+      "value": 0.0,
+      "target": "<= 0.1",
+      "pass": true
+    }
+  },
+  "all_pass": true,
+  "categorization": {
+    "accuracy": 0.981,
+    "macro_f1": 0.9898,
+    "per_class": {
+      "CASH_WITHDRAWAL": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 730
+      },
+      "CC_BILL_PAYMENT": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 598
+      },
+      "EDUCATION": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 320
+      },
+      "EMI_LOANS": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 184
+      },
+      "ENTERTAINMENT": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 929
+      },
+      "FOOD_DINING": {
+        "precision": 0.9851,
+        "recall": 0.9998,
+        "f1": 0.9924,
+        "support": 4306
+      },
+      "FUEL": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 1164
+      },
+      "GROCERIES": {
+        "precision": 0.9946,
+        "recall": 0.9636,
+        "f1": 0.9789,
+        "support": 4228
+      },
+      "HEALTH": {
+        "precision": 1.0,
+        "recall": 0.8943,
+        "f1": 0.9442,
+        "support": 1211
+      },
+      "INSURANCE": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 16
+      },
+      "INTEREST": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 306
+      },
+      "OTHER_INCOME": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 200
+      },
+      "PERSONAL_CARE": {
+        "precision": 0.8824,
+        "recall": 1.0,
+        "f1": 0.9375,
+        "support": 623
+      },
+      "RENT": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 347
+      },
+      "SALARY": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 540
+      },
+      "SELF_TRANSFER": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 1298
+      },
+      "SHOPPING": {
+        "precision": 0.9438,
+        "recall": 0.9224,
+        "f1": 0.933,
+        "support": 2475
+      },
+      "SUBSCRIPTIONS": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 974
+      },
+      "TRANSPORT": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 2148
+      },
+      "TRAVEL": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 680
+      },
+      "UNCATEGORIZED": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0
+      },
+      "UTILITIES": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 1723
+      }
+    },
+    "confusion": {
+      "CASH_WITHDRAWAL|CASH_WITHDRAWAL": 730,
+      "CC_BILL_PAYMENT|CC_BILL_PAYMENT": 598,
+      "EDUCATION|EDUCATION": 320,
+      "EMI_LOANS|EMI_LOANS": 184,
+      "ENTERTAINMENT|ENTERTAINMENT": 929,
+      "FOOD_DINING|FOOD_DINING": 4305,
+      "FOOD_DINING|GROCERIES": 1,
+      "FUEL|FUEL": 1164,
+      "GROCERIES|FOOD_DINING": 65,
+      "GROCERIES|GROCERIES": 4074,
+      "GROCERIES|SHOPPING": 41,
+      "GROCERIES|UNCATEGORIZED": 48,
+      "HEALTH|HEALTH": 1083,
+      "HEALTH|SHOPPING": 95,
+      "HEALTH|UNCATEGORIZED": 33,
+      "INSURANCE|INSURANCE": 16,
+      "INTEREST|INTEREST": 306,
+      "OTHER_INCOME|OTHER_INCOME": 200,
+      "PERSONAL_CARE|PERSONAL_CARE": 623,
+      "RENT|RENT": 347,
+      "SALARY|SALARY": 540,
+      "SELF_TRANSFER|SELF_TRANSFER": 1298,
+      "SHOPPING|GROCERIES": 21,
+      "SHOPPING|PERSONAL_CARE": 83,
+      "SHOPPING|SHOPPING": 2283,
+      "SHOPPING|UNCATEGORIZED": 88,
+      "SUBSCRIPTIONS|SUBSCRIPTIONS": 974,
+      "TRANSPORT|TRANSPORT": 2148,
+      "TRAVEL|TRAVEL": 680,
+      "UTILITIES|UTILITIES": 1723
+    },
+    "coverage": 0.9932
+  },
+  "kind": {
+    "accuracy": 0.9932,
+    "macro_f1": 0.9992,
+    "per_class": {
+      "EXPENSE": {
+        "precision": 1.0,
+        "recall": 0.9922,
+        "f1": 0.9961,
+        "support": 21597
+      },
+      "INCOME": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 1046
+      },
+      "REFUND": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 387
+      },
+      "REVERSAL": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 74
+      },
+      "TRANSFER": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 1896
+      },
+      "UNKNOWN": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0
+      }
+    },
+    "confusion": {
+      "EXPENSE|EXPENSE": 21428,
+      "EXPENSE|UNKNOWN": 169,
+      "INCOME|INCOME": 1046,
+      "REFUND|REFUND": 387,
+      "REVERSAL|REVERSAL": 74,
+      "TRANSFER|TRANSFER": 1896
+    }
+  },
+  "transfers": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "tp": 948,
+    "fp": 0,
+    "fn": 0
+  },
+  "refund_links": {
+    "precision": 0.9333,
+    "recall": 0.9358,
+    "f1": 0.9346,
+    "tp": 350,
+    "fp": 25,
+    "fn": 24
+  },
+  "reversals": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "tp": 37,
+    "fp": 0,
+    "fn": 0
+  },
+  "recurring": {
+    "series": {
+      "precision": 0.9975,
+      "recall": 1.0,
+      "f1": 0.9987,
+      "tp": 396,
+      "fp": 1,
+      "fn": 0
+    },
+    "members": {
+      "precision": 0.9993,
+      "recall": 1.0,
+      "f1": 0.9996,
+      "tp": 4072,
+      "fp": 3,
+      "fn": 0
+    },
+    "by_type": {
+      "EMI": {
+        "truth": 17,
+        "matched": 17
+      },
+      "INTEREST": {
+        "truth": 76,
+        "matched": 76
+      },
+      "RENT": {
+        "truth": 29,
+        "matched": 29
+      },
+      "SALARY": {
+        "truth": 45,
+        "matched": 45
+      },
+      "SUBSCRIPTION": {
+        "truth": 90,
+        "matched": 90
+      },
+      "UTILITY": {
+        "truth": 139,
+        "matched": 139
+      }
+    },
+    "missed_events": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "decoy_false_alarm_rate": 0.0,
+      "predicted_events": 6,
+      "skips": 6,
+      "decoys": 12
+    }
+  },
+  "timezone": {
+    "month_accuracy": 1.0,
+    "naive_utc_month_accuracy": 0.9979,
+    "tz_boundary_month_accuracy": 1.0,
+    "tz_boundary_cases": 20
+  },
+  "budgets": {
+    "spend_mae_paise": 15545,
+    "user_month_category_cells": 6908
+  },
+  "naive_baseline": {
+    "totals_paise": {
+      "truth": 4006717986,
+      "system": 4006717986,
+      "naive": 9187248128
+    },
+    "naive_overstatement": 1.293,
+    "system_error": 0.0
+  },
+  "anomalies": {
+    "BUDGET_CATEGORY_MISMATCH": {
+      "caught": 10,
+      "total": 10,
+      "recall": 1.0
+    },
+    "RECURRING_NOT_SKIP": {
+      "caught": 12,
+      "total": 12,
+      "recall": 1.0
+    },
+    "RECURRING_SKIP": {
+      "caught": 6,
+      "total": 6,
+      "recall": 1.0
+    },
+    "REFUND_AS_EXPENSE": {
+      "caught": 23,
+      "total": 25,
+      "recall": 0.92
+    },
+    "TRANSFER_DOUBLE_COUNT": {
+      "caught": 20,
+      "total": 20,
+      "recall": 1.0
+    },
+    "TZ_BOUNDARY": {
+      "caught": 20,
+      "total": 20,
+      "recall": 1.0
+    }
+  },
+  "anomaly_outcomes": [
+    {
+      "anomaly_id": "ANM-000001",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "REMAPPED_RETIRED -> UTILITIES"
+    },
+    {
+      "anomaly_id": "ANM-000002",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "UNMAPPED -> None"
+    },
+    {
+      "anomaly_id": "ANM-000003",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "REMAPPED_CASE -> FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000004",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "REMAPPED_SYNONYM -> UTILITIES"
+    },
+    {
+      "anomaly_id": "ANM-000005",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "REMAPPED_RETIRED -> FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000006",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "REMAPPED_RETIRED -> UTILITIES"
+    },
+    {
+      "anomaly_id": "ANM-000007",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "UNMAPPED -> None"
+    },
+    {
+      "anomaly_id": "ANM-000008",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "REMAPPED_SYNONYM -> GROCERIES"
+    },
+    {
+      "anomaly_id": "ANM-000009",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "REMAPPED_RETIRED -> UTILITIES"
+    },
+    {
+      "anomaly_id": "ANM-000010",
+      "issue_type": "BUDGET_CATEGORY_MISMATCH",
+      "outcome": "CAUGHT",
+      "observed": "REMAPPED_RETIRED -> FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000011",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000035: no MISSED event near 2026-09-27"
+    },
+    {
+      "anomaly_id": "ANM-000012",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000070: no MISSED event near 2026-06-03"
+    },
+    {
+      "anomaly_id": "ANM-000013",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000092: no MISSED event near 2026-04-26"
+    },
+    {
+      "anomaly_id": "ANM-000014",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000099: no MISSED event near 2026-05-25"
+    },
+    {
+      "anomaly_id": "ANM-000015",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000179: no MISSED event near 2026-05-30"
+    },
+    {
+      "anomaly_id": "ANM-000016",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000203: no MISSED event near 2026-08-15"
+    },
+    {
+      "anomaly_id": "ANM-000017",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000236: no MISSED event near 2026-06-30"
+    },
+    {
+      "anomaly_id": "ANM-000018",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000244: no MISSED event near 2026-09-14"
+    },
+    {
+      "anomaly_id": "ANM-000019",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000305: no MISSED event near 2026-07-25"
+    },
+    {
+      "anomaly_id": "ANM-000020",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000318: no MISSED event near 2026-08-02"
+    },
+    {
+      "anomaly_id": "ANM-000021",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000360: no MISSED event near 2026-05-09"
+    },
+    {
+      "anomaly_id": "ANM-000022",
+      "issue_type": "RECURRING_NOT_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000369: no MISSED event near 2026-09-08"
+    },
+    {
+      "anomaly_id": "ANM-000023",
+      "issue_type": "RECURRING_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000038: MISSED on 2026-09-28"
+    },
+    {
+      "anomaly_id": "ANM-000024",
+      "issue_type": "RECURRING_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000045: MISSED on 2026-08-11"
+    },
+    {
+      "anomaly_id": "ANM-000025",
+      "issue_type": "RECURRING_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000219: MISSED on 2026-09-20"
+    },
+    {
+      "anomaly_id": "ANM-000026",
+      "issue_type": "RECURRING_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000281: MISSED on 2026-08-04"
+    },
+    {
+      "anomaly_id": "ANM-000027",
+      "issue_type": "RECURRING_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000317: MISSED on 2026-08-06"
+    },
+    {
+      "anomaly_id": "ANM-000028",
+      "issue_type": "RECURRING_SKIP",
+      "outcome": "CAUGHT",
+      "observed": "series REC-000339: MISSED on 2026-06-14"
+    },
+    {
+      "anomaly_id": "ANM-000029",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00000379 as GROCERIES"
+    },
+    {
+      "anomaly_id": "ANM-000030",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00000823 as FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000031",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00000538 as TRANSPORT"
+    },
+    {
+      "anomaly_id": "ANM-000032",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00001680 as GROCERIES"
+    },
+    {
+      "anomaly_id": "ANM-000033",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00003428 as ENTERTAINMENT"
+    },
+    {
+      "anomaly_id": "ANM-000034",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00005754 as HEALTH"
+    },
+    {
+      "anomaly_id": "ANM-000035",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00008908 as FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000036",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00008965 as GROCERIES"
+    },
+    {
+      "anomaly_id": "ANM-000037",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00008302 as TRANSPORT"
+    },
+    {
+      "anomaly_id": "ANM-000038",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00009704 as ENTERTAINMENT"
+    },
+    {
+      "anomaly_id": "ANM-000039",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00011683 as TRANSPORT"
+    },
+    {
+      "anomaly_id": "ANM-000040",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00011346 as GROCERIES"
+    },
+    {
+      "anomaly_id": "ANM-000041",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00014537 as TRAVEL"
+    },
+    {
+      "anomaly_id": "ANM-000042",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00018060 as FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000043",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00017718 as PERSONAL_CARE"
+    },
+    {
+      "anomaly_id": "ANM-000044",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00017561 as PERSONAL_CARE"
+    },
+    {
+      "anomaly_id": "ANM-000045",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00017888 as FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000046",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00018934 as GROCERIES"
+    },
+    {
+      "anomaly_id": "ANM-000047",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "MISSED",
+      "observed": "REFUND linked to TXN-2026-00020539 as FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000048",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00021203 as TRANSPORT"
+    },
+    {
+      "anomaly_id": "ANM-000049",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00020628 as FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000050",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00022296 as SHOPPING"
+    },
+    {
+      "anomaly_id": "ANM-000051",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00021439 as FOOD_DINING"
+    },
+    {
+      "anomaly_id": "ANM-000052",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "MISSED",
+      "observed": "REFUND linked to TXN-2026-00023207 as PERSONAL_CARE"
+    },
+    {
+      "anomaly_id": "ANM-000053",
+      "issue_type": "REFUND_AS_EXPENSE",
+      "outcome": "CAUGHT",
+      "observed": "REFUND linked to TXN-2026-00024520 as SHOPPING"
+    },
+    {
+      "anomaly_id": "ANM-000054",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000055",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000056",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000057",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000058",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000059",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/CC_BILL_PAYMENT, credit TRANSFER/CC_BILL_PAYMENT"
+    },
+    {
+      "anomaly_id": "ANM-000060",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000061",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000062",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000063",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000064",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000065",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000066",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/CC_BILL_PAYMENT, credit TRANSFER/CC_BILL_PAYMENT"
+    },
+    {
+      "anomaly_id": "ANM-000067",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000068",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000069",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000070",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000071",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/SELF_TRANSFER, credit TRANSFER/SELF_TRANSFER"
+    },
+    {
+      "anomaly_id": "ANM-000072",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/CC_BILL_PAYMENT, credit TRANSFER/CC_BILL_PAYMENT"
+    },
+    {
+      "anomaly_id": "ANM-000073",
+      "issue_type": "TRANSFER_DOUBLE_COUNT",
+      "outcome": "CAUGHT",
+      "observed": "debit TRANSFER/CC_BILL_PAYMENT, credit TRANSFER/CC_BILL_PAYMENT"
+    },
+    {
+      "anomaly_id": "ANM-000074",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-01"
+    },
+    {
+      "anomaly_id": "ANM-000075",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-01"
+    },
+    {
+      "anomaly_id": "ANM-000076",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-01"
+    },
+    {
+      "anomaly_id": "ANM-000077",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-02"
+    },
+    {
+      "anomaly_id": "ANM-000078",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-03"
+    },
+    {
+      "anomaly_id": "ANM-000079",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-03"
+    },
+    {
+      "anomaly_id": "ANM-000080",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-03"
+    },
+    {
+      "anomaly_id": "ANM-000081",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-04"
+    },
+    {
+      "anomaly_id": "ANM-000082",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-05"
+    },
+    {
+      "anomaly_id": "ANM-000083",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-06"
+    },
+    {
+      "anomaly_id": "ANM-000084",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-06"
+    },
+    {
+      "anomaly_id": "ANM-000085",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-07"
+    },
+    {
+      "anomaly_id": "ANM-000086",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-07"
+    },
+    {
+      "anomaly_id": "ANM-000087",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-08"
+    },
+    {
+      "anomaly_id": "ANM-000088",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-08"
+    },
+    {
+      "anomaly_id": "ANM-000089",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-09"
+    },
+    {
+      "anomaly_id": "ANM-000090",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-10"
+    },
+    {
+      "anomaly_id": "ANM-000091",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-10"
+    },
+    {
+      "anomaly_id": "ANM-000092",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-10"
+    },
+    {
+      "anomaly_id": "ANM-000093",
+      "issue_type": "TZ_BOUNDARY",
+      "outcome": "CAUGHT",
+      "observed": "booked in 2026-12"
+    }
+  ],
+  "run_id": "RUN-000001"
+}

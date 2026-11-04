@@ -1,0 +1,66 @@
+merchant_id,name,default_category_code,vpa,is_online
+MER-0001,Swiggy,FOOD_DINING,swiggy-mrch@axl,true
+MER-0002,Zomato,FOOD_DINING,zomato-mrch@icici,true
+MER-0003,Domino's,FOOD_DINING,dominos-mrch@hdfcbank,true
+MER-0004,McDonald's,FOOD_DINING,mcdonalds-mrch@paytm,false
+MER-0005,Starbucks,FOOD_DINING,starbucks-mrch@ybl,false
+MER-0006,Haldiram's,FOOD_DINING,haldirams-mrch@axl,false
+MER-0007,BigBasket,GROCERIES,bigbasket-mrch@icici,true
+MER-0008,Blinkit,GROCERIES,blinkit-mrch@hdfcbank,true
+MER-0009,Zepto,GROCERIES,zepto-mrch@paytm,true
+MER-0010,DMart,GROCERIES,dmart-mrch@ybl,false
+MER-0011,Reliance Retail,GROCERIES,reliancefresh-mrch@axl,false
+MER-0012,More Supermarket,GROCERIES,moresupermarket-mrch@icici,false
+MER-0013,Amazon,SHOPPING,amazon-mrch@hdfcbank,true
+MER-0014,Flipkart,SHOPPING,flipkart-mrch@paytm,true
+MER-0015,Myntra,SHOPPING,myntra-mrch@ybl,true
+MER-0016,Ajio,SHOPPING,ajio-mrch@axl,true
+MER-0017,Croma,SHOPPING,croma-mrch@icici,false
+MER-0018,Decathlon,SHOPPING,decathlon-mrch@hdfcbank,false
+MER-0019,IKEA,SHOPPING,ikea-mrch@paytm,false
+MER-0020,Uber,TRANSPORT,uber-mrch@ybl,true
+MER-0021,Ola,TRANSPORT,ola-mrch@axl,true
+MER-0022,Rapido,TRANSPORT,rapido-mrch@icici,true
+MER-0023,Metro Rail,TRANSPORT,metrorail-mrch@hdfcbank,false
+MER-0024,FASTag,TRANSPORT,fastag-mrch@paytm,false
+MER-0025,Indian Oil,FUEL,indianoil-mrch@ybl,false
+MER-0026,HPCL,FUEL,hpcl-mrch@axl,false
+MER-0027,BPCL,FUEL,bpcl-mrch@icici,false
+MER-0028,BESCOM,UTILITIES,bescom-mrch@hdfcbank,false
+MER-0029,MSEDCL,UTILITIES,msedcl-mrch@paytm,false
+MER-0030,BSES,UTILITIES,bses-mrch@ybl,false
+MER-0031,TGSPDCL,UTILITIES,tgspdcl-mrch@axl,false
+MER-0032,TANGEDCO,UTILITIES,tangedco-mrch@icici,false
+MER-0033,Tata Power,UTILITIES,tatapower-mrch@hdfcbank,false
+MER-0034,Airtel,UTILITIES,airtel-mrch@paytm,true
+MER-0035,Jio,UTILITIES,jio-mrch@ybl,true
+MER-0036,Vi,UTILITIES,vodafoneidea-mrch@axl,true
+MER-0037,ACT Fibernet,UTILITIES,actfibernet-mrch@icici,true
+MER-0038,Tata Play,UTILITIES,tataplay-mrch@hdfcbank,true
+MER-0039,Apollo Pharmacy,HEALTH,apollopharmacy-mrch@paytm,false
+MER-0040,PharmEasy,HEALTH,pharmeasy-mrch@ybl,true
+MER-0041,Tata 1mg,HEALTH,tata1mg-mrch@axl,true
+MER-0042,Practo,HEALTH,practo-mrch@icici,true
+MER-0043,Unacademy,EDUCATION,unacademy-mrch@hdfcbank,true
+MER-0044,Coursera,EDUCATION,coursera-mrch@paytm,true
+MER-0045,LIC,INSURANCE,licofindia-mrch@ybl,false
+MER-0046,Star Health,INSURANCE,starhealth-mrch@axl,true
+MER-0047,Bajaj Finance,EMI_LOANS,,false
+MER-0048,HDFC Loans,EMI_LOANS,,false
+MER-0049,BookMyShow,ENTERTAINMENT,bookmyshow-mrch@paytm,true
+MER-0050,PVR INOX,ENTERTAINMENT,pvrinox-mrch@ybl,false
+MER-0051,Netflix,SUBSCRIPTIONS,netflix-mrch@axl,true
+MER-0052,Spotify,SUBSCRIPTIONS,spotify-mrch@icici,true
+MER-0053,Disney+ Hotstar,SUBSCRIPTIONS,hotstar-mrch@hdfcbank,true
+MER-0054,YouTube Premium,SUBSCRIPTIONS,youtubepremium-mrch@paytm,true
+MER-0055,Google One,SUBSCRIPTIONS,googleone-mrch@ybl,true
+MER-0056,Cult.fit,SUBSCRIPTIONS,cultfit-mrch@axl,true
+MER-0057,IRCTC,TRAVEL,irctc-mrch@icici,true
+MER-0058,IndiGo,TRAVEL,indigo-mrch@hdfcbank,true
+MER-0059,MakeMyTrip,TRAVEL,makemytrip-mrch@paytm,true
+MER-0060,OYO,TRAVEL,oyo-mrch@ybl,true
+MER-0061,RedBus,TRAVEL,redbus-mrch@axl,true
+MER-0062,Urban Company,PERSONAL_CARE,urbancompany-mrch@icici,true
+MER-0063,Nykaa,PERSONAL_CARE,nykaa-mrch@hdfcbank,true
+MER-0064,CRED,CC_BILL_PAYMENT,cred-mrch@paytm,true
+MER-0065,Tata Group,SHOPPING,tatacliq-mrch@ybl,true

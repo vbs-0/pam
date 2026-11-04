@@ -1,0 +1,29 @@
+{
+  "match": true,
+  "runs": [
+    "1938a37638e55c9649fd26a9c9aeb13cd8e0c33cbf2208d82e3a6d03598eee2e",
+    "1938a37638e55c9649fd26a9c9aeb13cd8e0c33cbf2208d82e3a6d03598eee2e"
+  ],
+  "python_hash_seeds": [
+    1,
+    2
+  ],
+  "files": {
+    "ground_truth/anomaly.csv": "f34427e37b8d07d7f30993de247eeb8f08c7a5700455382d73e3b20939d6f363",
+    "ground_truth/recurring_truth.csv": "28aa488fe71d0e5a8a2bec006b244490cbf4030f7100a8c89c7bb666f985599f",
+    "ground_truth/txn_label.csv": "881603003f2c1aa464c50271acd798d0e05109769fe90f0125a245cda3cb66e3",
+    "inputs/account.csv": "ad008c52443107d15cba386a64a5d7be8be6afdd88f9622aedba0ce9b8b2c443",
+    "inputs/account_balance_monthly.csv": "2357fae73ddac275cd1818f7dba7fa792904447fcecef954efec1992e6fa8c71",
+    "inputs/account_event.csv": "018212ad57ea8f6f5a2ef75d36be6ec92346f330d568a95503b563bfe7afc75a",
+    "inputs/account_holder.csv": "14e85d2e7c42ee21cc14c55da95379e891dddb6b1b03854800b7dd100efe17a9",
+    "inputs/budget.csv": "2d41a7ae0bb71f553884bea6e886341c0e10b0146d63f7c40a4ef56948b1c083",
+    "inputs/category.csv": "764a646d830cf6067137b3a89147c1ec30565afd9e3253776a072e0831ef0135",
+    "inputs/category_rule.csv": "27b666f55c721f17dc055127311bc7cd4e0b3de6ea3434f60f4f7ac4c9e1378a",
+    "inputs/category_synonym.csv": "60eda51d9117ca436d54d1a872089a16955e1d4f516c98bca0a0cac0d9eff5fe",
+    "inputs/merchant.csv": "72056c269be5cf5afa8b119e15bbd3db959605c5b300438f902cf74ecb6bd7c1",
+    "inputs/merchant_alias.csv": "4c4c34640ade2813d7e48931117217d5db5dc63163bd76c112e5f81ababc42ef",
+    "inputs/merchant_category.csv": "48ccbb229353143d2ee83bdf42697d79a8ce18e94c50342e585b101dcb4f0b7b",
+    "inputs/txn.csv": "5f6d71f43fc138106686e0730672e056a80afa7d5e95aed029f43bbc6a69462a",
+    "inputs/user_profile.csv": "e87a8e43dd24f5ab94b36311a2635c2af28de479510a62ee43497a5e3e509f36"
+  }
+}

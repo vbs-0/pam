@@ -1,0 +1,138 @@
+[
+  {
+    "name": "columns",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": "headers equal the schema column order"
+  },
+  {
+    "name": "pk_unique",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "fk_integrity",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "enums",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "id_formats",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "date_order",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "balances",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "cc_payments",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "interest_derivation",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "transfer_pairs_zero",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "lifecycle",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "duplicates",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "taxonomy_conformance",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 200,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "truth_isolation",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "sign_convention",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "manifest_and_volume",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": ""
+  },
+  {
+    "name": "coverage",
+    "status": "PASS",
+    "violations": 0,
+    "labelled": 0,
+    "examples": [],
+    "detail": "labelled issue types, true kinds and series types present"
+  }
+]

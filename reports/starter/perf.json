@@ -1,0 +1,8 @@
+{
+  "generate": 1.2,
+  "validate_dataset": 0.7,
+  "load": 11.5,
+  "pipeline": 10.1,
+  "evaluate": 3.7,
+  "validate_outputs": 0.9
+}

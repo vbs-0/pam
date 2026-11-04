@@ -152,6 +152,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A45 | Admin starts a full-scale generate on the 1 GB server | 422 with "generate the full scale offline with the CLI" (MAX_JOB_TRANSACTIONS, default 100k) | jobs/runner.py | test_review_admin::test_admin_jobs_lifecycle_and_single_flight | done |
 | A46 | Customer login switched to a missing household, or a customer with no household | 422 | api/admin.py | test_review_admin::test_admin_user_management | done |
 | A47 | Reviewer before any evaluation | 404 telling an admin to run one | api/review.py | (covered by _evaluated_run) | done |
+| A48 | Register or Google sign-in with an email that already has a login | Self-registered password dropped on Google link; Google never inherits another household; duplicate email rejected | api/auth.py | tests/api/test_auth.py | done |
 
 ## Web console (U)
 
