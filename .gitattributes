@@ -1,0 +1,6 @@
+* text=auto eol=lf
+*.csv -text
+*.sql -text
+*.json -text
+*.png binary
+*.apk binary
