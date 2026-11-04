@@ -117,8 +117,8 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A10 | `limit` 0 or 10,000 | 422 (bounds 1..100) | api/common.py | test_me::test_bad_cursor_limit_and_search | done |
 | A11 | Search containing `%` or `_` | Escaped, matched literally | api/common.py | test_me::test_bad_cursor_limit_and_search | done |
 | A12 | No successful pipeline run yet | 409 telling an admin to run the pipeline | api/common.py | test_me::test_no_run_409 | done |
-| A13 | Invalid / concurrent exception transition | 409 | api/analyst.py | test_exception_lifecycle_and_invalid_transition | planned |
-| A14 | Rule with invalid regex, > 200 chars, or no condition | 422 | api/analyst.py | test_rule_versioning_and_tester | planned |
+| A13 | Invalid or concurrent exception transition | 409: transition table, then `UPDATE … WHERE status = :from` so the slower of two analysts loses cleanly | api/analyst.py | test_analyst::test_exception_lifecycle_and_invalid_transition | done |
+| A14 | Rule with invalid regex, > 200 chars, no condition, retired category, unknown merchant | 422 | api/analyst.py | test_analyst::test_bad_rules_rejected | done |
 | A15 | Second dataset job while one runs | 409; a dead worker's job becomes FAILED | jobs/runner.py | test_admin_job_lifecycle | planned |
 | A16 | Export path traversal (`..%2F`) | 400/404 | api/admin.py | test_export_path_traversal_blocked | planned |
 | A17 | Admin demotes/disables themself | 409 | api/admin.py | test_admin_cannot_demote_self | planned |
@@ -137,6 +137,9 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A30 | Customer fixes an uncategorized txn | Open UNCATEGORIZED exception closes with an event naming the override | api/me.py | test_me::test_override_resolves_uncategorized_exception | done |
 | A31 | Staff opens a customer page | ANALYST/REVIEWER 403; ADMIN must name `?user_id=` (support view), unknown id 404 | api/common.py | test_me::test_roles_and_admin_support_view | done |
 | A32 | Login not linked to a household | 409 asking an admin to link it | api/common.py | (covered by household()) | done |
+| A33 | Rule regex with nested repetition (`(a+)+`) that could hang the categorizer on a crafted narration | Rejected with 422 at save time | api/analyst.py | test_analyst::test_bad_rules_rejected | done |
+| A34 | Exception no longer raised by the latest run (fixed by a rule or override) | Kept with its history; listed with `current: false` | api/analyst.py | test_analyst::test_exceptions_paging_and_counts | done |
+| A35 | Ground truth leaking to analysts | Trace returns `truth` only for REVIEWER/ADMIN | api/analyst.py | test_analyst::test_exception_lifecycle_and_invalid_transition | done |
 
 ## Web console (U)
 
