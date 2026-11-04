@@ -1,0 +1,122 @@
+@import "tailwindcss";
+@import "@fontsource-variable/hanken-grotesk";
+
+/* Hisaab Register: cool register paper, ruled lines, ballpoint-blue ink, red margin. Light is the default
+   (a household reading numbers in daylight); dark follows the OS or the toggle. Every rule is 1px. */
+:root {
+  --paper: #f7f9fc;
+  --sheet: #ffffff;
+  --rule: #c9d6ea;
+  --rule-strong: #9db4d6;
+  --ink: #14171f;
+  --muted: #475672;
+  --blue: #1e3a8a;
+  --blue-soft: #e4ebfa;
+  --red: #c8102e;
+  --red-soft: #fde8ec;
+  --amber: #8a4b08;
+  --green: #14633f;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --paper: #0e1420;
+  --sheet: #131b2b;
+  --rule: #22304a;
+  --rule-strong: #34486c;
+  --ink: #e6ecf8;
+  --muted: #9aa8c5;
+  --blue: #8fb0ff;
+  --blue-soft: #1a2744;
+  --red: #ff6b7e;
+  --red-soft: #3a1620;
+  --amber: #f2a33a;
+  --green: #5ccf9b;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1420; --sheet: #131b2b; --rule: #22304a; --rule-strong: #34486c; --ink: #e6ecf8;
+    --muted: #9aa8c5; --blue: #8fb0ff; --blue-soft: #1a2744; --red: #ff6b7e; --red-soft: #3a1620;
+    --amber: #f2a33a; --green: #5ccf9b; color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --font-sans: "Hanken Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-paper: var(--paper);
+  --color-sheet: var(--sheet);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-blue: var(--blue);
+  --color-blue-soft: var(--blue-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --color-amber: var(--amber);
+  --color-green: var(--green);
+  --radius-sm: 2px;
+}
+
+html { background: var(--paper); }
+body {
+  margin: 0; color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.45;
+  font-feature-settings: "tnum" 1, "lnum" 1; -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--blue); color: var(--paper); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 2px; }
+input, select, textarea, button { font: inherit; color: inherit; caret-color: var(--blue); }
+* { scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
+a { color: var(--blue); text-underline-offset: 3px; }
+
+.margin-rule { border-left: 1px solid var(--red); }
+.num { font-variant-numeric: tabular-nums lining-nums; text-align: right; white-space: nowrap; }
+.struck { text-decoration: line-through; text-decoration-color: var(--red); text-decoration-thickness: 1.5px; color: var(--muted); }
+.stamp {
+  display: inline-block; border: 1px solid currentColor; padding: 0 5px; font-size: 10.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase; line-height: 1.5; border-radius: 1px; white-space: nowrap;
+}
+
+.field {
+  background: var(--sheet); border: 1px solid var(--rule-strong); border-radius: 2px; padding: 7px 10px; min-height: 38px;
+  width: 100%;
+}
+.field:hover { border-color: var(--blue); }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 14px;
+  border-radius: 2px; border: 1px solid var(--blue); color: var(--blue); background: transparent; font-weight: 600;
+  cursor: pointer; transition: background-color .12s ease-out, color .12s ease-out; white-space: nowrap;
+}
+.btn:hover:not(:disabled) { background: var(--blue-soft); }
+.btn-solid { background: var(--blue); color: var(--paper); }
+.btn-solid:hover:not(:disabled) { background: var(--blue); filter: brightness(1.12); }
+.btn-danger { border-color: var(--red); color: var(--red); }
+.btn-danger:hover:not(:disabled) { background: var(--red-soft); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ghost { border-color: transparent; }
+
+table.register { width: 100%; border-collapse: collapse; }
+table.register th { text-align: left; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--rule-strong); white-space: nowrap; }
+table.register th.num { text-align: right; }
+table.register td { padding: 9px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.register tbody tr:hover { background: var(--blue-soft); }
+table.register tr.clickable { cursor: pointer; }
+
+.skeleton { background: linear-gradient(90deg, var(--rule) 0%, var(--blue-soft) 50%, var(--rule) 100%); background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite; border-radius: 2px; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* the signature: a month's naive figure gets a hand-drawn strike when it appears */
+.strike-draw { position: relative; display: inline-block; color: var(--muted); }
+.strike-draw::after { content: ""; position: absolute; left: -3px; right: -3px; top: 52%; height: 2px; background: var(--red);
+  transform: rotate(-2.5deg); transform-origin: left center; animation: draw .45s .15s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes draw { from { transform: rotate(-2.5deg) scaleX(0); } to { transform: rotate(-2.5deg) scaleX(1); } }
+.reinked { animation: reink .35s ease-out both; }
+@keyframes reink { from { opacity: .35; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+.sheet-in { animation: sheet .18s ease-out both; }
+@keyframes sheet { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-delay: 0s !important; transition-duration: .001ms !important; }
+}

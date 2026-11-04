@@ -97,6 +97,9 @@ def test_summary_recurring_insights_shapes(client, h):
     s = client.get(f"{V1}/me/summary?month=2026-03", headers=h).json()
     assert {"income_paise", "spend_paise", "savings_rate", "top_categories", "over_budget_count"} <= set(s)
     assert s["income_paise"] > 0 and s["spend_paise"] > 0
+    assert s["naive_spend_paise"] >= s["spend_paise"] >= 0 and s["transfers_out_paise"] >= 0
+    tr = client.get(f"{V1}/me/trend?months=6", headers=h).json()
+    assert 1 <= len(tr) <= 6 and [x["month"] for x in tr] == sorted(x["month"] for x in tr)
     rec = client.get(f"{V1}/me/recurring", headers=h).json()
     assert rec and {"series_id", "status", "next_expected", "events"} <= set(rec[0]) and len(rec[0]["events"]) <= 12
     assert isinstance(client.get(f"{V1}/me/insights?month=2026-03", headers=h).json(), list)

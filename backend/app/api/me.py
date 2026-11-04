@@ -205,11 +205,30 @@ def summary(month: str = Depends(month_q), user: str = Depends(household), run: 
     lines, _, spend, income = _budget(conn, run, user, month)
     total = sum(spend.values())
     top = sorted(((c, v) for c, v in spend.items() if v > 0), key=lambda cv: -cv[1])[:5]
+    naive, contra = conn.execute(text(
+        f"SELECT COALESCE(-sum(amount_paise) FILTER (WHERE amount_paise < 0), 0), "
+        f"COALESCE(-sum(amount_paise) FILTER (WHERE amount_paise < 0 AND kind = 'TRANSFER'), 0) "
+        f"FROM ({EFFECTIVE} AND e.user_id = :u AND e.local_month = :m) x"), {"run": run, "u": user, "m": month}).one()
     return {"month": month, "income_paise": income, "spend_paise": total,
+            "naive_spend_paise": int(naive), "transfers_out_paise": int(contra),
             "savings_rate": round((income - total) / income, 4) if income > 0 else None,
             "top_categories": [{"code": c, "spend_paise": v} for c, v in top],
             "over_budget_count": sum(x.status == "OVER" for x in lines),
             "near_budget_count": sum(x.status == "NEAR" for x in lines)}
+
+
+@me.get("/trend")
+def trend(months: int = Query(12, ge=1, le=36), user: str = Depends(household), run: str = Depends(run_id),
+          conn: Connection = Depends(get_conn)):
+    """Spend and income per month, oldest first, same rules as the summary."""
+    rows = conn.execute(text(
+        f"SELECT local_month AS month, COALESCE(-sum(amount_paise) FILTER (WHERE kind IN ('EXPENSE', 'REFUND') OR "
+        f"(kind = 'UNKNOWN' AND amount_paise < 0)), 0) AS spend_paise, COALESCE(sum(amount_paise) FILTER (WHERE "
+        f"kind = 'INCOME' OR (kind = 'UNKNOWN' AND amount_paise > 0)), 0) AS income_paise "
+        f"FROM ({EFFECTIVE} AND e.user_id = :u) x GROUP BY 1 ORDER BY 1 DESC LIMIT :n"),
+        {"run": run, "u": user, "n": months}).all()
+    return [{"month": r.month, "spend_paise": int(r.spend_paise), "income_paise": int(r.income_paise)}
+            for r in reversed(rows)]
 
 
 @me.get("/recurring")
