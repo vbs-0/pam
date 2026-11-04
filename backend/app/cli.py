@@ -71,6 +71,31 @@ def cmd_validate_dataset(a) -> None:
         sys.exit(1)
 
 
+def cmd_evaluate(a) -> None:
+    """Offline: run the engine on the dataset files and score it against ground truth (no database needed)."""
+    from app.datagen.validate import Data
+    from app.engine.pipeline import input_from_rows, run_engine
+    from app.evaluation import evaluate, from_engine, render_markdown
+    out, reports = _out(a), _reports(a)
+    t = time.perf_counter()
+    d = Data(out)
+    result = run_engine(input_from_rows(d.rows))
+    decided, events, resolutions, exceptions = from_engine(result)
+    m = evaluate(decided, d.rows["txn_label"], d.rows["recurring_truth"], d.rows["anomaly"], events, resolutions,
+                 exceptions)
+    m["engine_stats"] = result.stats
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "evaluation.json").write_text(json.dumps(m, indent=2, default=str) + "\n", encoding="utf-8",
+                                             newline="\n")
+    (reports / "evaluation.md").write_text(render_markdown(m, f"Evaluation — {out.name}"), encoding="utf-8",
+                                           newline="\n")
+    for k, v in m["thresholds"].items():
+        print(f"{'PASS' if v['pass'] else 'FAIL'}  {k:28} {v['value']:.4f}  ({v['target']})")
+    print(f"{time.perf_counter() - t:.1f}s -> {reports}")
+    if not m["all_pass"]:
+        sys.exit(1)
+
+
 def cmd_docs(a) -> None:
     from app.docs_gen import render_data_dictionary
     path = ROOT / "docs" / "data-dictionary.md"
@@ -88,6 +113,7 @@ def main(argv: list[str] | None = None) -> None:
                             ("export", cmd_export, "write JSON and the SQL seed next to the CSVs"),
                             ("repro", cmd_repro, "generate twice in fresh interpreters and compare checksums"),
                             ("validate-dataset", cmd_validate_dataset, "check keys, joins, dates, arithmetic, labels"),
+                            ("evaluate", cmd_evaluate, "run the engine on the files and score it (no DB)"),
                             ("docs", cmd_docs, "regenerate docs/data-dictionary.md from the schema")]:
         s = sub.add_parser(name, help=help_)
         s.set_defaults(fn=fn)

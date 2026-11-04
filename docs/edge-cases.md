@@ -21,23 +21,23 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | D11 | 00:10 IST on 1 Jan 2026 is 2025 in UTC | Txn id year uses the IST year (`TXN-2026-…`) | datagen/generator.py | test_generator::test_exact_counts_and_chronological_ids (first row is 2025 in UTC, id says 2026) | done |
 | D12 | Salary day falls on Sunday / 2nd or 4th Saturday / national holiday | Paid on the previous working day (RBI rules) | datagen/calendar.py | test_people::test_calendar_rules | done |
 | D13 | Pension on the 1st is a holiday | Paid next working day | datagen/calendar.py | test_people::test_calendar_rules | done |
-| D14 | Subscription billed on the 29th–31st | Clamped to month end in short months (natural decoy for skip detection) | datagen/schedules.py | engine test_shift_and_month_end_clamp_are_not_skips | planned |
-| D15 | 28-day mobile recharge | 13 charges in a calendar year, still one monthly series | datagen/schedules.py | engine test_detects_monthly_active_series | planned |
+| D14 | Subscription billed on the 29th–31st | Clamped to month end in short months (natural decoy for skip detection) | datagen/schedules.py | test_recurring::test_shift_and_month_end_clamp_are_not_skips | done |
+| D15 | 28-day mobile recharge | 13 charges in a calendar year, still one monthly series | datagen/schedules.py | test_recurring::test_same_merchant_two_series (28-day pack = 13 charges, one monthly series) | done |
 | D16 | Refund date after 31 Dec 2026 | Refund dropped (outside window) | datagen/spending.py | test_generator::test_exact_counts_and_chronological_ids (no IST date outside 2026) | done |
 | D17 | Multiple partial refunds of one order | Sum of refunds ≤ original | datagen/spending.py | test_generator::test_refunds_never_exceed_their_purchase | done |
 | D18 | Refund whose purchase was in Dec 2025 | Orphan refund, truth link empty | datagen/spending.py | test_generator::test_coverage_of_required_phenomena | done |
 | D19 | Local merchant not in the merchant master | `true_merchant_id` null; keyword fallback or UNCATEGORIZED | datagen/spending.py | test_generator::test_coverage_of_required_phenomena | done |
-| D20 | "ENTERPRISES"/"TRADERS" shops sell anything | True category varies; rules cannot know → exception queue | datagen/catalog.py | evaluation per-class F1 | planned |
+| D20 | "ENTERPRISES"/"TRADERS" shops sell anything | True category varies; rules cannot know → exception queue | datagen/catalog.py | test_evaluation::test_starter_meets_acceptance_thresholds (per-class F1 in reports/<scale>/evaluation.md; ambiguous shops land in the UNCATEGORIZED queue) | done |
 | D21 | Two identical purchases same merchant, same day, same amount | Not duplicates (different RRN) | datagen, validate::duplicates | test_validate::test_clean_dataset_passes (duplicates on account+RRN+amount+time), test_detects_duplicate_pk_bad_fk_bad_enum | done |
 | D22 | Household with no budgets (5%) | Budget page shows NO_BUDGET lines; no insights crash | datagen/budgets.py, engine | api test_summary_recurring_insights_shapes | planned |
-| D23 | Budget revised mid-month | Version 2 effective; v1 kept as history | datagen/budgets.py | test_budgets_insights::test_latest_version_wins | planned |
-| D24 | Self-employed irregular income | No salary series; NEFT credits → OTHER_INCOME | datagen/schedules.py | evaluation recurring precision | planned |
-| D25 | Retired household | Pension series (SALARY type), more health/grocery spend | datagen | test_generator coverage | planned |
+| D23 | Budget revised mid-month | Version 2 effective; v1 kept as history | datagen/budgets.py | test_budgets_insights::test_latest_version_wins | done |
+| D24 | Self-employed irregular income | No salary series; NEFT credits → OTHER_INCOME | datagen/schedules.py | test_evaluation::test_every_salary_and_pension_series_found | done |
+| D25 | Retired household | Pension series (SALARY type), more health/grocery spend | datagen | test_evaluation::test_every_salary_and_pension_series_found | done |
 | D26 | Joint account | Spend counts toward the owner's budget; joint holder can view it | datagen/people.py, api/me.py | api test_transactions_keyset_pagination_and_isolation | planned |
 | D27 | Ground truth leaking into inputs | No `true_*` column in any input table or file | schema.py, validate | test_generator::test_ground_truth_not_in_inputs, validate::truth_isolation | done |
 | D28 | Windows checkout rewrites CSV line endings | `.gitattributes` marks CSV/SQL/JSON `-text` so checksums hold | .gitattributes | repro check on a fresh clone | done |
 | D29 | Same seed, different Python version / OS | RNG uses only `random.random()`; manifest has no timestamps | datagen/rand.py, writer.py | test_writer::test_repro_identical_across_interpreters (two fresh interpreters, PYTHONHASHSEED 1 and 2) | done |
-| D30 | Same merchant runs two independent series on one account (Airtel broadband via BBPS ₹799 + Airtel prepaid via UPI ₹349 every 28 days) | Series key = counterparty + channel + amount band, never merchant alone | datagen/schedules.py, engine/recurring.py | engine test_same_merchant_two_series | planned |
+| D30 | Same merchant runs two independent series on one account (Airtel broadband via BBPS ₹799 + Airtel prepaid via UPI ₹349 every 28 days) | Series key = counterparty + channel + amount band, never merchant alone | datagen/schedules.py, engine/recurring.py | test_recurring::test_same_merchant_two_series | done |
 | D31 | Interest on an account closed in Q2 has only 1–2 postings | A truth series needs ≥ 3 occurrences; fewer are labelled INTEREST without a series | datagen/generator.py | test_generator::test_labels_complete_linked_and_truth_month_is_ist | done |
 | D32 | Refund or reversal would land after the account closed | Dropped (the credit cannot post to a closed account) | datagen/spending.py | test_generator::test_fk_and_owner_consistency | done |
 | D33 | Self transfer close to midnight before a closure day | Transfers only 08:00–21:59 and only while both accounts are open, so no leg lands on the closure day after the sweep | datagen/ledger.py | test_generator::test_balances_reconcile_and_savings_never_negative | done |
@@ -46,54 +46,60 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | D36 | Subscription on a credit card opened during 2026 | Card subscriptions only use cards opened before 2026, so no charge predates the card | datagen/schedules.py | test_generator::test_fk_and_owner_consistency | done |
 | D37 | Partial refunds of the same order | Linked to the same purchase; second refund 1–5 days after the first; total ≤ original | datagen/spending.py | test_generator::test_refunds_never_exceed_their_purchase | done |
 | D38 | Reference numbers must look like real RRNs and stay unique at 500k rows | Bijective key→RRN map (multiplier coprime with 10¹¹), 12 digits | datagen/descriptors.py | test_generator::test_references_unique_except_transfer_legs_and_reversals | done |
+| D39 | CLI run in a Windows console (cp1252 has no ₹) | stdout/stderr reconfigured to UTF-8 at start-up | cli.py | manual: `python -m app.cli evaluate` in Windows 11 Terminal | done |
 
 ## Labelled anomalies from the brief (★)
 
 | ID | Scenario | Expected handling | Where | Test | Status |
 |---|---|---|---|---|---|
-| ★A1 | Transfer counted as spending twice (UPI to own VPA with note "Payment"; credit leg 1–3 days later, maybe next month; card bill via CRED) | Own-VPA rule + pairing → both legs TRANSFER, excluded from spend | engine/pipeline.py, transfers.py | test_anomalies::test_transfer_double_count_shape; engine: test_transfers_refunds::test_pairs_delayed_cross_month_transfer_and_not_other_users, integration anomaly recall | injected |
-| ★A2 | Refund treated as new expense (credit with no refund keyword) | Merchant credit → REFUND linked to original, nets the original category | engine/refunds.py | test_anomalies::test_refund_as_expense_has_no_keyword; engine: test_refund_category_follows_original_and_reversal_by_rrn | injected |
-| ★A3 | Recurring series skips incorrectly (one occurrence missing) | MISSED event at the expected date ±7 days, then RESUMED | engine/recurring.py | test_anomalies::test_skip_really_missing_and_decoy_present; engine: test_recurring::test_true_skip_emits_missed_and_resumed | injected |
-| ★A3b | Decoys: retry 2–4 days late, holiday shift, month-end clamp, cancellation | No MISSED event (cancellation → ENDED) | engine/recurring.py | test_anomalies::test_skip_really_missing_and_decoy_present; engine: test_shift_and_month_end_clamp_are_not_skips, test_cancelled_series_ends | injected |
-| ★A4 | Transaction date crosses timezone boundary (00:00–05:29 IST on the 1st) | Business month = IST month | engine/pipeline.py, timeutil.py | test_anomalies::test_tz_boundary_utc_month_differs; engine: test_primitives::test_local_date_crosses_utc_boundary | injected |
-| ★A5 | Budget categories do not match taxonomy (retired, lowercase, synonym, unknown) | Remap retired/case/synonym; unknown → UNMAPPED exception + insight | engine/budgets.py | test_anomalies::test_budget_mismatch_only_where_labelled, test_validate::test_detects_unlabelled_taxonomy_violation; engine: test_budgets_insights::test_resolution_paths | injected |
+| ★A1 | Transfer counted as spending twice (UPI to own VPA with note "Payment"; credit leg 1–3 days later, maybe next month; card bill via CRED) | Own-VPA rule + pairing → both legs TRANSFER, excluded from spend | engine/pipeline.py, transfers.py | test_anomalies::test_transfer_double_count_shape, test_transfers_refunds::test_pairs_delayed_cross_month_transfer_and_not_other_users, test_evaluation::test_starter_meets_acceptance_thresholds (400/400 caught at full scale) | done |
+| ★A2 | Refund treated as new expense (credit with no refund keyword) | Merchant credit → REFUND linked to original, nets the original category | engine/refunds.py | test_anomalies::test_refund_as_expense_has_no_keyword, test_transfers_refunds::test_refund_category_follows_original_and_reversal_by_rrn, test_evaluation::test_starter_meets_acceptance_thresholds (465/500 at full scale; misses are partial refunds with sibling orders, see E36) | done |
+| ★A3 | Recurring series skips incorrectly (one occurrence missing) | MISSED event at the expected date ±7 days, then RESUMED | engine/recurring.py | test_anomalies::test_skip_really_missing_and_decoy_present, test_recurring::test_true_skip_emits_missed_and_resumed, test_evaluation::test_starter_meets_acceptance_thresholds (120/120) | done |
+| ★A3b | Decoys: retry 2–4 days late, holiday shift, month-end clamp, cancellation | No MISSED event (cancellation → ENDED) | engine/recurring.py | test_recurring::test_shift_and_month_end_clamp_are_not_skips, test_cancelled_series_ends, test_evaluation::test_starter_meets_acceptance_thresholds (0 false alarms on 240 decoys) | done |
+| ★A4 | Transaction date crosses timezone boundary (00:00–05:29 IST on the 1st) | Business month = IST month | engine/pipeline.py, timeutil.py | test_anomalies::test_tz_boundary_utc_month_differs, test_evaluation::test_starter_meets_acceptance_thresholds (400/400) | done |
+| ★A5 | Budget categories do not match taxonomy (retired, lowercase, synonym, unknown) | Remap retired/case/synonym; unknown → UNMAPPED exception + insight | engine/budgets.py | test_anomalies::test_budget_mismatch_only_where_labelled, test_validate::test_detects_unlabelled_taxonomy_violation, test_budgets_insights::test_resolution_paths, test_evaluation::test_starter_meets_acceptance_thresholds (200/200) | done |
 
 ## Decision engine (E)
 
 | ID | Scenario | Expected handling | Where | Test | Status |
 |---|---|---|---|---|---|
-| E01 | "amazon fresh" vs "amazon" | Longest alias wins; refinement rule → GROCERIES | engine/categorize.py | test_categorize::test_priority_and_refinement | planned |
-| E02 | VPA known but descriptor text misleading | VPA match beats alias | categorize.py | test_vpa_beats_alias_and_conditions | planned |
-| E03 | Same descriptor with different RRN | Cache hit (normalized text strips RRN) | normalize.py, categorize.py | test_cache_used | planned |
-| E04 | Rule direction/channel/account conditions | All non-null conditions must match | categorize.py | test_vpa_beats_alias_and_conditions | planned |
-| E05 | Equal amount moved to a different user | Never paired (pairing is per user) | transfers.py | test_pairs_delayed_cross_month_transfer_and_not_other_users | planned |
-| E06 | Debit and credit on the same account | Never a transfer | transfers.py | test_card_payment_and_window_and_same_account | planned |
-| E07 | Two identical transfers on one day | One-to-one greedy pairing by smallest gap | transfers.py | test_two_identical_transfers_pair_one_to_one | planned |
-| E08 | Credit leg posted before the debit (bank posting lag) | Window −1 day … +3 days | transfers.py | test_credit_before_debit_within_a_day | planned |
+| E01 | "amazon fresh" vs "amazon" | Longest alias wins; refinement rule → GROCERIES | engine/categorize.py | test_categorize::test_priority_and_refinement | done |
+| E02 | VPA known but descriptor text misleading | VPA match beats alias | categorize.py | test_categorize::test_vpa_beats_alias_and_conditions | done |
+| E03 | Same descriptor with different RRN | Cache hit (normalized text strips RRN) | normalize.py, categorize.py | test_categorize::test_cache_used | done |
+| E04 | Rule direction/channel/account conditions | All non-null conditions must match | categorize.py | test_categorize::test_vpa_beats_alias_and_conditions | done |
+| E05 | Equal amount moved to a different user | Never paired (pairing is per user) | transfers.py | test_transfers_refunds::test_pairs_delayed_cross_month_transfer_and_not_other_users | done |
+| E06 | Debit and credit on the same account | Never a transfer | transfers.py | test_transfers_refunds::test_card_payment_and_window_and_same_account | done |
+| E07 | Two identical transfers on one day | One-to-one greedy pairing by smallest gap | transfers.py | test_transfers_refunds::test_two_identical_transfers_pair_one_to_one | done |
+| E08 | Credit leg posted before the debit (bank posting lag) | Window −1 day … +3 days | transfers.py | test_transfers_refunds::test_credit_before_debit_within_a_day | done |
 | E09 | Transfer-categorized txn with no counterpart | Stays TRANSFER, exception UNMATCHED_TRANSFER | pipeline.py | test_pipeline | planned |
-| E10 | UPI debit failed and auto-reversed (same RRN) | Both legs REVERSAL, excluded from spend | refunds.py | test_refund_category_follows_original_and_reversal_by_rrn | planned |
-| E11 | Over-refund (more than remaining) | Orphan refund + exception | refunds.py | test_partial_refunds_link_and_net | planned |
-| E12 | Orphan refund from a non-expense category | Category UNCATEGORIZED, still reduces spend bucket | refunds.py | test_orphan_refund_non_expense_becomes_uncategorized | planned |
-| E13 | Refund in a later month | Reduces spend in the refund's month (cash basis, documented) | budgets.py | test_spend_partition_refund_nets_transfer_excluded | planned |
-| E14 | User/analyst override | Locked: pairing, refunds, rent inference never change it; survives reruns | pipeline.py | test_pipeline::test_override_locks_decision, test_locked_items_untouched | planned |
-| E15 | Two consecutive skips | Two MISSED events | recurring.py | test_double_skip_two_missed | planned |
-| E16 | One-step price change (salary hike, rent increase, plan upgrade) | Series kept; AMOUNT_CHANGED event; typical = recent median | recurring.py | test_price_change_allowed_and_logged | planned |
-| E17 | Variable bills (electricity, interest) | Wider amount tolerance; no AMOUNT_CHANGED noise | recurring.py | test_quarterly_interest_with_varying_amounts | planned |
-| E18 | Frequent merchant (Swiggy every few days) | Not a series (median gap outside cadence) | recurring.py | test_discretionary_noise_rejected | planned |
-| E19 | Rent paid by UPI to a person with no note | Monthly uncategorized P2P ≥ ₹5,000 inferred RENT (conf 0.7) | recurring.py | test_uncategorized_p2p_monthly_becomes_rent | planned |
-| E20 | Series last seen 1.6–2.5 cycles ago | Status MISSED (not yet ENDED) | recurring.py | test_tail_gap_is_missed_not_ended | planned |
-| E21 | Fewer than 3 occurrences | Not a series | recurring.py | test_two_occurrences_not_series | planned |
-| E22 | Budget submitted for an INCOME category | UNMAPPED | budgets.py | test_resolution_paths | planned |
-| E23 | Two budgets resolve to the same category | Amounts summed, both ids kept as evidence | budgets.py | test_status_thresholds_and_lines | planned |
-| E24 | Budget amount 0 | OVER if any spend, else UNDER | budgets.py | test_status_thresholds_and_lines | planned |
-| E25 | Uncategorized debits | Counted in spend under UNCATEGORIZED (never silently dropped) | budgets.py | test_spend_partition_refund_nets_transfer_excluded | planned |
-| E26 | Ledger partition | Σ amounts = income − spend + transfers + reversals, per user | pipeline.py, outputs_validate.py | test_pipeline_end_to_end_partition_and_exceptions | planned |
+| E10 | UPI debit failed and auto-reversed (same RRN) | Both legs REVERSAL, excluded from spend | refunds.py | test_transfers_refunds::test_refund_category_follows_original_and_reversal_by_rrn | done |
+| E11 | Over-refund (more than remaining) | Orphan refund + exception | refunds.py | test_transfers_refunds::test_partial_refunds_link_and_net | done |
+| E12 | Orphan refund from a non-expense category | Category UNCATEGORIZED, still reduces spend bucket | refunds.py | test_transfers_refunds::test_orphan_refund_non_expense_becomes_uncategorized | done |
+| E13 | Refund in a later month | Reduces spend in the refund's month (cash basis, documented) | budgets.py | test_budgets_insights::test_spend_partition_refund_nets_transfer_excluded | done |
+| E14 | User/analyst override | Locked: pairing, refunds, rent inference never change it; survives reruns | pipeline.py | test_pipeline::test_override_locks_decision, test_transfers_refunds::test_locked_items_untouched; DB rerun part: B15 | planned |
+| E15 | Two consecutive skips | Two MISSED events | recurring.py | test_recurring::test_double_skip_two_missed | done |
+| E16 | One-step price change (salary hike, rent increase, plan upgrade) | Series kept; AMOUNT_CHANGED event; typical = recent median | recurring.py | test_recurring::test_price_change_allowed_and_logged | done |
+| E17 | Variable bills (electricity, interest) | Wider amount tolerance; no AMOUNT_CHANGED noise | recurring.py | test_recurring::test_quarterly_interest_with_varying_amounts | done |
+| E18 | Frequent merchant (Swiggy every few days) | Not a series (median gap outside cadence) | recurring.py | test_recurring::test_discretionary_noise_rejected | done |
+| E19 | Rent paid by UPI to a person with no note | Monthly uncategorized P2P ≥ ₹5,000 inferred RENT (conf 0.7) | recurring.py | test_recurring::test_uncategorized_p2p_monthly_becomes_rent, test_small_p2p_is_not_rent | done |
+| E20 | Series last seen 1.6–2.5 cycles ago | Status MISSED (not yet ENDED) | recurring.py | test_recurring::test_tail_gap_is_missed_not_ended | done |
+| E21 | Fewer than 3 occurrences | Not a series | recurring.py | test_recurring::test_two_occurrences_not_series | done |
+| E22 | Budget submitted for an INCOME category | UNMAPPED | budgets.py | test_budgets_insights::test_resolution_paths | done |
+| E23 | Two budgets resolve to the same category | Amounts summed, both ids kept as evidence | budgets.py | test_budgets_insights::test_status_thresholds_and_lines | done |
+| E24 | Budget amount 0 | OVER if any spend, else UNDER | budgets.py | test_budgets_insights::test_status_thresholds_and_lines | done |
+| E25 | Uncategorized debits | Counted in spend under UNCATEGORIZED (never silently dropped) | budgets.py | test_budgets_insights::test_spend_partition_refund_nets_transfer_excluded | done |
+| E26 | Ledger partition | Σ amounts = income − spend + transfers + reversals, per user | pipeline.py, outputs_validate.py | test_pipeline::test_pipeline_end_to_end_partition_and_exceptions | done |
 | E27 | Rerun the pipeline | Same REC-/EXC- ids; resolved exceptions stay resolved; history kept per run | jobs/pipeline_job.py | test_outputs_validate_and_rerun_keeps_ids | planned |
-| E28 | Spend spike with < 3 prior months | No SPEND_SPIKE insight | insights.py | test_spike_needs_three_prior_months | planned |
-| E29 | Month with zero income | LOW_SAVINGS skipped (no divide by zero) | insights.py | test_low_savings_zero_income | planned |
+| E28 | Spend spike with < 3 prior months | No SPEND_SPIKE insight | insights.py | test_budgets_insights::test_spike_needs_three_prior_months | done |
+| E29 | Month with zero income | LOW_SAVINGS skipped (no divide by zero) | insights.py | test_budgets_insights::test_low_savings_zero_income | done |
 | E30 | Pipeline fails halfway | Run marked FAILED, outputs rolled back, readers keep using last SUCCEEDED run | jobs/pipeline_job.py | test_failed_run_is_invisible | planned |
-| E31 | Series on an account that closed mid-year (interest stops after the last quarter before closure) | Status ENDED because the account is CLOSED, even if the gap is still short | recurring.py | test_series_on_closed_account_ends | planned |
-| E32 | One merchant, two series (see D30) | Kept as two series; neither reports AMOUNT_CHANGED because of the other | recurring.py | test_same_merchant_two_series | planned |
+| E31 | Series on an account that closed mid-year (interest stops after the last quarter before closure) | Status ENDED because the account is CLOSED, even if the gap is still short | recurring.py | test_recurring::test_series_on_closed_account_ends | done |
+| E32 | One merchant, two series (see D30) | Kept as two series; neither reports AMOUNT_CHANGED because of the other | recurring.py | test_recurring::test_same_merchant_two_series | done |
+| E33 | Budget code typed with spaces, hyphens or lower case (`food-dining`, ` food dining `) | Canonicalised (upper, `_` separators) then REMAPPED_CASE, or REMAPPED_RETIRED if the canonical code is retired | budgets.py | test_budgets_insights::test_resolution_paths | done |
+| E34 | Retired code used for a month before its retirement date | VALID for that month; remapping only applies after `effective_to`; a successor must itself be an active expense category | budgets.py | test_budgets_insights::test_retired_code_still_valid_before_retirement | done |
+| E35 | Interest jumps 2–4× between quarters as balances grow | No amount-stability check for interest (fixed narration + quarterly cadence identify it) | recurring.py | test_recurring::test_quarterly_interest_with_varying_amounts | done |
+| E36 | Partial refund while several orders at that merchant are open | Prefer the order whose unrefunded remainder equals the credit on the same account, else the closest order with enough remainder; genuinely ambiguous (~6–9% link to a sibling order, category usually identical) — documented limitation | refunds.py | test_transfers_refunds::test_refund_prefers_exact_amount_over_latest_purchase | done |
+| E37 | Same merchant credit is a refund for one user and income for another | Refund only when the merchant's category is an expense or the narration says refund; salary/interest/other income never become refunds | refunds.py | test_pipeline::test_pipeline_end_to_end_partition_and_exceptions | done |
 
 ## API and security (A)
 

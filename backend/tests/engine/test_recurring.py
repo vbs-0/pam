@@ -87,8 +87,8 @@ def test_small_p2p_is_not_rent():
 
 
 def test_quarterly_interest_with_varying_amounts():
-    items = [occ(date(2026, m, 28 if m == 2 else 30), 12000 + 3000 * i, cat="INTEREST", merchant=None,
-                 kind="INCOME") for i, m in enumerate([3, 6, 9, 12])]
+    items = [occ(date(2026, m, 28 if m == 2 else 30), amt, cat="INTEREST", merchant=None, kind="INCOME")
+             for m, amt in zip([3, 6, 9, 12], [24267, 49643, 94699, 128919], strict=True)]   # 2-4x jumps
     s = detect_recurring(items, END)
     assert s and s[0].cadence == "QUARTERLY" and s[0].series_type == "INTEREST"
     assert not any(e[0] == "AMOUNT_CHANGED" for e in s[0].events)

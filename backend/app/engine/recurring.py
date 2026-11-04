@@ -14,7 +14,7 @@ from app.engine.types import Enriched
 
 SERIES_TYPE = {"SALARY": "SALARY", "RENT": "RENT", "SUBSCRIPTIONS": "SUBSCRIPTION", "EMI_LOANS": "EMI",
                "UTILITIES": "UTILITY", "INTEREST": "INTEREST"}
-VARIABLE_TOL = {"UTILITIES": 0.6, "INTEREST": 1.0}      # bills and interest vary by design (E17)
+VARIABLE_TOL = {"UTILITIES": 0.6, "INTEREST": float("inf")}  # bills vary; interest follows the balance (E17)
 CANDIDATE_KINDS = {"EXPENSE", "INCOME", "UNKNOWN"}
 
 
