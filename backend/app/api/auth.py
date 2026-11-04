@@ -14,6 +14,7 @@ from app import schema
 from app.api.deps import Caller, current_user
 from app.config import settings
 from app.db import get_conn
+from app.households import create_household
 from app.jobs.sql import next_number
 from app.security import AuthError, issue_local_token, verify_firebase_token, verify_password
 
@@ -102,22 +103,18 @@ def firebase(body: FirebaseIn, request: Request, conn: Connection = Depends(get_
             conn.execute(text("UPDATE app_user SET firebase_uid = :u WHERE app_user_id = :i"),
                          {"u": uid, "i": row.app_user_id})
         else:
-            row = _create(conn, uid, email)
+            row = _create(conn, uid, email, (claims.get("name") or "").strip())
     if row.disabled:
         conn.commit()
         raise AuthError("this login is disabled", status=403)
     return _issue(conn, row, "google", request)
 
 
-def _create(conn: Connection, uid: str, email: str):
-    """New Google user. Admin emails from config become ADMIN; everyone else is a CUSTOMER linked to the first
-    unclaimed household so the demo has data to show (synthetic data only; see docs/edge-cases.md A23)."""
+def _create(conn: Connection, uid: str, email: str, name: str):
+    """New Google user. Admin emails from config become ADMIN; everyone else gets a new, empty household of their
+    own to fill in (A23). Sample households are only reachable with their own email + password logins."""
     role = "ADMIN" if email in settings.admin_email_set else "CUSTOMER"
-    profile = None
-    if role == "CUSTOMER":
-        profile = conn.execute(text(
-            "SELECT p.user_id FROM user_profile p WHERE NOT EXISTS "
-            "(SELECT 1 FROM app_user a WHERE a.profile_user_id = p.user_id) ORDER BY p.user_id LIMIT 1")).scalar()
+    profile = create_household(conn, name or email.split("@")[0]) if role == "CUSTOMER" else None
     app_id = f"APP-{next_number(conn, schema.app_user, 'app_user_id'):06d}"
     conn.execute(text("INSERT INTO app_user (app_user_id, email, role, profile_user_id, password_hash, firebase_uid, "
                       "disabled, created_at) VALUES (:i, :e, :r, :p, NULL, :u, false, now())"),

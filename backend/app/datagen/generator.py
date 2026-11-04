@@ -105,6 +105,8 @@ def generate(p: GenParams) -> Dataset:
     n_purchases = round(room / (1 + FOLLOWUP_RATE))
     if n_purchases < 12 * p.users:
         raise ValueError(f"{p.transactions} transactions is too few for {p.users} households")
+    if p.users >= 500_000:
+        raise ValueError("synthetic households must stay below USR-500001 (real households start there)")
     for u, q in zip(users, split(n_purchases, [user_weight(u, seed) for u in users]), strict=True):
         sp = spenders[u.user_id]
         for m, n in enumerate(split(q, sp.month_weights()), 1):

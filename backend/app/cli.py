@@ -110,22 +110,22 @@ def _conn():
 
 
 def cmd_load(a) -> None:
-    from app.jobs.load import load_dataset, seed_demo_users
+    from app.jobs.load import load_dataset, seed_demo_users, seed_household_logins
     t = time.perf_counter()
     with _conn() as conn:
         counts = load_dataset(conn, _out(a), _out(a).name)
-        seeded = seed_demo_users(conn)
+        seeded = seed_demo_users(conn) + seed_household_logins(conn)
         conn.commit()
     print(f"loaded {counts['txn']:,} transactions ({sum(counts.values()):,} rows), {seeded} demo logins created "
           f"in {time.perf_counter() - t:.1f}s")
 
 
 def cmd_seed_users(a) -> None:
-    from app.jobs.load import seed_demo_users
+    from app.jobs.load import seed_demo_users, seed_household_logins
     with _conn() as conn:
-        n = seed_demo_users(conn)
+        n = seed_demo_users(conn) + seed_household_logins(conn)
         conn.commit()
-    print(f"{n} demo logins created" if n else "nothing to do (DEMO_PASSWORD unset or users exist)")
+    print(f"{n} demo logins created" if n else "nothing to do (passwords unset or logins exist)")
 
 
 def cmd_pipeline(a) -> None:

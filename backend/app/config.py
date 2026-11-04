@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     firebase_project_id: str | None = None
     admin_emails: str = ""
     demo_password: str | None = None
+    household_password: str | None = None
     cors_origins: str = "http://localhost:5173"
     data_dir: str = "../data"
     reports_dir: str = "../reports"
@@ -21,6 +22,9 @@ class Settings(BaseSettings):
     def check(self) -> None:
         if self.env == "prod" and (self.jwt_secret == DEFAULT_SECRET or len(self.jwt_secret) < 32):
             raise RuntimeError("JWT_SECRET must be set to 32+ random characters in prod")
+        if self.env == "prod" and self.demo_password and (len(self.demo_password) < 12
+                                                          or self.demo_password == self.household_password):
+            raise RuntimeError("DEMO_PASSWORD guards staff logins: 12+ characters, not the shared household one")
 
     @property
     def admin_email_set(self) -> set[str]:

@@ -25,7 +25,8 @@ def loaded(db_engine, tmp_path_factory):
 def test_load_counts(loaded):
     conn, _, counts, _ = loaded
     assert counts["txn"] == 25_000
-    assert conn.execute(text("SELECT count(*) FROM txn")).scalar() == 25_000
+    # real households created by earlier API tests survive the load (A36), so count the sample ones
+    assert conn.execute(text("SELECT count(*) FROM txn WHERE user_id < 'USR-500001'")).scalar() == 25_000
     assert conn.execute(text("SELECT count(*) FROM gt.txn_label")).scalar() == 25_000
     assert conn.execute(text("SELECT scale FROM dataset_load ORDER BY load_id DESC LIMIT 1")).scalar() == "starter"
 
@@ -54,7 +55,7 @@ def test_outputs_validate_and_rerun_keeps_ids(loaded):
     assert conn.execute(text("SELECT series_id, counterparty_key FROM recurring_series ORDER BY 1")).all() == before
     assert conn.execute(text("SELECT exception_id, status FROM exception_case ORDER BY 1")).all() == exc_before
     n = conn.execute(text("SELECT count(*) FROM txn_enrichment WHERE run_id = :r"), {"r": run2}).scalar()
-    assert n == 25_000
+    assert n == conn.execute(text("SELECT count(*) FROM txn")).scalar()
 
 
 def test_failed_run_is_invisible(loaded):

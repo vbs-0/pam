@@ -1,11 +1,7 @@
-import time
-
-import jwt
 import pytest
 from sqlalchemy import text
 
 from app import security
-from app.config import settings
 from tests.api.conftest import DEMO_PASSWORD, login
 
 pytestmark = pytest.mark.db
@@ -65,24 +61,6 @@ def test_disabled_and_deleted_logins(client, api_db):
             c.execute(text("UPDATE app_user SET disabled = false WHERE email = 'reviewer@pam.test'"))
     ghost = security.issue_local_token("APP-999999", "ADMIN")       # a role claim in the token grants nothing
     assert client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {ghost}"}).status_code == 401
-
-
-@pytest.fixture
-def google(monkeypatch):
-    """Signatures are covered in test_security; here we test account linking, so verification is a plain decode."""
-    from cryptography.hazmat.primitives.asymmetric import rsa
-
-    from app.api import auth
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    monkeypatch.setattr(settings, "admin_emails", "boss@corp.test")
-    monkeypatch.setattr(auth, "verify_firebase_token",
-                        lambda t: jwt.decode(t, key.public_key(), algorithms=["RS256"], audience="demo-proj"))
-
-    def tok(uid, email, verified=True):
-        now = int(time.time())
-        return jwt.encode({"sub": uid, "email": email, "email_verified": verified, "aud": "demo-proj", "iat": now,
-                           "exp": now + 600}, key, algorithm="RS256")
-    return tok
 
 
 def test_google_signup_link_and_conflicts(client, google, api_db):

@@ -5,6 +5,7 @@ from sqlalchemy import Connection, text
 
 from app import schema
 from app.evaluation import Decided, evaluate
+from app.households import REAL_FROM
 from app.jobs.pipeline_job import latest_run_id
 from app.jobs.sql import copy_rows, select_rows
 
@@ -17,7 +18,7 @@ def run_evaluation(conn: Connection, run_id: str | None = None) -> dict:
     decided = [Decided(*r) for r in conn.execute(text(
         "SELECT e.txn_id, e.user_id, e.local_month, e.category_code, e.kind, e.link_txn_id, e.series_id, "
         "t.amount_paise, t.posted_at, t.descriptor FROM txn_enrichment e JOIN txn t USING (txn_id) "
-        "WHERE e.run_id = :r"), p)]
+        "WHERE e.run_id = :r AND e.user_id < :real"), p | {"real": REAL_FROM})]   # real households have no truth
     events = [tuple(r) for r in conn.execute(text(
         "SELECT series_id, event_type, event_date FROM recurring_series_event WHERE run_id = :r"), p)]
     resolutions = {b: (c, how) for b, c, how in conn.execute(text(

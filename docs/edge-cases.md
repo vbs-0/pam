@@ -127,7 +127,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A20 | Login probing for which emails exist | Unknown email still runs an argon2 verify against a dummy hash; same 401 message | security.py, api/auth.py | test_security::test_passwords | done |
 | A21 | Phone or server clock skew; Firebase `auth_time` in the future | 30 s leeway on exp/iat; future `auth_time` rejected | security.py | test_security::test_firebase_bad_claims_rejected | done |
 | A22 | Google certificate endpoint unreachable | Cached keys reused until refreshed (cache honours `max-age`); with no keys at all → 503, not 401 | security.py | test_security::test_cert_cache_max_age | done |
-| A23 | First Google sign-in by someone with no invite | Admin emails (config) → ADMIN; others → CUSTOMER linked to the first unclaimed household so the demo has data (synthetic data only; a real deployment would invite instead) | api/auth.py | test_auth::test_google_signup_link_and_conflicts | done |
+| A23 | First Google sign-in by someone with no invite | Admin emails (config) → ADMIN; everyone else → CUSTOMER with a new, empty household of their own (USR-500001 up). Nobody is ever handed another household | api/auth.py, households.py | test_entry::test_new_user_gets_own_empty_household | done |
 | A24 | Google email already used by a demo/invited login | Linked to that login (no duplicate); a different Google uid for the same email → 409 | api/auth.py | test_auth::test_google_signup_link_and_conflicts | done |
 | A25 | Google account with an unverified email | 403, never matched to an existing login by email | api/auth.py | test_auth::test_google_signup_link_and_conflicts | done |
 | A26 | Password guessing | 5 failures per email in 15 min → 429 with minutes to wait (per process) | api/auth.py | test_auth::test_lockout_after_repeated_failures | done |
@@ -140,6 +140,15 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A33 | Rule regex with nested repetition (`(a+)+`) that could hang the categorizer on a crafted narration | Rejected with 422 at save time | api/analyst.py | test_analyst::test_bad_rules_rejected | done |
 | A34 | Exception no longer raised by the latest run (fixed by a rule or override) | Kept with its history; listed with `current: false` | api/analyst.py | test_analyst::test_exceptions_paging_and_counts | done |
 | A35 | Ground truth leaking to analysts | Trace returns `truth` only for REVIEWER/ADMIN | api/analyst.py | test_analyst::test_exception_lifecycle_and_invalid_transition | done |
+| A36 | Dataset reload with real households present | Their profile, accounts, events, transactions, budgets and overrides are set aside and put back; real ids use their own ranges (USR-5xxxxx, TXN-yyyy-9xxxxxxx, AEV-9xxxxx) so nothing collides | jobs/load.py, households.py | test_entry::test_full_run_and_reload_keep_real_households | done |
+| A37 | Real household's recurring bills judged "missed" against the sample data's end date | Real households run through the engine as of today; sample households as of the dataset end | jobs/pipeline_job.py | test_entry::test_full_run_and_reload_keep_real_households | done |
+| A38 | User adds a transaction while a full run holds the lock | Saved; reply says `processed: false`; the full run processes real households last, so it is included | jobs/pipeline_job.py refresh_household | (lock timeout path) | done |
+| A39 | Same amount, description and day entered twice | Saved, reply names `possible_duplicate_of` so the app can ask (two identical chai payments are real) | api/entry.py | test_entry::test_add_edit_delete_transaction_updates_budget | done |
+| A40 | Entered date in the future, before the account opened, after it closed; zero/negative/₹100 cr+ amount; bad UPI id; unknown channel | 422 (closed account 409) | api/entry.py | test_entry::test_bad_transactions_rejected, test_ownership_closed_accounts_and_samples_read_only | done |
+| A41 | Writing to a sample household (shared demo login) | 403: sample households are read-only; category corrections still allowed | api/entry.py | test_entry::test_ownership_closed_accounts_and_samples_read_only | done |
+| A42 | Deleting a transaction that was paired as a transfer or linked as a refund | Links to it are cleared in every run, its exceptions removed, household re-run so the other side is re-decided | api/entry.py | test_entry::test_add_edit_delete_transaction_updates_budget | done |
+| A43 | Own UPI id already on another account; credit limit on a savings account; budget on an income category | 409 / 422 / 422 | api/entry.py | test_entry::test_ownership_closed_accounts_and_samples_read_only | done |
+| A44 | Staff password equal to the public sample-household password | Server refuses to start in prod | config.py | (startup check) | done |
 
 ## Web console (U)
 
