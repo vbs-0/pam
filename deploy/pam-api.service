@@ -1,0 +1,22 @@
+[Unit]
+Description=PAM API (Payment Account Manager)
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+User=pam
+Group=pam
+WorkingDirectory=/opt/pam/app/backend
+Environment=HOME=/opt/pam
+ExecStart=/opt/pam/app/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8100 --workers 1 --proxy-headers --forwarded-allow-ips 127.0.0.1 --no-server-header
+Restart=on-failure
+RestartSec=3
+MemoryMax=600M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pam/app/data /opt/pam/app/reports /tmp
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
