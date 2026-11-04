@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     env: str = "dev"
     database_url: str = "postgresql+psycopg://pam:pam@localhost:5432/pam"
+    test_database_url: str | None = None
     jwt_secret: str = DEFAULT_SECRET
     jwt_ttl_minutes: int = 60
     firebase_project_id: str | None = None
