@@ -216,3 +216,55 @@ Future<void> showError(BuildContext context, Object e) async {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e is ApiException ? e.message : 'Something went wrong.'), behavior: SnackBarBehavior.floating));
 }
+
+/// Start-up screen: the logo breathes above a sliding bar while the saved session is checked.
+class BootSplash extends StatefulWidget {
+  const BootSplash({super.key});
+  @override
+  State<BootSplash> createState() => _BootSplashState();
+}
+
+class _BootSplashState extends State<BootSplash> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat();
+  @override
+  void dispose() { _c.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) {
+    final k = Palette.of(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(
+      body: Center(
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (_, __) {
+            final t = Curves.easeInOut.transform((_c.value < .5 ? _c.value : 1 - _c.value) * 2);
+            return Column(mainAxisSize: MainAxisSize.min, children: [
+              Transform.scale(scale: 1 + .08 * t, child: Opacity(opacity: 1 - .2 * t, child: Image.asset(dark ? 'assets/logo-dark.png' : 'assets/logo-light.png', width: 84, height: 84))),
+              const SizedBox(height: 14),
+              Text('PAM', style: TextStyle(color: k.blue, fontWeight: FontWeight.w800, letterSpacing: 3)),
+              const SizedBox(height: 14),
+              SizedBox(width: 120, child: LinearProgressIndicator(minHeight: 3, backgroundColor: k.rule, color: k.blue)),
+            ]);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Animates a whole number from its previous value (0 on first show) to [value]; re-animates when [value] changes.
+class CountUp extends StatelessWidget {
+  final int value;
+  final Widget Function(int) builder;
+  const CountUp(this.value, this.builder, {super.key});
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.of(context).disableAnimations) return builder(value);
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: value.toDouble()),
+      duration: const Duration(milliseconds: 750),
+      curve: Curves.easeOutCubic,
+      builder: (_, v, __) => builder(v.round()),
+    );
+  }
+}

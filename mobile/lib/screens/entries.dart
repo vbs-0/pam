@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../api.dart';
 import '../format.dart';
@@ -60,6 +61,51 @@ class _EntriesState extends State<Entries> {
     if (changed == true) { widget.onChanged(); }
   }
 
+  /// Swipe right to change the category, swipe left to delete (with a five-second undo). Sample households are read-only.
+  Widget _swipeable(Map<String, dynamic> t) {
+    final k = Palette.of(context);
+    Widget bg(Alignment a, Color c, IconData i, String label) => Container(
+          color: c, alignment: a, padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(i, color: Colors.white), const SizedBox(width: 8), Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))]),
+        );
+    return Dismissible(
+      key: ValueKey(t['txn_id']),
+      direction: _sample ? DismissDirection.startToEnd : DismissDirection.horizontal,
+      background: bg(Alignment.centerLeft, k.blue, Icons.sell_outlined, 'Category'),
+      secondaryBackground: bg(Alignment.centerRight, k.red, Icons.delete_outline, 'Delete'),
+      confirmDismiss: (dir) async {
+        HapticFeedback.selectionClick();
+        if (dir == DismissDirection.startToEnd) { await _open(t); return false; }
+        return true;
+      },
+      onDismissed: (_) => _deleteWithUndo(t),
+      child: _Row(t, onTap: () => _open(t)),
+    );
+  }
+
+  void _deleteWithUndo(Map<String, dynamic> t) {
+    final at = _items.indexOf(t);
+    setState(() => _items.remove(t));
+    HapticFeedback.mediumImpact();
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(SnackBar(
+      content: const Text('Entry deleted'), behavior: SnackBarBehavior.floating, duration: const Duration(seconds: 5),
+      action: SnackBarAction(label: 'Undo', onPressed: () {}),
+    )).closed.then((reason) async {
+      if (reason == SnackBarClosedReason.action) {
+        if (mounted) setState(() => _items.insert(at.clamp(0, _items.length), t));
+        return;
+      }
+      try {
+        await Api.instance.delete('/me/transactions/${t['txn_id']}');
+        widget.onChanged();
+      } catch (e) {
+        if (mounted) { setState(() => _items.insert(at.clamp(0, _items.length), t)); showError(context, e); }
+      }
+    });
+  }
+
   Future<void> _add() async {
     final added = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, useSafeArea: true, builder: (_) => const AddEntrySheet());
     if (added == true) widget.onChanged();
@@ -87,7 +133,7 @@ class _EntriesState extends State<Entries> {
           else if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: ErrorBox(_error!, retry: _reload))
           else if (_items.isEmpty) EmptyState(_q.isEmpty ? 'No entries this month' : 'No entries match “$_q”', hint: _sample || _q.isNotEmpty ? null : 'Tap Add entry to write your first one.')
           else ...[
-            for (final t in _items) _Row(t, onTap: () => _open(t)),
+            for (final t in _items) _swipeable(t),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(child: _cursor != null

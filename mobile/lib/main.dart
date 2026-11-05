@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'api.dart';
 import 'screens/books.dart';
@@ -7,11 +8,16 @@ import 'screens/entries.dart';
 import 'screens/folio.dart';
 import 'screens/login.dart';
 import 'screens/recurring.dart';
+import 'prefs.dart';
+import 'screens/onboarding.dart';
+import 'screens/settings.dart';
 import 'theme.dart';
+import 'ui/widgets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try { await Firebase.initializeApp(); } catch (_) {/* no config in this build: email sign-in only */}
+  await Prefs.load();
   runApp(const PamApp());
 }
 
@@ -41,20 +47,22 @@ class _PamAppState extends State<PamApp> {
   }
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(
+      valueListenable: Prefs.themeMode,
+      builder: (_, mode, __) => MaterialApp(
         title: 'PAM',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(Brightness.light),
         darkTheme: buildTheme(Brightness.dark),
-        themeMode: ThemeMode.system,
+        themeMode: mode,
         home: _loading
-            ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+            ? const BootSplash()
             : _me == null
                 ? LoginScreen(expired: _expired, onSignedIn: (m) => setState(() { _me = m; _expired = false; }))
                 : _me!.role != 'CUSTOMER'
                     ? StaffNotice(me: _me!, onSignOut: () async { await Api.instance.signOut(); setState(() => _me = null); })
                     : Home(me: _me!, onSignOut: () async { await Api.instance.signOut(); setState(() => _me = null); }),
-      );
+      ));
 }
 
 class StaffNotice extends StatelessWidget {
@@ -88,25 +96,53 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int _i = 0;
   int _rev = 0; // bump to make tabs reload after an entry is written
+  bool _walk = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Prefs.seenWalkthrough(widget.me.id).then((seen) { if (!seen && mounted) setState(() => _walk = true); });
+  }
+
+  Future<void> _finishWalk() async {
+    await Prefs.markWalkthrough(widget.me.id);
+    if (mounted) setState(() { _walk = false; _i = 0; _rev++; });
+  }
+
+  Future<void> _replayWalk() async {
+    await Prefs.markWalkthrough(widget.me.id, seen: false);
+    if (mounted) setState(() => _walk = true);
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_walk) return Walkthrough(onDone: _finishWalk);
     final pages = [
-      Folio(key: ValueKey('f$_rev')),
+      Folio(key: ValueKey('f$_rev'), onGo: (t) => setState(() => _i = t)),
       Entries(key: ValueKey('e$_rev'), onChanged: () => setState(() => _rev++)),
       Recurring(key: ValueKey('r$_rev')),
-      Books(key: ValueKey('b$_rev'), me: widget.me, onSignOut: widget.onSignOut, onChanged: () => setState(() => _rev++)),
+      Books(key: ValueKey('b$_rev'), me: widget.me, onChanged: () => setState(() => _rev++)),
+      Settings(me: widget.me, onSignOut: widget.onSignOut, onReplayWalkthrough: _replayWalk),
     ];
     return Scaffold(
-      body: SafeArea(child: IndexedStack(index: _i, children: pages)),
+      body: SafeArea(
+        child: Column(children: [
+          ValueListenableBuilder<int>(
+            valueListenable: Api.instance.inFlight,
+            builder: (_, n, __) => SizedBox(height: 2, child: n > 0 ? const LinearProgressIndicator(minHeight: 2) : null),
+          ),
+          Expanded(child: IndexedStack(index: _i, children: pages)),
+        ]),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _i,
-        onDestinationSelected: (v) => setState(() => _i = v),
+        onDestinationSelected: (v) { HapticFeedback.selectionClick(); setState(() => _i = v); },
         destinations: const [
           NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Folio'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: 'Entries'),
           NavigationDestination(icon: Icon(Icons.repeat), label: 'Recurring'),
           NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'Books'),
+          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
     );

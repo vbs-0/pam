@@ -10,8 +10,8 @@ const _upiApps = {'PHPE': 'PhonePe', 'GPAY': 'Google Pay', 'PTYM': 'Paytm', 'BHI
 
 class Books extends StatefulWidget {
   final Me me;
-  final VoidCallback onSignOut, onChanged;
-  const Books({super.key, required this.me, required this.onSignOut, required this.onChanged});
+  final VoidCallback onChanged;
+  const Books({super.key, required this.me, required this.onChanged});
   @override
   State<Books> createState() => _BooksState();
 }
@@ -62,10 +62,6 @@ class _BooksState extends State<Books> {
             ]);
           },
         ),
-        const SizedBox(height: 28),
-        OutlinedButton.icon(onPressed: widget.onSignOut, icon: const Icon(Icons.logout), label: const Text('Sign out')),
-        const SizedBox(height: 12),
-        Text('Server: ${Uri.parse(apiBase).host}', style: TextStyle(color: k.muted, fontSize: 12)),
       ]),
     );
   }

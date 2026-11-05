@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -64,7 +66,19 @@ class Api {
   Future<dynamic> put(String path, Map<String, dynamic> body) => _send('PUT', path, body: body);
   Future<dynamic> delete(String path) => _send('DELETE', path);
 
+  /// Number of requests in flight; the home screen shows a thin progress line while it is above zero.
+  final inFlight = ValueNotifier<int>(0);
+
   Future<dynamic> _send(String method, String path, {Map<String, String?> query = const {}, Map<String, dynamic>? body, bool auth = true}) async {
+    inFlight.value++;
+    try {
+      return await _sendRaw(method, path, query: query, body: body, auth: auth);
+    } finally {
+      inFlight.value--;
+    }
+  }
+
+  Future<dynamic> _sendRaw(String method, String path, {Map<String, String?> query = const {}, Map<String, dynamic>? body, bool auth = true}) async {
     final qp = {for (final e in query.entries) if (e.value != null && e.value!.isNotEmpty) e.key: e.value!};
     final uri = Uri.parse('$apiBase$path').replace(queryParameters: qp.isEmpty ? null : qp);
     final headers = {'Accept': 'application/json', 'X-PAM-Client': 'mobile', if (body != null) 'Content-Type': 'application/json', if (auth && _token != null) 'Authorization': 'Bearer $_token'};

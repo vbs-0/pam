@@ -4,9 +4,11 @@ import '../api.dart';
 import '../format.dart';
 import '../theme.dart';
 import '../ui/widgets.dart';
+import 'onboarding.dart';
 
 class Folio extends StatefulWidget {
-  const Folio({super.key});
+  final void Function(int tab) onGo;
+  const Folio({super.key, required this.onGo});
   @override
   State<Folio> createState() => _FolioState();
 }
@@ -50,7 +52,7 @@ class _FolioState extends State<Folio> {
               ..sort((x, y) => ((y['ratio'] as num?) ?? -1).compareTo((x['ratio'] as num?) ?? -1));
             final empty = spend == 0 && income == 0 && naive == 0;
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (profile['sample'] == true) Padding(padding: const EdgeInsets.only(top: 10), child: Stamp('Sample household · read-only', k.blue)),
+              if (profile['sample'] == true) Padding(padding: const EdgeInsets.only(top: 10), child: Stamp('Sample household · read-only', k.blue)) else SetupGuide(onGo: widget.onGo),
               if (empty) const EmptyState('Nothing written for this month yet', hint: 'Add an account in Books, then your first entry.') else ...[
                 Container(
                   margin: const EdgeInsets.only(top: 12),
@@ -59,19 +61,19 @@ class _FolioState extends State<Folio> {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('TRUE SPEND', style: TextStyle(color: k.muted, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1)),
                     const SizedBox(height: 4),
-                    DefaultTextStyle.merge(style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: -1), child: _BigMoney(spend, k.blue)),
+                    DefaultTextStyle.merge(style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: -1), child: CountUp(spend, (v) => _BigMoney(v, k.blue))),
                     if (naive > spend) Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 6, children: [
                         Text('A plain ledger shows', style: TextStyle(color: k.muted)),
-                        Money(naive, struck: true, big: true),
+                        CountUp(naive, (v) => Money(v, struck: true, big: true)),
                         Text('· PAM leaves out ${inr(naive - spend)}', style: TextStyle(color: k.muted)),
                       ]),
                     ),
                     const SizedBox(height: 14),
                     Row(children: [
-                      Expanded(child: _Fig('INCOME', Money(income, big: true))),
-                      Expanded(child: _Fig('KEPT', Text(rate == null ? '—' : '${(rate * 100).round()}%', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: rate != null && rate < 0 ? k.red : k.ink)))),
+                      Expanded(child: _Fig('INCOME', CountUp(income, (v) => Money(v, big: true)))),
+                      Expanded(child: _Fig('KEPT', rate == null ? const Text('—', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)) : CountUp((rate * 100).round(), (v) => Text('$v%', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: rate < 0 ? k.red : k.ink))))),
                     ]),
                   ]),
                 ),
