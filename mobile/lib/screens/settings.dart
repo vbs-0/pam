@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../api.dart';
+import '../offline.dart';
 import '../prefs.dart';
 import '../theme.dart';
 import '../ui/widgets.dart';
@@ -16,7 +17,7 @@ class Settings extends StatelessWidget {
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Sign out?'),
-        content: const Text('You will need your email and password (or Google) to open your register again.'),
+        content: Text(Outbox.instance.pending.isEmpty ? 'You will need your email and password (or Google) to open your register again.' : '${Outbox.instance.pending.length} change(s) made offline have not synced yet and will be lost if you sign out. Connect to the internet and wait for them to sync first.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Stay')),
           FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Sign out')),

@@ -175,7 +175,7 @@ class _EntriesState extends State<Entries> {
           const SizedBox(height: 10),
           Row(children: [
             Expanded(child: TextField(
-              decoration: const InputDecoration(hintText: 'Search name, note or amount', prefixIcon: Icon(Icons.search), isDense: true),
+              decoration: const InputDecoration(hintText: 'Search narration, payee or amount', prefixIcon: Icon(Icons.search), isDense: true),
               textInputAction: TextInputAction.search, maxLength: 60, buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
               onSubmitted: (v) { _q = v.trim(); _reload(); },
             )),

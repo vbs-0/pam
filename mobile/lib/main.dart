@@ -11,6 +11,7 @@ import 'screens/folio.dart';
 import 'screens/login.dart';
 import 'prefs.dart';
 import 'screens/onboarding.dart';
+import 'offline.dart';
 import 'theme.dart';
 import 'widgets_sync.dart';
 import 'ui/widgets.dart';
@@ -19,6 +20,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try { await Firebase.initializeApp(); } catch (_) {/* no config in this build: email sign-in only */}
   await Prefs.load();
+  await Outbox.instance.load();
+  await Local.instance.load();
   runApp(const PamApp());
 }
 
@@ -42,7 +45,7 @@ class _PamAppState extends State<PamApp> {
 
   Future<void> _boot() async {
     if (await Api.instance.restore()) {
-      try { _me = await Api.instance.me(); } catch (_) { await Api.instance.signOut(); }
+      try { _me = await Api.instance.me(); } catch (_) { await Api.instance.signOut(keepQueue: true); }
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -99,7 +102,7 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with WidgetsBindingObserver {
   int _i = 0;
   int _rev = 0; // bump to make tabs reload after an entry is written
   bool _walk = false;
@@ -110,6 +113,32 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     _maybeWalk();
+    refreshWidgets();
+    WidgetsBinding.instance.addObserver(this);
+    Outbox.instance.synced.addListener(_afterSync);
+    _syncQuietly();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    Outbox.instance.synced.removeListener(_afterSync);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState s) {
+    if (s == AppLifecycleState.resumed) _syncQuietly();
+  }
+
+  /// Send anything queued while offline, then refresh the phone's copy. No dialogs: it just happens.
+  Future<void> _syncQuietly() async {
+    await Outbox.instance.flush();
+    await Local.instance.prefetch();
+  }
+
+  void _afterSync() {
+    if (mounted) setState(() => _rev++);
     refreshWidgets();
   }
 
@@ -152,12 +181,7 @@ class _HomeState extends State<Home> {
             valueListenable: Api.instance.inFlight,
             builder: (_, n, __) => SizedBox(height: 2, child: n > 0 ? const LinearProgressIndicator(minHeight: 2) : null),
           ),
-          ValueListenableBuilder<bool>(
-            valueListenable: Api.instance.offline,
-            builder: (_, off, __) => off
-                ? Container(width: double.infinity, color: Palette.of(context).amber, padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12), child: Text('Offline · showing what was last saved on this phone', textAlign: TextAlign.center, style: TextStyle(color: Palette.of(context).paper, fontWeight: FontWeight.w700, fontSize: 12)))
-                : const SizedBox.shrink(),
-          ),
+          const SyncBanner(),
           Expanded(child: IndexedStack(index: _i, children: pages)),
         ]),
       ),

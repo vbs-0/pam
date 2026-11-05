@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api.dart';
 import '../format.dart';
+import '../offline.dart';
 import '../theme.dart';
 
 class Money extends StatelessWidget {
@@ -265,6 +266,95 @@ class CountUp extends StatelessWidget {
       duration: const Duration(milliseconds: 750),
       curve: Curves.easeOutCubic,
       builder: (_, v, __) => builder(v.round()),
+    );
+  }
+}
+
+
+/// One slim line that says what the phone is doing: working offline, sending saved changes, or a change the server
+/// refused. Tapping it lists the changes so nothing disappears silently.
+class SyncBanner extends StatelessWidget {
+  const SyncBanner({super.key});
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: Api.instance.offline,
+        builder: (_, off, __) => ValueListenableBuilder<int>(
+          valueListenable: Outbox.instance.changes,
+          builder: (_, __, ___) => ValueListenableBuilder<bool>(
+            valueListenable: Outbox.instance.syncing,
+            builder: (context, busy, ____) {
+              final k = Palette.of(context);
+              final n = Outbox.instance.pending.length, bad = Outbox.instance.failed.length;
+              if (!off && n == 0 && bad == 0) return const SizedBox.shrink();
+              final (color, text) = bad > 0
+                  ? (k.red, '$bad change${bad == 1 ? '' : 's'} could not be saved · tap to review')
+                  : busy ? (k.blue, 'Syncing $n change${n == 1 ? '' : 's'}…')
+                  : off ? (k.amber, n > 0 ? 'Offline · $n change${n == 1 ? '' : 's'} saved on this phone, will sync automatically' : 'Offline · everything still works and will sync when you are back')
+                  : (k.blue, '$n change${n == 1 ? '' : 's'} waiting to sync');
+              return InkWell(
+                onTap: bad > 0 || n > 0 ? () => showModalBottomSheet<void>(context: context, isScrollControlled: true, useSafeArea: true, builder: (_) => const _SyncSheet()) : null,
+                child: Container(width: double.infinity, color: color, padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12), child: Text(text, textAlign: TextAlign.center, style: TextStyle(color: k.paper, fontWeight: FontWeight.w700, fontSize: 12))),
+              );
+            },
+          ),
+        ),
+      );
+}
+
+class _SyncSheet extends StatelessWidget {
+  const _SyncSheet();
+  String _label(Op o) {
+    final p = o.path.replaceFirst('/me/', '');
+    if (p.startsWith('transactions')) {
+      if (o.method == 'POST' && p == 'transactions') return 'New entry: ${o.body?['description'] ?? ''}';
+      if (o.method == 'DELETE') return 'Delete entry';
+      if (p.endsWith('/category')) return 'Change category';
+      if (p.endsWith('/note')) return 'Note';
+      if (p.endsWith('/split')) return 'Split entry';
+      if (p.endsWith('/duplicate')) return 'Duplicate entry';
+      return 'Edit entry';
+    }
+    if (p.startsWith('transfers')) return 'Move money between accounts';
+    if (p.startsWith('accounts')) return 'Account change';
+    if (p.startsWith('goals')) return 'Savings goal';
+    if (p.startsWith('budgets')) return 'Budget limit';
+    return p;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final k = Palette.of(context);
+    return ValueListenableBuilder<int>(
+      valueListenable: Outbox.instance.changes,
+      builder: (context, _, __) {
+        final ob = Outbox.instance;
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [const Expanded(child: Text('Changes on this phone', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700))), IconButton(tooltip: 'Close', onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close))]),
+              if (ob.failed.isEmpty && ob.pending.isEmpty) const EmptyState('All synced'),
+              if (ob.pending.isNotEmpty) ...[
+                const SectionTitle('Waiting to sync'),
+                for (final o in ob.pending) Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(children: [const Icon(Icons.schedule, size: 18), const SizedBox(width: 10), Expanded(child: Text(_label(o)))])),
+                OutlinedButton.icon(onPressed: () => Outbox.instance.flush(), icon: const Icon(Icons.sync), label: const Text('Try now')),
+              ],
+              if (ob.failed.isNotEmpty) ...[
+                const SectionTitle('Could not be saved'),
+                for (final o in ob.failed)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8), padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: k.redSoft, border: Border.all(color: k.red)),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(_label(o), style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Text(o.error ?? 'The server refused this change.', style: TextStyle(color: k.red)),
+                      Row(children: [TextButton(onPressed: () => Outbox.instance.retryFailed(o), child: const Text('Try again')), TextButton(onPressed: () => Outbox.instance.discard(o), child: const Text('Discard'))]),
+                    ]),
+                  ),
+              ],
+            ]),
+          ),
+        );
+      },
     );
   }
 }
