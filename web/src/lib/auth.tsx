@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { get, post, setUnauthorizedHandler, tokenStore } from "./api";
+import { googleIdToken } from "./firebase";
 import type { LoginOut, Me } from "./types";
 
 interface AuthState {
@@ -8,6 +9,7 @@ interface AuthState {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  google: () => Promise<void>;
   logout: () => void;
   expired: boolean;
 }
@@ -50,6 +52,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMe(r.user);
   }, []);
 
-  const value = useMemo(() => ({ me, loading, login, register, logout, expired }), [me, loading, login, register, logout, expired]);
+  const google = useCallback(async () => {
+    const id_token = await googleIdToken();
+    if (!id_token) return;
+    const r = await post<LoginOut>("/auth/firebase", { id_token });
+    tokenStore.set(r.access_token);
+    setExpired(false);
+    setMe(r.user);
+  }, []);
+
+  const value = useMemo(() => ({ me, loading, login, register, google, logout, expired }), [me, loading, login, register, google, logout, expired]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

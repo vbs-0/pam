@@ -1,8 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../api.dart';
 import '../theme.dart';
+
+// Web OAuth client of the Firebase project (a public identifier). Lets the native picker return an ID token Firebase accepts.
+const _webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID', defaultValue: '317517119946-3e38slb8t2bjkpdg7uvh8foln12khmo0.apps.googleusercontent.com');
+bool _googleReady = false;
 
 class LoginScreen extends StatefulWidget {
   final bool expired;
@@ -23,12 +28,19 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _google() async {
     setState(() { _busy = true; _error = null; });
     try {
-      final cred = await FirebaseAuth.instance.signInWithProvider(GoogleAuthProvider());
+      // native account picker inside the app (no browser)
+      if (!_googleReady) { await GoogleSignIn.instance.initialize(serverClientId: _webClientId); _googleReady = true; }
+      final account = await GoogleSignIn.instance.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null) throw ApiException(0, 'Google did not return a sign-in token.');
+      final cred = await FirebaseAuth.instance.signInWithCredential(GoogleAuthProvider.credential(idToken: idToken));
       final token = await cred.user?.getIdToken();
       if (token == null) throw ApiException(0, 'Google did not return a sign-in token.');
       widget.onSignedIn(await Api.instance.google(token));
     } on ApiException catch (e) {
       setState(() => _error = e.message);
+    } on GoogleSignInException catch (e) {
+      if (e.code != GoogleSignInExceptionCode.canceled) setState(() => _error = 'Google sign-in did not complete (${e.code.name}).');
     } on FirebaseAuthException catch (e) {
       if (e.code != 'web-context-canceled' && e.code != 'canceled') setState(() => _error = 'Google sign-in did not complete (${e.code}).');
     } catch (_) {

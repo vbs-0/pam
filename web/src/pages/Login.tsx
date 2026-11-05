@@ -4,9 +4,10 @@ import { Field } from "../components/ui";
 import { homeFor } from "../components/Shell";
 import { ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { googleEnabled } from "../lib/firebase";
 
 export default function Login() {
-  const { me, login, register, expired } = useAuth();
+  const { me, login, register, google, expired } = useAuth();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,6 +15,13 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (me) return <Navigate to={homeFor(me.role)} replace />;
+
+  async function withGoogle() {
+    setBusy(true); setError(null);
+    try { await google(); }
+    catch (err) { setError(err instanceof ApiError || err instanceof Error ? err.message : "Could not sign in with Google."); }
+    finally { setBusy(false); }
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -51,10 +59,10 @@ export default function Login() {
           {mode === "in" && <p className="text-sm -mt-2"><Link to="/forgot" className="underline text-blue">Forgot your password?</Link></p>}
           {error && <p role="alert" className="text-red text-sm border border-red bg-red-soft px-3 py-2">{error}</p>}
           <button className="btn btn-solid w-full" disabled={busy || !email || !password}>{busy ? "One moment…" : mode === "in" ? "Sign in" : "Create account"}</button>
+          {googleEnabled && <button type="button" className="btn w-full" disabled={busy} onClick={withGoogle}>Continue with Google</button>}
           <p className="text-sm text-center">{mode === "in" ? "New here? " : "Already have an account? "}<button type="button" className="underline text-blue font-semibold" onClick={() => { setMode(mode === "in" ? "up" : "in"); setError(null); }}>{mode === "in" ? "Create an account" : "Sign in"}</button></p>
           <div className="text-sm text-muted border-t border-rule pt-4 space-y-1">
             <p><b className="text-ink">Looking around?</b> Sample households sign in as <span className="font-mono text-ink">usr-000001@pam.is-cool.dev</span> with password <span className="font-mono text-ink">password123</span>. They are read-only synthetic data.</p>
-            <p>Google sign-in is switched off on this server until a Firebase project is connected.</p>
           </div>
         </form>
       </section>

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 
 /// Server address. Override at build time: flutter build apk --dart-define=API_BASE=https://host/api/v1
@@ -54,7 +55,7 @@ class Api {
 
   Future<void> signOut() async {
     _token = null;
-    try { await FirebaseAuth.instance.signOut(); } catch (_) {}
+    try { await FirebaseAuth.instance.signOut(); await GoogleSignIn.instance.signOut(); } catch (_) {}
     try { await _store.delete(key: 'token'); } catch (_) {}
   }
 
