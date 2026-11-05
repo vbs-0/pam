@@ -88,8 +88,10 @@ def _issue(conn: Connection, row, how: str, request: Request) -> TokenOut:
     conn.commit()
     user = {"app_user_id": row.app_user_id, "email": row.email, "role": row.role,
             "profile_user_id": row.profile_user_id}
-    minutes = settings.jwt_ttl_minutes_mobile if request.headers.get("x-pam-client") == "mobile" else settings.jwt_ttl_minutes
-    return TokenOut(access_token=issue_local_token(row.app_user_id, row.role, minutes), expires_in=minutes * 60, user=user)
+    mobile = request.headers.get("x-pam-client") == "mobile"
+    minutes = settings.jwt_ttl_minutes_mobile if mobile else settings.jwt_ttl_minutes
+    return TokenOut(access_token=issue_local_token(row.app_user_id, row.role, minutes),
+                    expires_in=minutes * 60, user=user)
 
 
 USER_COLS = "app_user_id, email, role, profile_user_id, password_hash, firebase_uid, disabled"
