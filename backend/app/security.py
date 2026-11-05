@@ -49,10 +49,10 @@ def verify_password(hashed: str | None, password: str) -> bool:
         return False
 
 
-def issue_local_token(app_user_id: str, role: str) -> str:
+def issue_local_token(app_user_id: str, role: str, ttl_minutes: int | None = None) -> str:
     now = int(time.time())
     claims = {"sub": app_user_id, "role": role, "iss": LOCAL_ISSUER, "iat": now,
-              "exp": now + settings.jwt_ttl_minutes * 60}
+              "exp": now + (ttl_minutes or settings.jwt_ttl_minutes) * 60}
     return jwt.encode(claims, settings.jwt_secret, algorithm="HS256")
 
 

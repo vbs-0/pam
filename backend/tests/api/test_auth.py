@@ -116,3 +116,10 @@ def test_register_gives_own_empty_household_and_is_limited(client, api_db, googl
     codes = [client.post("/api/v1/auth/register", json={"email": f"x{i}@mail.test", "password": "long-enough-pass"}).status_code for i in range(6)]
     assert codes == [201] * 5 + [429]
     auth.SIGNUPS.clear()
+
+
+def test_session_length_depends_on_client(client):
+    body = {"email": "analyst@pam.test", "password": DEMO_PASSWORD}
+    assert client.post("/api/v1/auth/login", json=body).json()["expires_in"] == 7 * 24 * 3600
+    mobile = client.post("/api/v1/auth/login", json=body, headers={"X-PAM-Client": "mobile"}).json()
+    assert mobile["expires_in"] == 30 * 24 * 3600

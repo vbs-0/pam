@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://pam:pam@localhost:5432/pam"
     test_database_url: str | None = None
     jwt_secret: str = DEFAULT_SECRET
-    jwt_ttl_minutes: int = 60
+    jwt_ttl_minutes: int = 7 * 24 * 60          # web console: 7 days
+    jwt_ttl_minutes_mobile: int = 30 * 24 * 60  # Android app (sends X-PAM-Client: mobile): 30 days
     firebase_project_id: str | None = None
     admin_emails: str = ""
     demo_password: str | None = None

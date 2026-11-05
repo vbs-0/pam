@@ -67,7 +67,7 @@ class Api {
   Future<dynamic> _send(String method, String path, {Map<String, String?> query = const {}, Map<String, dynamic>? body, bool auth = true}) async {
     final qp = {for (final e in query.entries) if (e.value != null && e.value!.isNotEmpty) e.key: e.value!};
     final uri = Uri.parse('$apiBase$path').replace(queryParameters: qp.isEmpty ? null : qp);
-    final headers = {'Accept': 'application/json', if (body != null) 'Content-Type': 'application/json', if (auth && _token != null) 'Authorization': 'Bearer $_token'};
+    final headers = {'Accept': 'application/json', 'X-PAM-Client': 'mobile', if (body != null) 'Content-Type': 'application/json', if (auth && _token != null) 'Authorization': 'Bearer $_token'};
     http.Response res;
     try {
       final req = http.Request(method, uri)..headers.addAll(headers);

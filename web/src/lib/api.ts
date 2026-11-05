@@ -1,11 +1,11 @@
-// Thin typed fetch client. Tokens live in sessionStorage (cleared when the tab closes); the server decides roles.
+// Thin typed fetch client. The token lives in localStorage so a sign-in lasts the server's 7 days; the server decides roles and expiry.
 export const BASE = "/api/v1";
 const KEY = "pam.token";
 
 export const tokenStore = {
-  get: () => { try { return sessionStorage.getItem(KEY); } catch { return null; } },
-  set: (t: string) => { try { sessionStorage.setItem(KEY, t); } catch { /* private mode: nothing to do */ } },
-  clear: () => { try { sessionStorage.removeItem(KEY); } catch { /* ignore */ } },
+  get: () => { try { return localStorage.getItem(KEY); } catch { return null; } },
+  set: (t: string) => { try { localStorage.setItem(KEY, t); } catch { /* private mode: nothing to do */ } },
+  clear: () => { try { localStorage.removeItem(KEY); } catch { /* ignore */ } },
 };
 
 // ADMIN support view: customer endpoints take ?user_id=; the shell sets this when an admin opens a household.
