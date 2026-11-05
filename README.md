@@ -86,6 +86,7 @@ Per-issue recall: transfer double-count 400/400, TZ boundary 400/400, budget mis
 
 ## Limitations (honest list)
 
+- **Dependency audit:** `npm audit --omit=dev` (what ships to browsers) reports 0 findings and CI enforces it. 7 moderate findings remain in dev-only lint tooling (a `minimatch` pattern-matching issue inside `typescript-eslint`); they never reach a browser or the server and are accepted until that package updates.
 - **Google sign-in needs a Firebase project.** It is on in the live deployment (web popup and the app's native picker). A fresh install needs `FIREBASE_PROJECT_ID` on the server, the `VITE_FIREBASE_*` values for the web build (`web/.env.example`) and, for the app, a git-ignored `google-services.json` with the release SHA-1 registered. Without them the button is hidden and email sign-in still works.
 - **Email is limited to account mail.** A welcome message on sign-up, a reset link and a "password changed" notice, sent through an SMTP relay on port 587 (the host's cloud blocks port 25). Sign-up does not verify the address, so there is no verified-email gate on using the app.
 - **Refund recall is just over target (0.909 vs 0.90).** Missed links are mostly refunds that arrive after a long gap with a changed descriptor; they surface as exceptions rather than being linked wrongly.

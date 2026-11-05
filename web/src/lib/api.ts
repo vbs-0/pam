@@ -12,7 +12,7 @@ export const tokenStore = {
 const HKEY = "pam.household";
 export const household = {
   get: () => { try { return sessionStorage.getItem(HKEY); } catch { return null; } },
-  set: (v: string | null) => { try { v ? sessionStorage.setItem(HKEY, v) : sessionStorage.removeItem(HKEY); } catch { /* ignore */ } },
+  set: (v: string | null) => { try { if (v) sessionStorage.setItem(HKEY, v); else sessionStorage.removeItem(HKEY); } catch { /* ignore */ } },
 };
 
 export class ApiError extends Error {
@@ -51,7 +51,7 @@ export async function api<T = unknown>(method: string, path: string, opts: { que
   }
   if (res.status === 204) return undefined as T;
   const text = await res.text();
-  let data: any = null;
+  let data: { detail?: unknown; request_id?: string; errors?: { field: string; message: string }[] } | null = null;
   try { data = text ? JSON.parse(text) : null; } catch { /* non-JSON error page from a proxy */ }
   if (!res.ok) {
     if (res.status === 401 && token && opts.auth !== false) onUnauthorized();

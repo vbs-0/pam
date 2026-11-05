@@ -9,7 +9,7 @@ export const googleEnabled = !!(cfg.apiKey && cfg.authDomain && cfg.projectId);
 
 /** Opens Google's popup and returns a Firebase ID token for the PAM server to verify. Returns null if the user closes it. */
 export async function googleIdToken(): Promise<string | null> {
-  const [{ initializeApp, getApps }, { getAuth, GoogleAuthProvider, signInWithPopup }] = await Promise.all([import("firebase/app"), import("firebase/auth")]);
+  const [{ initializeApp, getApps }, { getAuth, GoogleAuthProvider, signInWithPopup }] = await Promise.all([import("@firebase/app"), import("@firebase/auth")]);
   const app = getApps()[0] ?? initializeApp(cfg);
   try {
     const cred = await signInWithPopup(getAuth(app), new GoogleAuthProvider());

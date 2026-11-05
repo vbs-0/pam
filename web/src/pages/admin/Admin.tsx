@@ -6,7 +6,7 @@ import { Empty, ErrorBox, Field, PageHead, QueryState, Section, Skeleton, Stamp,
 import { ApiError, BASE, get, household, patch, post, tokenStore } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { dateTime, titleCase } from "../../lib/format";
-import type { Job, Page } from "../../lib/types";
+import type { Job, Page, ReproOut, ValidationOut } from "../../lib/types";
 
 interface Overview {
   dataset: { scale: string; loaded_at: string; seed: number } | null; latest_run_id: string | null;
@@ -15,8 +15,8 @@ interface Overview {
 
 export function AdminOverview() {
   const q = useQuery({ queryKey: ["overview"], queryFn: () => get<Overview>("/admin/overview"), refetchInterval: 10_000 });
-  const val = useQuery({ queryKey: ["validation", "OUTPUTS"], queryFn: () => get<any>("/admin/validation", { scope: "OUTPUTS" }), retry: false });
-  const repro = useQuery({ queryKey: ["repro"], queryFn: () => get<any>("/admin/reproducibility", { scale: "starter" }), retry: false });
+  const val = useQuery({ queryKey: ["validation", "OUTPUTS"], queryFn: () => get<ValidationOut>("/admin/validation", { scope: "OUTPUTS" }), retry: false });
+  const repro = useQuery({ queryKey: ["repro"], queryFn: () => get<ReproOut>("/admin/reproducibility", { scale: "starter" }), retry: false });
   return (
     <>
       <PageHead title="Overview" sub="State of the dataset, the pipeline and the evidence." />
@@ -32,7 +32,7 @@ export function AdminOverview() {
             <Section title="Latest run"><p>{o.latest_run_id ?? "No run yet"} {o.evaluation && <> · evaluation <StatusStamp status={o.evaluation.all_pass ? "PASS" : "FAIL"} /></>}</p></Section>
             <Section title="Output validation">
               {val.isPending ? <Skeleton rows={2} /> : val.isError ? <p className="text-muted">None yet. Start a Validate job.</p> : <><p><StatusStamp status={val.data.passed ? "PASS" : "FAIL"} /> {dateTime(val.data.created_at)}</p>
-                <ul className="mt-2 text-sm">{val.data.results.checks.map((c: any) => <li key={c.name} className="flex justify-between py-1 border-b border-rule"><span>{titleCase(c.name)}</span><StatusStamp status={c.status} /></li>)}</ul></>}
+                <ul className="mt-2 text-sm">{val.data.results.checks.map((c) => <li key={c.name} className="flex justify-between py-1 border-b border-rule"><span>{titleCase(c.name)}</span><StatusStamp status={c.status} /></li>)}</ul></>}
             </Section>
             <Section title="Reproducibility">
               {repro.isPending ? <Skeleton rows={2} /> : repro.isError ? <p className="text-muted">No check yet. Start a Repro job.</p> : <p><StatusStamp status={repro.data.match ? "PASS" : "FAIL"} /> two fresh interpreters produced {repro.data.match ? "identical" : "different"} checksums ({repro.data.source}).</p>}

@@ -5,7 +5,7 @@ import { Empty, ErrorBox, Field, Money, PageHead, QueryState, Section, Skeleton,
 import { ApiError, get } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { dateTime, titleCase } from "../../lib/format";
-import type { Page } from "../../lib/types";
+import type { Page, TraceOut } from "../../lib/types";
 
 interface Summary { run_id: string; all_pass: boolean; by_issue: { issue_type: string; labelled: number; caught: number; recall: number | null }[] }
 interface Anomaly { anomaly_id: string; issue_type: string; entity_type: string; entity_id: string; expected_decision: string; note: string | null; outcome: "CAUGHT" | "MISSED"; observed: string | null }
@@ -96,8 +96,8 @@ export function Trace() {
   const [sp, setSp] = useSearchParams();
   const txn = sp.get("txn") ?? "";
   const [input, setInput] = useState(txn);
-  const q = useQuery({ queryKey: ["trace", txn], queryFn: () => get<any>(`/ops/transactions/${txn}`), enabled: !!txn, retry: false });
-  const d = q.data;
+  const q = useQuery({ queryKey: ["trace", txn], queryFn: () => get<TraceOut>(`/ops/transactions/${txn}`), enabled: !!txn, retry: false });
+  const d = q.data as TraceOut;   // only read in the branch where the query has succeeded
   return (
     <>
       <PageHead title="Transaction trace" sub="Every decision about one transaction, across runs." />
@@ -118,12 +118,12 @@ export function Trace() {
           </Section>
           <Section title="Decision per run">
             <table className="register"><thead><tr><th>Run</th><th>Category</th><th>Kind</th><th>Rule</th><th>Decision</th><th>Link</th></tr></thead>
-              <tbody>{d.runs.map((r: any) => <tr key={r.run_id}><td className="font-mono text-xs">{r.run_id}</td><td>{titleCase(r.category_code)}</td><td>{titleCase(r.kind)}</td><td className="font-mono text-xs">{r.rule_id ? `${r.rule_id} v${r.rule_version}` : "—"}</td><td className="text-sm">{r.decision}</td><td className="font-mono text-xs">{r.link_txn_id ?? "—"}</td></tr>)}</tbody></table>
+              <tbody>{d.runs.map((r) => <tr key={r.run_id}><td className="font-mono text-xs">{r.run_id}</td><td>{titleCase(r.category_code)}</td><td>{titleCase(r.kind)}</td><td className="font-mono text-xs">{r.rule_id ? `${r.rule_id} v${r.rule_version}` : "—"}</td><td className="text-sm">{r.decision}</td><td className="font-mono text-xs">{r.link_txn_id ?? "—"}</td></tr>)}</tbody></table>
           </Section>
-          {d.overrides.length > 0 && <Section title="Overrides"><ul className="text-sm">{d.overrides.map((o: any) => <li key={o.override_id} className="py-1.5 border-b border-rule">{o.override_id} · {titleCase(o.category_code)} · {o.actor} · {dateTime(o.created_at)} {o.reason && `— ${o.reason}`}</li>)}</ul></Section>}
-          {d.exceptions.map((x: any) => (
+          {d.overrides.length > 0 && <Section title="Overrides"><ul className="text-sm">{d.overrides.map((o) => <li key={o.override_id} className="py-1.5 border-b border-rule">{o.override_id} · {titleCase(o.category_code)} · {o.actor} · {dateTime(o.created_at)} {o.reason && `— ${o.reason}`}</li>)}</ul></Section>}
+          {d.exceptions.map((x) => (
             <Section key={x.exception_id} title={`${x.exception_id} · ${titleCase(x.exception_type)}`} right={<StatusStamp status={x.status} />}>
-              <ol className="text-sm">{x.events.map((e: any) => <li key={e.seq} className="py-1 border-b border-rule">{e.from_status ?? "—"} → <b>{e.to_status}</b> · {e.actor} · {dateTime(e.at)}{e.note && ` — ${e.note}`}</li>)}</ol>
+              <ol className="text-sm">{x.events.map((e) => <li key={e.seq} className="py-1 border-b border-rule">{e.from_status ?? "—"} → <b>{e.to_status}</b> · {e.actor} · {dateTime(e.at)}{e.note && ` — ${e.note}`}</li>)}</ol>
             </Section>
           ))}
           {(me?.role === "REVIEWER" || me?.role === "ADMIN") && d.truth !== undefined && (

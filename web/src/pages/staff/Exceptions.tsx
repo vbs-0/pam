@@ -14,7 +14,7 @@ const VERB: Record<string, string> = { IN_REVIEW: "Start review", RESOLVED: "Res
 export default function Exceptions() {
   const [sp, setSp] = useSearchParams();
   const type = sp.get("type") ?? "", status = sp.get("status") ?? "OPEN";
-  const set = (k: string, v: string) => setSp((p) => { v ? p.set(k, v) : p.delete(k); return p; }, { replace: true });
+  const set = (k: string, v: string) => setSp((p) => { if (v) p.set(k, v); else p.delete(k); return p; }, { replace: true });
   const [open, setOpen] = useState<string | null>(null);
   const counts = useQuery({ queryKey: ["exc-counts"], queryFn: () => get<{ exception_type: string; status: string; n: number }[]>("/analyst/exceptions/counts") });
   const list = useInfiniteQuery({

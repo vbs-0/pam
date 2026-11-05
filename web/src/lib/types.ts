@@ -60,6 +60,17 @@ export interface Rule {
 export interface Job {
   job_id: string; job_type: string; params: Record<string, unknown>; status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
   created_by: string; created_at: string; started_at: string | null; finished_at: string | null;
-  result: Record<string, any> | null; error: string | null;
+  result: Record<string, unknown> | null; error: string | null;
 }
 export interface Page<T> { items: T[]; next_cursor: string | null }
+
+export interface ValidationOut { passed: boolean; created_at: string; results: { checks: { name: string; status: string }[] } }
+export interface ReproOut { match: boolean; source?: string; runs: string[]; python_hash_seeds?: number[]; files?: Record<string, string> }
+export interface TraceOut {
+  txn: { amount_paise: number; descriptor: string; posted_at: string; channel: string; account_id: string; account_type: string; account_status: string };
+  current: { category_code: string; kind: string } | null;
+  runs: { run_id: string; category_code: string; kind: string; rule_id: string | null; rule_version: number | null; decision: string; link_txn_id: string | null }[];
+  overrides: { override_id: string; category_code: string; actor: string; created_at: string; reason: string | null }[];
+  truth?: Record<string, unknown> | null;     // reviewers and admins only
+  exceptions: { exception_id: string; exception_type: string; status: string; events: { seq: number; from_status: string | null; to_status: string; actor: string; at: string; note: string | null }[] }[];
+}

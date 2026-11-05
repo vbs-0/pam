@@ -19,7 +19,7 @@ export default function Entries() {
   const [open, setOpen] = useState<string | null>(null);
   const adding = sp.get("add") === "1";
   const catName = useCategoryName();
-  const set = (k: string, v: string) => setSp((p) => { v ? p.set(k, v) : p.delete(k); return p; }, { replace: true });
+  const set = (k: string, v: string) => setSp((p) => { if (v) p.set(k, v); else p.delete(k); return p; }, { replace: true });
 
   useEffect(() => { const t = setTimeout(() => search !== q && set("q", search.trim()), 300); return () => clearTimeout(t); }, [search]); // eslint-disable-line
 
