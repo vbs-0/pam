@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "dev.is_cool.pam_mobile"   // must match the Firebase app registration if Google sign-in is configured
+        applicationId = "pam.garudatechnologies.com"   // must match the Firebase app registration if Google sign-in is configured
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
