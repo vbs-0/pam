@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate } from "react-router";
+import { Link, Navigate } from "react-router";
 import { Field } from "../components/ui";
 import { homeFor } from "../components/Shell";
 import { ApiError } from "../lib/api";
@@ -48,6 +48,7 @@ export default function Login() {
           {mode === "up" && <Field label="Your name" hint="Optional">{(id) => <input id={id} className="field" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />}</Field>}
           <Field label="Email">{(id) => <input id={id} className="field" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />}</Field>
           <Field label="Password" hint={mode === "up" ? "At least 10 characters" : undefined}>{(id) => <input id={id} className="field" type="password" autoComplete={mode === "in" ? "current-password" : "new-password"} required minLength={mode === "up" ? 10 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
+          {mode === "in" && <p className="text-sm -mt-2"><Link to="/forgot" className="underline text-blue">Forgot your password?</Link></p>}
           {error && <p role="alert" className="text-red text-sm border border-red bg-red-soft px-3 py-2">{error}</p>}
           <button className="btn btn-solid w-full" disabled={busy || !email || !password}>{busy ? "One moment…" : mode === "in" ? "Sign in" : "Create account"}</button>
           <p className="text-sm text-center">{mode === "in" ? "New here? " : "Already have an account? "}<button type="button" className="underline text-blue font-semibold" onClick={() => { setMode(mode === "in" ? "up" : "in"); setError(null); }}>{mode === "in" ? "Create an account" : "Sign in"}</button></p>

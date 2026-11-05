@@ -6,17 +6,26 @@
 import threading
 import time
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import Connection, text
 
-from app import schema
+from app import mail, schema
 from app.api.deps import Caller, current_user
 from app.config import settings
 from app.db import get_conn
 from app.households import REAL_FROM, create_household
 from app.jobs.sql import next_number
-from app.security import AuthError, hash_password, issue_local_token, verify_firebase_token, verify_password
+from app.security import (
+    AuthError,
+    hash_password,
+    issue_local_token,
+    issue_reset_token,
+    read_reset_token,
+    reset_fingerprint_ok,
+    verify_firebase_token,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 MAX_FAILS, WINDOW_S = 5, 900
@@ -34,6 +43,15 @@ class RegisterIn(BaseModel):
     email: str = Field(min_length=5, max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
     password: str = Field(min_length=10, max_length=128)
     name: str = Field("", max_length=80)
+
+
+class ForgotIn(BaseModel):
+    email: str = Field(min_length=5, max_length=120)
+
+
+class ResetIn(BaseModel):
+    token: str = Field(min_length=20, max_length=2000)
+    password: str = Field(min_length=10, max_length=128)
 
 
 class FirebaseIn(BaseModel):
@@ -120,6 +138,51 @@ def register(body: RegisterIn, request: Request, conn: Connection = Depends(get_
                  {"i": app_id, "e": email, "p": profile, "h": hash_password(body.password)})
     row = conn.execute(text(f"SELECT {USER_COLS} FROM app_user WHERE app_user_id = :i"), {"i": app_id}).first()
     return _issue(conn, row, "register", request)
+
+
+FORGOTS: dict[str, list[float]] = {}
+
+
+@router.post("/forgot", status_code=202)
+def forgot(body: ForgotIn, request: Request, tasks: BackgroundTasks, conn: Connection = Depends(get_conn)):
+    """Always answers the same way, so it cannot be used to find out which emails have accounts. 3 mails per hour
+    per address and 10 per hour per client; Google-only and disabled logins get nothing."""
+    email = body.email.strip().lower()
+    ip = request.client.host if request.client else "?"
+    now = time.time()
+    with _fails_lock:
+        for key, cap in ((f"e:{email}", 3), (f"i:{ip}", 10)):
+            recent = [t for t in FORGOTS.get(key, []) if now - t < 3600]
+            if len(recent) >= cap:
+                raise AuthError("too many reset requests; try again in an hour", status=429)
+            FORGOTS[key] = [*recent, now]
+    row = conn.execute(text("SELECT app_user_id, password_hash, disabled FROM app_user WHERE email = :e"),
+                       {"e": email}).first()
+    if row and row.password_hash and not row.disabled and mail.configured():
+        link = f"{settings.app_url.rstrip('/')}/reset?token={issue_reset_token(row.app_user_id, row.password_hash)}"
+        tasks.add_task(mail.send, email, "Reset your PAM password",
+                       "Someone asked to reset the password for this PAM account.\n\nOpen this link within 30 "
+                       f"minutes to choose a new one:\n{link}\n\nIf it was not you, ignore this email; nothing "
+                       "changes until the link is used.")
+    return {"detail": "If that email has a password login, a reset link is on its way."}
+
+
+@router.post("/reset")
+def reset(body: ResetIn, request: Request, conn: Connection = Depends(get_conn)):
+    claims = read_reset_token(body.token)
+    row = conn.execute(text("SELECT app_user_id, email, password_hash, disabled FROM app_user "
+                            "WHERE app_user_id = :i FOR UPDATE"), {"i": claims["sub"]}).first()
+    if row is None or row.disabled or not reset_fingerprint_ok(claims, row.password_hash):
+        raise AuthError("this reset link is invalid or has expired", status=400)
+    conn.execute(text("UPDATE app_user SET password_hash = :h WHERE app_user_id = :i"),
+                 {"h": hash_password(body.password), "i": row.app_user_id})
+    conn.execute(text("INSERT INTO audit_event (at, actor, action, entity_type, entity_id, request_id, detail) "
+                      "VALUES (now(), :a, 'PASSWORD_RESET', 'APP_USER', :i, :r, NULL)"),
+                 {"a": row.email, "i": row.app_user_id, "r": getattr(request.state, "request_id", None)})
+    conn.commit()
+    with _fails_lock:
+        _fails.pop(row.email, None)
+    return {"detail": "Password changed. You can sign in now."}
 
 
 @router.post("/firebase", response_model=TokenOut)

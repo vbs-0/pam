@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     demo_password: str | None = None
     household_password: str | None = None
     allow_signup: bool = True
+    smtp_host: str | None = None             # outbound mail for password resets; unset = mail is skipped
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    mail_from: str | None = None
+    app_url: str = "https://pam.is-cool.dev"  # base for links inside emails
     cors_origins: str = "http://localhost:5173"
     data_dir: str = "../data"
     reports_dir: str = "../reports"

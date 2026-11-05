@@ -74,6 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'One moment…' : _signUp ? 'Create account' : 'Sign in'))),
                     const SizedBox(height: 6),
                     Center(child: TextButton(onPressed: () => setState(() { _signUp = !_signUp; _error = null; }), child: Text(_signUp ? 'Already have an account? Sign in' : 'New here? Create an account'))),
+                    if (!_signUp) Center(child: Text('Forgot your password? Reset it at pam.is-cool.dev/forgot', style: TextStyle(color: k.muted, fontSize: 13), textAlign: TextAlign.center)),
                     const Divider(height: 32),
                     Text('Looking around? Sample households sign in as usr-000001@pam.is-cool.dev with password password123. They are read-only synthetic data.', style: TextStyle(color: k.muted, fontSize: 13)),
                   ]),

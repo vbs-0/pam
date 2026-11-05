@@ -4,6 +4,7 @@ Two token kinds reach the API: local HS256 tokens (seeded demo users, offline re
 (RS256, verified against Google's published x509 certificates). The algorithm is pinned per kind, so an HS256
 token signed with Google's public certificate (algorithm confusion) or an ``alg: none`` token never passes.
 """
+import hashlib
 import json
 import re
 import threading
@@ -55,10 +56,43 @@ def issue_local_token(app_user_id: str, role: str) -> str:
     return jwt.encode(claims, settings.jwt_secret, algorithm="HS256")
 
 
+RESET_TTL_S = 30 * 60
+
+
+def _fingerprint(password_hash: str) -> str:
+    return hashlib.sha256(password_hash.encode()).hexdigest()[:16]
+
+
+def issue_reset_token(app_user_id: str, password_hash: str) -> str:
+    """Single-use without a table: it embeds a fingerprint of the current password hash, so setting a new password
+    (or a second reset) invalidates every earlier link."""
+    now = int(time.time())
+    return jwt.encode({"sub": app_user_id, "purpose": "reset", "fp": _fingerprint(password_hash), "iss": LOCAL_ISSUER,
+                       "iat": now, "exp": now + RESET_TTL_S}, settings.jwt_secret, algorithm="HS256")
+
+
+def read_reset_token(token: str) -> dict:
+    try:
+        c = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"], issuer=LOCAL_ISSUER, leeway=LEEWAY_S,
+                       options={"require": ["exp", "sub", "iss", "fp"]})
+    except jwt.PyJWTError as e:
+        raise AuthError("this reset link is invalid or has expired", status=400) from e
+    if c.get("purpose") != "reset":
+        raise AuthError("this reset link is invalid or has expired", status=400)
+    return c
+
+
+def reset_fingerprint_ok(claims: dict, password_hash: str | None) -> bool:
+    return password_hash is not None and claims["fp"] == _fingerprint(password_hash)
+
+
 def verify_local_token(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.jwt_secret, algorithms=["HS256"], issuer=LOCAL_ISSUER, leeway=LEEWAY_S,
-                          options={"require": ["exp", "iat", "sub", "iss"]})
+        claims = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"], issuer=LOCAL_ISSUER, leeway=LEEWAY_S,
+                            options={"require": ["exp", "iat", "sub", "iss"]})
+        if claims.get("purpose"):                      # a reset token is not a login token
+            raise AuthError("invalid token")
+        return claims
     except jwt.ExpiredSignatureError as e:
         raise AuthError("token expired") from e
     except jwt.PyJWTError as e:

@@ -5,6 +5,7 @@ import { Skeleton } from "./components/ui";
 import { useAuth } from "./lib/auth";
 import type { Role } from "./lib/types";
 import Login from "./pages/Login";
+import { Forgot, Reset } from "./pages/Recover";
 import Folio from "./pages/customer/Folio";
 
 const Entries = lazy(() => import("./pages/customer/Entries"));
@@ -47,6 +48,8 @@ export default function App() {
       <Suspense fallback={<div className="p-10 max-w-xl mx-auto"><Skeleton rows={4} /></div>}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot" element={<Forgot />} />
+          <Route path="/reset" element={<Reset />} />
           <Route element={<Gate />}>
             <Route path="/" element={<Home />} />
             <Route path="/entries" element={customer(<Entries />)} />
