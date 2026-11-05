@@ -49,7 +49,7 @@ export default function Entries() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1.3fr_1.3fr_1fr] mb-4" role="search">
         <Field label="Search narration">{(id) => (
           <div className="relative"><Search size={16} className="absolute left-3 top-3 text-muted" aria-hidden />
-            <input id={id} className="field pl-9" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="swiggy, rent, 4821…" maxLength={60} /></div>
+            <input id={id} className="field field-icon" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="swiggy, rent, 4821…" maxLength={60} /></div>
         )}</Field>
         <Field label="Category">{(id) => <CategorySelect id={id} value={category} onChange={(v) => set("category", v)} includeBlank="All categories" />}</Field>
         <Field label="Account">{(id) => (

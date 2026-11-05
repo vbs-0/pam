@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { get, post, setUnauthorizedHandler, tokenStore } from "./api";
+import { get, household, post, setUnauthorizedHandler, tokenStore } from "./api";
 import { googleIdToken } from "./firebase";
 import type { LoginOut, Me } from "./types";
 
@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     tokenStore.clear();
+    household.set(null);          // an admin's "viewing household X" must never leak into the next sign-in
     setMe(null);
     qc.clear();
   }, [qc]);
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const r = await post<LoginOut>("/auth/login", { email, password });
     tokenStore.set(r.access_token);
+    household.set(null);
     setExpired(false);
     setMe(r.user);
   }, []);
@@ -48,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = useCallback(async (email: string, password: string, name: string) => {
     const r = await post<LoginOut>("/auth/register", { email, password, name });
     tokenStore.set(r.access_token);
+    household.set(null);
     setExpired(false);
     setMe(r.user);
   }, []);
@@ -57,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!id_token) return;
     const r = await post<LoginOut>("/auth/firebase", { id_token });
     tokenStore.set(r.access_token);
+    household.set(null);
     setExpired(false);
     setMe(r.user);
   }, []);

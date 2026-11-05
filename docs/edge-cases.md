@@ -176,6 +176,7 @@ Labelled anomaly types from the brief are marked ★; `injected` means the label
 | U09 | Someone else changed the exception first | API answers 409; the message is shown and the queue refetches | pages/staff/Exceptions.tsx, api/analyst.py | manual | done |
 | U10 | Reduced motion / dark mode / keyboard only | Reduced-motion and dark themes are styled; focus ring and labelled controls | index.css, components/Shell.tsx | manual; no keyboard-only or Lighthouse pass run | partial |
 | U11 | localStorage blocked (private mode) | Theme falls back to the system setting, no crash | components/Shell.tsx | manual | done |
+| U12 | An admin's "support view" household is still stored in the tab when someone else signs in | Cleared on every sign-in and sign-out, so a customer never asks for another household (which would answer 404 on every page) | lib/auth.tsx, lib/api.ts | manual (found in use) | done |
 
 ## Android app (M)
 

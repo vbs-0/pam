@@ -82,6 +82,7 @@ a { color: var(--blue); text-underline-offset: 3px; }
   width: 100%;
 }
 .field:hover { border-color: var(--blue); }
+.field-icon { padding-left: 34px; }     /* room for a leading icon; a utility class would lose to .field */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 0 14px;
   border-radius: 2px; border: 1px solid var(--blue); color: var(--blue); background: transparent; font-weight: 600;
