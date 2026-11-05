@@ -289,3 +289,19 @@ def test_change_email_and_delete_account(client, me):
     assert client.post(f"{V1}/auth/login", json={"email": em, "password": "wipe-password-1"}).status_code == 401
     assert client.post(f"{V1}/auth/delete-account", headers=login(client, "customer@pam.test"),
                        json={"confirm_email": "customer@pam.test", "password": DEMO_PASSWORD}).status_code == 403    # demo is protected
+
+
+def test_idempotency_key_applies_a_write_once(client, me):
+    h = {**me, "Idempotency-Key": "queued-0001-abcd"}
+    body = {"name": "Trip", "target_paise": 500000}
+    a = client.post(f"{V1}/me/goals", json=body, headers=h)
+    b = client.post(f"{V1}/me/goals", json=body, headers=h)
+    assert a.status_code == 201 and b.status_code == 201
+    assert a.json() == b.json() and b.headers.get("x-idempotent-replay") == "1"
+    assert len(client.get(f"{V1}/me/goals", headers=me).json()) == 1
+    # a different key is a different write; a failed write is not remembered
+    c = client.post(f"{V1}/me/goals", json=body, headers={**me, "Idempotency-Key": "queued-0002-abcd"})
+    assert c.json()["goal_id"] != a.json()["goal_id"]
+    bad = {**me, "Idempotency-Key": "queued-0003-abcd"}
+    assert client.post(f"{V1}/me/goals", json={"name": "", "target_paise": 1}, headers=bad).status_code == 422
+    assert client.post(f"{V1}/me/goals", json=body, headers=bad).status_code == 201

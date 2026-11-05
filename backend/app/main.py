@@ -9,6 +9,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from app.api import admin, analyst, analytics, auth, entries_plus, entry, errors, me, me_plus, review
 from app.config import settings
 from app.db import get_conn
+from app.idempotency import IdempotencyMiddleware
 from app.logging import RequestIdMiddleware, setup_logging
 
 
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
     setup_logging()
     app = FastAPI(title="PAM API", version="0.1.0", lifespan=lifespan,
                   description="Payment Account Manager — categorization, recurring payments, budgets.")
+    app.add_middleware(IdempotencyMiddleware)   # innermost: sees the uncompressed answer it stores
     app.add_middleware(GZipMiddleware, minimum_size=1024)
     app.add_middleware(CORSMiddleware, allow_origins=[o for o in settings.cors_origins.split(",") if o],
                        allow_methods=["*"], allow_headers=["*"], expose_headers=["X-Request-ID"])
