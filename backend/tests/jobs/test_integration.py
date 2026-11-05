@@ -72,13 +72,15 @@ def test_failed_run_is_invisible(loaded):
 def test_override_survives_rerun(loaded):
     conn, _, _, _ = loaded
     tid = conn.execute(text("SELECT min(txn_id) FROM txn WHERE amount_paise < 0")).scalar()
-    conn.execute(text("INSERT INTO category_override VALUES ('OVR-000001', :t, 'HEALTH', 'test', NULL, now())"),
-                 {"t": tid})
+    # real households' overrides (made by earlier API tests) survive a reload, so pick a free id
+    n = conn.execute(text("SELECT coalesce(max(substring(override_id from 5)::int), 0) + 1 FROM category_override")).scalar()
+    oid = f"OVR-{n:06d}"
+    conn.execute(text("INSERT INTO category_override VALUES (:o, :t, 'HEALTH', 'test', NULL, now())"), {"o": oid, "t": tid})
     conn.commit()
     run = run_pipeline(conn)
     row = conn.execute(text("SELECT category_code, decision FROM txn_enrichment WHERE run_id = :r AND txn_id = :t"),
                        {"r": run, "t": tid}).one()
-    assert row == ("HEALTH", "OVERRIDE:OVR-000001")
+    assert row == ("HEALTH", f"OVERRIDE:{oid}")
 
 
 def test_reload_keeps_app_users(loaded, monkeypatch):
