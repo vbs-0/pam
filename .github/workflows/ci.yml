@@ -74,3 +74,36 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze --no-fatal-infos
+
+  deploy:
+    # Continuous delivery: only after every job above passes, only for pushes to main.
+    needs: [backend, web, mobile]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: SSH setup
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          printf 'Host vbs\n  HostName %s\n  User ubuntu\n  IdentityFile ~/.ssh/deploy_key\n  StrictHostKeyChecking yes\n' \
+            "${{ secrets.DEPLOY_HOST }}" > ~/.ssh/config
+      - name: Backend (alembic, restart, readiness check, rollback on failure)
+        run: bash deploy/deploy.sh vbs
+      - name: Web console
+        working-directory: web
+        env:
+          # Public Firebase web identifiers (not secrets), same as web/.env.example documents.
+          VITE_FIREBASE_API_KEY: AIzaSyCKQevQumG5aLD1GWpKjCI--0c96qjc7WU
+          VITE_FIREBASE_AUTH_DOMAIN: payment-account-manager.firebaseapp.com
+          VITE_FIREBASE_PROJECT_ID: payment-account-manager
+        run: |
+          npm ci && npm run build
+          tar czf - -C dist . | ssh vbs "sudo tar xzf - -C /opt/pam/www --overwrite"
