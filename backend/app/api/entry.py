@@ -259,7 +259,12 @@ def add_transaction(body: TxnIn, request: Request, user: str = Depends(own), cal
     audit(conn, caller.email, "TXN_CREATE", "TXN", txn_id, _rid(request), body.model_dump())
     conn.commit()
     # saved either way; a duplicate is flagged, not blocked (two identical chai payments a day are real) (A39)
-    return _result(conn, user, txn_id, refresh_household(conn, user), {"possible_duplicate_of": dup})
+    refreshed = refresh_household(conn, user)
+    if refreshed and not body.category_code:
+        from app.api.sorting import apply_user_rules  # lazy: sorting imports this module
+        if apply_user_rules(conn, latest_run_id(conn), user, _rid(request)):
+            conn.commit()
+    return _result(conn, user, txn_id, refreshed, {"possible_duplicate_of": dup})
 
 
 def _own_txn_row(conn, user, txn_id):

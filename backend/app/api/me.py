@@ -25,6 +25,7 @@ from app.api.common import (
 from app.api.deps import Caller, current_user
 from app.db import get_conn
 from app.engine.budgets import BudgetResolution, budget_lines
+from app.households import is_real
 from app.jobs.sql import next_number
 
 router = APIRouter(tags=["customer"])
@@ -157,6 +158,7 @@ def transaction(txn_id: str, user: str = Depends(household), run: str = Depends(
 class CategoryIn(BaseModel):
     category_code: str = Field(min_length=1, max_length=40)
     reason: str | None = Field(None, max_length=300)
+    remember: bool = Field(False, description="Also sort future (and still unsorted) entries with a similar narration this way")
 
 
 def apply_override(conn: Connection, txn_id: str, code: str, local_date: date, actor: str, reason: str | None,
@@ -202,8 +204,14 @@ def set_category(txn_id: str, body: CategoryIn, request: Request,
     code = body.category_code.strip().upper()
     oid = apply_override(conn, txn_id, code, r.local_date, caller.email, body.reason,
                          getattr(request.state, "request_id", None))
+    out = {"override_id": oid, "category_code": code}
+    if body.remember and is_real(user):
+        from app.api.sorting import apply_user_rules, remember_rule  # lazy: sorting imports this module
+        phrase = remember_rule(conn, user, r.descriptor, r.amount_paise, code)
+        if phrase:
+            out |= {"rule": phrase, "also_sorted": apply_user_rules(conn, run, user, getattr(request.state, "request_id", None))}
     conn.commit()
-    return {"override_id": oid, "category_code": code}
+    return out
 
 
 def _prev_month(m: str) -> str:

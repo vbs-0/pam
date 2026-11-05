@@ -41,7 +41,7 @@ from app.api.entry import (
 from app.api.me import apply_override, audit, display_name
 from app.db import get_conn
 from app.households import next_txn_id
-from app.jobs.pipeline_job import refresh_household, today
+from app.jobs.pipeline_job import latest_run_id, refresh_household, today
 from app.timeutil import ist_to_utc
 
 router = APIRouter(prefix="/me", tags=["customer: entries plus"])
@@ -490,7 +490,12 @@ def import_csv(
         {"rows": len(batch), "skipped": skipped},
     )
     conn.commit()
-    return result | {"imported": len(batch), "refreshed": refresh_household(conn, user)}
+    refreshed = refresh_household(conn, user)
+    if refreshed:
+        from app.api.sorting import apply_user_rules  # lazy: sorting imports entry
+        apply_user_rules(conn, latest_run_id(conn), user, _rid(request))
+        conn.commit()
+    return result | {"imported": len(batch), "refreshed": refreshed}
 
 
 # ---------- export / backup / restore ----------

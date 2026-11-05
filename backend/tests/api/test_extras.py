@@ -305,3 +305,62 @@ def test_idempotency_key_applies_a_write_once(client, me):
     bad = {**me, "Idempotency-Key": "queued-0003-abcd"}
     assert client.post(f"{V1}/me/goals", json={"name": "", "target_paise": 1}, headers=bad).status_code == 422
     assert client.post(f"{V1}/me/goals", json=body, headers=bad).status_code == 201
+
+
+def _unsorted_entry(client, h, acc, desc, day=D1, amount=4000):
+    r = client.post(f"{V1}/me/transactions", json={"account_id": acc, "date": day, "amount_paise": amount, "direction": "DR", "description": desc}, headers=h)
+    assert r.status_code == 201, r.text
+    return r.json()["txn_id"], r.json()["transaction"]
+
+
+def test_remember_my_choice_sorts_similar_entries_now_and_later(client, me):
+    acc = _acct(client, me)
+    t1, tx = _unsorted_entry(client, me, acc, "Sharma lassi packet 114")
+    assert tx["kind"] == "UNKNOWN"
+    t2, _ = _unsorted_entry(client, me, acc, "lassi packet 09", D2)
+    r = client.post(f"{V1}/me/transactions/{t1}/category", json={"category_code": "FOOD_DINING", "remember": True}, headers=me)
+    assert r.status_code == 201 and r.json()["rule"] == "sharma lassi packet"
+    rules = client.get(f"{V1}/me/sorting-rules", headers=me).json()
+    assert [x["phrase"] for x in rules] == ["sharma lassi packet"]
+    # the same narration added later is sorted straight away (and a different one is not)
+    _, later = _unsorted_entry(client, me, acc, "SHARMA LASSI PACKET 7781", D2)
+    assert later["category_code"] == "FOOD_DINING" and later["kind"] == "EXPENSE"
+    _, other = _unsorted_entry(client, me, acc, "lassi packet 77", D2)
+    assert other["kind"] == "UNKNOWN"
+    assert client.delete(f"{V1}/me/sorting-rules/{rules[0]['rule_id']}", headers=me).status_code == 204
+    _, after = _unsorted_entry(client, me, acc, "sharma lassi packet 9", D2)
+    assert after["kind"] == "UNKNOWN"
+    assert t2
+
+
+def test_ai_sorting_is_opt_in_masked_and_only_picks_listed_categories(client, me, monkeypatch):
+    from app import ai_sort
+    acc = _acct(client, me)
+    t1, _ = _unsorted_entry(client, me, acc, "ramesh@okhdfc zxqv traders 99812")
+    assert client.get(f"{V1}/me/ai", headers=me).json()["enabled"] is False
+    monkeypatch.setattr(ai_sort.settings, "gemini_api_key", "test-key")
+    assert client.post(f"{V1}/me/ai/sort", headers=me).status_code == 409          # not turned on
+    assert client.put(f"{V1}/me/ai", json={"enabled": True}, headers=me).json()["enabled"] is True
+    seen = {}
+
+    def fake_call(body):
+        seen["prompt"] = body["contents"][0]["parts"][0]["text"]
+        import re
+        n = re.search(r'"id": (\d+)', seen["prompt"]).group(1)
+        rows = [{"id": int(n), "category": "FOOD_DINING", "confidence": 0.9}]
+        return {"candidates": [{"content": {"parts": [{"text": json.dumps(rows)}]}}]}
+    monkeypatch.setattr(ai_sort, "_call", fake_call)
+    r = client.post(f"{V1}/me/ai/sort", headers=me)
+    assert r.status_code == 200 and r.json()["sorted"] == 1, r.json()
+    assert "ramesh" not in seen["prompt"] and "99812" not in seen["prompt"] and "okhdfc" not in seen["prompt"]
+    assert "zxqv traders" in seen["prompt"]
+    d = client.get(f"{V1}/me/transactions/{t1}", headers=me).json()
+    assert d["category_code"] == "FOOD_DINING" and d["overrides"][0]["actor"] == "AI:gemini"
+    # a made-up category or a low-confidence answer is ignored
+    t2, _ = _unsorted_entry(client, me, acc, "mystery payment", D2)
+    monkeypatch.setattr(ai_sort, "_call", lambda b: {"candidates": [{"content": {"parts": [{"text": json.dumps([{"id": 0, "category": "ROOT_ACCESS", "confidence": 1}])}]}}]})
+    assert client.post(f"{V1}/me/ai/sort", headers=me).json()["sorted"] == 0
+    monkeypatch.setattr(ai_sort, "_call", lambda b: (_ for _ in ()).throw(ai_sort.AiError("Could not reach Gemini")))
+    t3, _ = _unsorted_entry(client, me, acc, "another mystery", D2)
+    assert client.post(f"{V1}/me/ai/sort", headers=me).status_code == 502
+    assert t2 and t3

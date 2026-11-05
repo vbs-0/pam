@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from starlette.middleware.gzip import GZipMiddleware
 
-from app.api import admin, analyst, analytics, auth, entries_plus, entry, errors, me, me_plus, review
+from app.api import admin, analyst, analytics, auth, entries_plus, entry, errors, me, me_plus, review, sorting
 from app.config import settings
 from app.db import get_conn
 from app.idempotency import IdempotencyMiddleware
@@ -42,8 +42,8 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestIdMiddleware)
     errors.install(app)
     v1 = APIRouter(prefix="/api/v1")
-    for r in (auth.router, me.router, entry.router, entries_plus.router, me_plus.router, analytics.router,
-              analyst.router, analyst.ops, review.router, admin.router):
+    for r in (auth.router, me.router, entry.router, entries_plus.router, me_plus.router, sorting.router,
+              analytics.router, analyst.router, analyst.ops, review.router, admin.router):
         v1.include_router(r)
     app.include_router(v1)
 

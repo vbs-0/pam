@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     mail_from: str | None = None
     app_url: str = "https://pam.is-cool.dev"  # base for links inside emails
+    gemini_api_key: str | None = None        # optional: AI suggestions for unsorted entries; unset = feature off
+    gemini_model: str = "gemini-2.5-flash"
     cors_origins: str = "http://localhost:5173"
     data_dir: str = "../data"
     reports_dir: str = "../reports"
