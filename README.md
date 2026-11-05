@@ -1,3 +1,5 @@
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo-dark.png"><img src="docs/brand/logo-light.png" alt="PAM" width="140"></picture></p>
+
 # PAM: Payment Account Manager
 
 [![CI](https://github.com/vbs-0/pam/actions/workflows/ci.yml/badge.svg)](https://github.com/vbs-0/pam/actions/workflows/ci.yml)
@@ -6,7 +8,7 @@ PAM turns a household's bank and UPI transactions into answers to three question
 
 Indian context throughout: UPI/IMPS/NEFT/card channels, amounts in integer **paise**, business dates in **IST**, UTC storage.
 
-**Live:** https://pam.is-cool.dev (web console) · https://pam.is-cool.dev/docs (API) · [Android APK](https://pam.is-cool.dev/downloads/pam.apk)
+**Live:** https://pam.is-cool.dev (web console) · https://pam.is-cool.dev/docs (API) · [Android APK](https://pam.is-cool.dev/downloads/pam.apk) · [Releases](https://github.com/vbs-0/pam/releases)
 Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample household, or create an account (email or Google) to get your own empty household and enter real data: savings accounts, credit cards and UPI apps (PhonePe, Google Pay, Paytm, BHIM, Amazon Pay or a name of your own).
 
 ## What is in the repo
@@ -22,7 +24,7 @@ Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample h
 | `deploy/` | systemd unit, nginx site, deploy script |
 | `.github/` | CI: backend tests, web build and tests, Flutter analysis |
 
-The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed. `python -m app.cli generate --scale full` recreates it byte for byte; its manifest, provenance record and reports are in `reports/full/`. The data is synthetic only; see [docs/dataset-provenance.md](docs/dataset-provenance.md) for provenance, tamper checks (`docs/manifest-hashes.sha256`) and the exact reproducibility scope (locked Python 3.12 and `backend/uv.lock`). Generated files are never edited by hand.
+The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed, but the complete files are attached to the [v1.1.0 release](https://github.com/vbs-0/pam/releases/tag/v1.1.0) as a 67 MB zip, and `python -m app.cli generate --scale full` recreates them byte for byte; its manifest, provenance record and reports are in `reports/full/`. The data is synthetic only; see [docs/dataset-provenance.md](docs/dataset-provenance.md) for provenance, tamper checks (`docs/manifest-hashes.sha256`) and the exact reproducibility scope (locked Python 3.12 and `backend/uv.lock`). Generated files are never edited by hand.
 
 ## Run it
 

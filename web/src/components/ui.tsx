@@ -190,3 +190,13 @@ export function LimitBar({ actual, budget, status }: { actual: number; budget: n
     </div>
   );
 }
+
+/** The PAM mark: the house-and-receipt artwork; light or dark variant follows the theme (see .logo-* in index.css). */
+export function Logo({ size = 32 }: { size?: number }) {
+  return (
+    <span className="inline-flex shrink-0" aria-hidden>
+      <img src="/logo-light.png" width={size} height={size} alt="" className="logo-light rounded-md" />
+      <img src="/logo-dark.png" width={size} height={size} alt="" className="logo-dark rounded-md" />
+    </span>
+  );
+}

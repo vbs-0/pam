@@ -9,7 +9,7 @@ external source, licence or consent to record. The generator and the files it wr
 | Scale | Where | Committed |
 |---|---|---|
 | Starter: 50 households, 25,000 transactions | `data/starter/` | everything: CSV (`inputs/`, `ground_truth/`), JSON, `seed.sql`, `manifest.json`, `provenance.json` |
-| Full: 1,000 households, 500,000 transactions | `data/full/` (about 500 MB) | **not committed**; its manifest, provenance record, validation, evaluation and reproducibility reports are in `reports/full/` |
+| Full: 1,000 households, 500,000 transactions | `data/full/` (about 500 MB) | **not committed**; its manifest, provenance record, validation, evaluation and reproducibility reports are in `reports/full/`. The complete files (CSV, JSON, `seed.sql`) are attached to the [v1.1.0 release](https://github.com/vbs-0/pam/releases/tag/v1.1.0) as `pam-full-dataset-seed20261022.zip`; after unzipping, `sha256sum pam-full-dataset/manifest.json` must equal the value in `docs/manifest-hashes.sha256` |
 
 The full dataset is regenerated exactly with one command, and the committed manifest tells you whether you got the
 same bytes:

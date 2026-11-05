@@ -77,7 +77,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: AutofillGroup(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('PAM', style: TextStyle(color: k.blue, fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: 2)),
+                    Row(children: [
+                      ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset(Theme.of(context).brightness == Brightness.dark ? 'assets/logo-dark.png' : 'assets/logo-light.png', width: 44, height: 44)),
+                      const SizedBox(width: 10),
+                      Text('PAM', style: TextStyle(color: k.blue, fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: 2)),
+                    ]),
                     const SizedBox(height: 14),
                     Text(_signUp ? 'Start your register' : 'Open your register', style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w700, letterSpacing: -.5, height: 1.1)),
                     const SizedBox(height: 8),

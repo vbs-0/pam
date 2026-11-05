@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Field } from "../components/ui";
+import { Field, Logo } from "../components/ui";
 import { api, ApiError } from "../lib/api";
 
 function Page({ title, lead, children }: { title: string; lead: string; children: ReactNode }) {
@@ -8,7 +8,7 @@ function Page({ title, lead, children }: { title: string; lead: string; children
     <div className="min-h-screen flex items-center justify-center p-6 relative">
       <div className="absolute inset-y-0 left-6 sm:left-24 w-px bg-red opacity-60" aria-hidden />
       <div className="w-full max-w-sm space-y-5 relative sm:pl-0">
-        <p className="text-sm font-bold tracking-[0.2em] text-blue">PAM</p>
+        <p className="flex items-center gap-2 text-sm font-bold tracking-[0.2em] text-blue"><Logo size={32} />PAM</p>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="text-muted mt-1">{lead}</p>

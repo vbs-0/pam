@@ -2,6 +2,7 @@ import { BookOpen, ClipboardList, Download, FileSearch, Gauge, Home, LogOut, Moo
 import { useEffect, useState, type ComponentType } from "react";
 import { NavLink, Outlet } from "react-router";
 import { household } from "../lib/api";
+import { Logo } from "./ui";
 import { useAuth } from "../lib/auth";
 import type { Role } from "../lib/types";
 
@@ -69,7 +70,7 @@ export default function Shell() {
       <aside className="md:sticky md:top-0 md:h-screen border-b md:border-b-0 md:border-r border-rule-strong bg-sheet flex md:flex-col">
         <div className="hidden md:block px-5 pt-6 pb-5 border-b border-rule">
           <div className="flex items-center gap-2.5">
-            <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden><rect width="32" height="32" rx="3" fill="var(--paper)" stroke="var(--rule-strong)" /><path d="M11 3v26" stroke="var(--red)" strokeWidth="1.5" /><path d="M14 22V10h5.5a3.2 3.2 0 0 1 0 6.4H14" fill="none" stroke="var(--blue)" strokeWidth="2.6" strokeLinejoin="round" /></svg>
+            <Logo size={34} />
             <div><div className="font-bold leading-none tracking-tight">PAM</div><div className="text-xs text-muted mt-1">Payment Account Manager</div></div>
           </div>
         </div>

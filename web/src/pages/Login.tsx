@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router";
-import { Field } from "../components/ui";
+import { Field, Logo } from "../components/ui";
 import { homeFor } from "../components/Shell";
 import { ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -49,6 +49,7 @@ export default function Login() {
       <section className="flex items-center justify-center p-6">
         <form onSubmit={submit} className="w-full max-w-sm space-y-5" noValidate>
           <div>
+            <div className="mb-4"><Logo size={56} /></div>
             <h1 className="text-2xl font-semibold tracking-tight">{mode === "in" ? "Open your register" : "Start your register"}</h1>
             <p className="text-muted mt-1">{mode === "in" ? "Sign in with your email and password." : "Create an account. You get a household of your own, empty and ready for your entries."}</p>
           </div>
