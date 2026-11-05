@@ -1,5 +1,7 @@
 # Deployment (pam.is-cool.dev)
 
+Domain, VM, firewall and DNS setup are in [`infrastructure.md`](infrastructure.md).
+
 One small Linux VM (Oracle Cloud, Ubuntu 22.04, 2 vCPU, 1 GB RAM). No containers: the 1 GB box is better spent on
 Postgres and one API process.
 
@@ -94,5 +96,6 @@ Reset requests are limited to 3 per address and 10 per client per hour. A failed
 ## Server hygiene
 
 The VM runs only this project: unrelated services found at the start (other sites, Redis and similar) were stopped.
-Open ports: 22 (SSH), 80 and 443 (nginx). Postgres listens on localhost only; local development reaches it through
+Publicly listening ports: 22 (SSH), 80 and 443 (nginx). The cloud and host firewalls are wider than that, see
+[`infrastructure.md`](infrastructure.md#3-security-rules-three-layers). Postgres listens on localhost only; local development reaches it through
 `ssh -N -L 15432:127.0.0.1:5432 vbs` (see [`dev-setup.md`](dev-setup.md)).
