@@ -74,6 +74,7 @@ function Actions({ x, done }: { x: ExceptionRow; done: () => void }) {
   const m = useMutation({
     mutationFn: (to: string) => post(`/analyst/exceptions/${x.exception_id}/transition`, { to_status: to, note: note.trim() || null, category_code: to === "RESOLVED" && cat ? cat : null }),
     onSuccess: () => { qc.invalidateQueries(); done(); },
+    onError: () => qc.invalidateQueries(),     // someone else moved it first (409): show the current state behind the message
   });
   return (
     <div className="py-2 grid md:grid-cols-[1fr_1fr] gap-4">

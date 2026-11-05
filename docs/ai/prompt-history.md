@@ -9,7 +9,7 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 - Passwords and other credentials are omitted.
 - Messages that only triggered a tool (interruptions, automatic task notifications, model switches) are not listed.
 - Assistant replies and tool calls are not included. The commit history shows the work they produced.
-- All prompts went to one tool, Claude Code. No other AI tool was used.
+- Prompts to Claude Code are listed here. I also asked ChatGPT for advice on choosing an SMTP relay and pasted one of its replies into the session (P38). Those ChatGPT prompts were not exported, so they are not reproduced; the disclosure says so.
 
 ---
 
@@ -77,7 +77,7 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 
 **P27.** Don't ask any questions. Proceed, implement everything, then build the APK as well. Deploy everything by tomorrow. You can also create a git repository, because this PC has git configured, and the key too.
 
-## 6. Review and follow-up
+## 6. Review, naming and sign-off
 
 **P28.** Why did it stop? And why is there no option to add records?
 
@@ -88,3 +88,49 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 **P31.** Does the brief say it is mandatory to mention a specific programme label everywhere?
 
 **P32.** Remove that label from the README and the About box. Make it look like a professional application and its git repository, while keeping the current format. Also refine this prompt history so it looks professional.
+
+## 7. Mail and domain
+
+**P33.** Why are you not relying on port 587? Do you want me to add its ingress and egress rules?
+
+**P34.** All I have is that domain. I don't know where to get SMTP credentials; it's not like a hosting company, I just got a domain.
+
+**P35.** *(Screenshot of the DNS dashboard showing a second record I had created.)* I tried and got one.
+
+**P36.** I think we can self-host Mailu on the Oracle server and control mailboxes, SMTP, IMAP and webmail.
+
+**P37.** *(Pasted a provider's question: complete email hosting, or SMTP only for notifications, OTPs and password resets.)*
+
+**P38.** *(Pasted ChatGPT's recommendation of SMTP2GO with its free-plan limits and setup steps.)*
+
+**P39.** Leave that. At least guide me to set up Gmail SMTP.
+
+**P40.** Done setting up. *(Pasted the connection check output.)* Also, the mail is redacted@example.com.
+
+**P41.** Have you added this SMTP setup and the server setup information to the documents on GitHub?
+
+**P42.** Yes. Document it from server creation, then the security rules, getting the domain and where from, and the DNS setup too.
+
+## 8. Remaining work and Google sign-in
+
+**P43.** Not yet. First tell me what else is left on our code.
+
+**P44.** *(Screenshot of the Firebase "Add Firebase to your Android app" step and the downloaded config file.)*
+
+**P45.** I messed up. We need to change the Firebase config to a new one; that one is my office account.
+
+**P46.** *(Screenshot and config from a new Firebase project.)* Use the same name and id, `pam.garudatechnologies.com`.
+
+**P47.** *(Screenshots showing Google enabled and the release fingerprint added, plus the new config file.)*
+
+**P48.** Make redacted@example.com the admin. Also install it on my phone using adb; the phone is connected to this PC.
+
+**P49.** *(Screenshot of the web login saying Google sign-in is switched off.)* It's still off on the website.
+
+**P50.** The Google sign-in redirects to Chrome instead of happening inside the app.
+
+**P51.** Done working. Now what else is left to do?
+
+**P52.** Proceed with the must-do list: test the README from a fresh clone, update the edge-case register, add CI, update the docs and prompt history. Also add welcome emails and so on, and tell me if anything else is left.
+
+**P53.** Also add UPI accounts, with Paytm, PhonePe and so on and a custom option, alongside savings account and credit card.

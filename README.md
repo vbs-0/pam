@@ -1,23 +1,26 @@
 # PAM: Payment Account Manager
 
+[![CI](https://github.com/vbs-0/pam/actions/workflows/ci.yml/badge.svg)](https://github.com/vbs-0/pam/actions/workflows/ci.yml)
+
 PAM turns a household's bank and UPI transactions into answers to three questions: **what did we really spend, what repeats, and are we inside budget?** It categorizes every transaction, maps recurring payments (salary, rent, EMIs, subscriptions, bills), and compares spending with monthly budgets. Everything it decides is traceable to a rule, a version and a confidence, and every exception goes to a human queue.
 
 Indian context throughout: UPI/IMPS/NEFT/card channels, amounts in integer **paise**, business dates in **IST**, UTC storage.
 
 **Live:** https://pam.is-cool.dev (web console) · https://pam.is-cool.dev/docs (API) · [Android APK](https://pam.is-cool.dev/downloads/pam.apk)
-Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample household, or create an account to get your own empty household and enter real data.
+Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample household, or create an account (email or Google) to get your own empty household and enter real data: savings accounts, credit cards and UPI apps (PhonePe, Google Pay, Paytm, BHIM, Amazon Pay or a name of your own).
 
 ## What is in the repo
 
 | Path | What |
 |---|---|
-| `backend/` | FastAPI + Postgres. Data generator, decision engine, jobs, REST API, Alembic migrations, 190+ tests |
+| `backend/` | FastAPI + Postgres. Data generator, decision engine, jobs, REST API, Alembic migrations, 200+ tests |
 | `web/` | React 19 + Vite + Tailwind console for all four roles (customer, analyst, reviewer, admin), light and dark |
-| `mobile/` | Small Flutter Android app for customers (folio, entries, recurring, books) |
+| `mobile/` | Small Flutter Android app for customers (folio, entries, recurring, books; email and Google sign-in) |
 | `data/starter/` | The starter dataset: 50 households, 25,000 transactions (committed) |
 | `reports/` | Validation, evaluation and reproducibility reports for starter and full scale |
 | `docs/` | Data dictionary, edge-case register, infrastructure and deploy notes, AI disclosure, prompt history |
 | `deploy/` | systemd unit, nginx site, deploy script |
+| `.github/` | CI: backend tests, web build and tests, Flutter analysis |
 
 The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed. `python -m app.cli generate --scale full` recreates it byte for byte; its manifest and reports are in `reports/full/`.
 
@@ -38,10 +41,12 @@ cd ../web && npm install && VITE_API_TARGET=http://localhost:8000 npm run dev
 Verify key behaviour:
 
 ```bash
-cd backend && uv run pytest -q                    # 193 tests
+cd backend && uv run pytest -q                    # 200+ tests
 uv run python -m app.cli repro --scale starter    # two fresh generations must have identical checksums
 cat ../reports/starter/evaluation.md              # metrics against acceptance targets
 ```
+
+Optional settings: SMTP (`SMTP_*`, for password-reset and welcome email), Google sign-in (`FIREBASE_PROJECT_ID`, `VITE_FIREBASE_*`, `google-services.json`). Each is documented in `backend/.env.example`, `web/.env.example` and [`docs/deploy.md`](docs/deploy.md); everything works without them except those two features.
 
 Mobile: `cd mobile && flutter build apk --release` (set `--dart-define=API_BASE=...` to point at another server). Release signing reads a git-ignored `android/key.properties`; without it the build falls back to the debug key.
 
@@ -82,7 +87,7 @@ Per-issue recall: transfer double-count 400/400, TZ boundary 400/400, budget mis
 ## Limitations (honest list)
 
 - **Google sign-in needs a Firebase project.** It is on in the live deployment (web popup and the app's native picker). A fresh install needs `FIREBASE_PROJECT_ID` on the server, the `VITE_FIREBASE_*` values for the web build (`web/.env.example`) and, for the app, a git-ignored `google-services.json` with the release SHA-1 registered. Without them the button is hidden and email sign-in still works.
-- **Email is for password reset only.** Sign-up does not verify the address, and no mail is sent on registration. Outbound mail uses any SMTP relay (`SMTP_*` settings); the host's cloud blocks port 25, so a relay on port 587 is required.
+- **Email is limited to account mail.** A welcome message on sign-up, a reset link and a "password changed" notice, sent through an SMTP relay on port 587 (the host's cloud blocks port 25). Sign-up does not verify the address, so there is no verified-email gate on using the app.
 - **Refund recall is just over target (0.909 vs 0.90).** Missed links are mostly refunds that arrive after a long gap with a changed descriptor; they surface as exceptions rather than being linked wrongly.
 - **Single node.** Fine for the challenge load; a worker queue would be the next step for larger runs.
 - The mobile app is a thin customer client: no budgets editor, no staff screens.

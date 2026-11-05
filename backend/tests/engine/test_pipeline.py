@@ -38,3 +38,16 @@ def test_deterministic(ds):
     assert [(e.category_code, e.kind, e.link_txn_id, e.series_key) for e in a.enriched] == \
            [(e.category_code, e.kind, e.link_txn_id, e.series_key) for e in b.enriched]
     assert a.insights == b.insights and a.exceptions == b.exceptions
+
+
+def test_transfer_without_counterpart_becomes_unmatched_transfer_exception():          # E09
+    from datetime import UTC, date, datetime
+
+    from app.engine.pipeline import _exceptions
+    from app.engine.types import Enriched, Txn
+    t = Txn("TXN-1", "USR-000001", "ACC-USR-000001-01", "UPI", datetime(2026, 3, 1, tzinfo=UTC), -50_000, "UPI", "UPI/DR/x")
+    lonely = Enriched(t, "x", date(2026, 3, 1), "2026-03", kind="TRANSFER", rule_id="R-TRANSFER")
+    paired = Enriched(t, "x", date(2026, 3, 1), "2026-03", kind="TRANSFER", link_txn_id="TXN-2")
+    kept = Enriched(t, "x", date(2026, 3, 1), "2026-03", kind="TRANSFER", locked=True)
+    out = _exceptions([lonely, paired, kept], [], [])
+    assert [x.exception_type for x in out] == ["UNMATCHED_TRANSFER"] and out[0].entity_id == "TXN-1"

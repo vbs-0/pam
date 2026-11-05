@@ -20,3 +20,10 @@ describe("months", () => {
   });
   it("names them", () => expect(monthName("2026-03")).toBe("March 2026"));
 });
+
+describe("large amounts", () => {
+  it("groups crore-scale amounts the Indian way", () => {            // U03
+    expect(inrSigned(1_000_000_000)).toBe("₹1,00,00,000.00");
+    expect(inrSigned(-12_345_678_900)).toBe("−₹12,34,56,789.00");
+  });
+});

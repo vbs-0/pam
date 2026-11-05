@@ -2,6 +2,11 @@
 
 I used Claude Code (Anthropic) as a pair-programmer for most of this project. [`prompt-history.md`](prompt-history.md) has every message I sent it.
 
+## Tools used
+
+- **Claude Code (Anthropic):** the main tool; every prompt is in [`prompt-history.md`](prompt-history.md).
+- **ChatGPT:** consulted for advice on choosing an SMTP relay. I pasted one reply into the Claude session, so that reply is reflected in the history, but the prompts I sent ChatGPT were not exported and are not reproduced. I did not follow its recommendation (SMTP2GO); I used a Gmail relay.
+
 ## Where AI accelerated the work
 
 - Scaffolding and boilerplate: FastAPI routers, Alembic migrations, React pages, Flutter screens, systemd/nginx/deploy scripts.
@@ -28,3 +33,4 @@ I used Claude Code (Anthropic) as a pair-programmer for most of this project. [`
 - Visual polish was not pixel-reviewed by a designer; it was checked through layout assertions and the live site at desktop and phone widths.
 - The Android app was built and signed, but I have not exercised it across a range of devices.
 - Google sign-in has not been exercised end to end (no Firebase project configured).
+- Continuous-integration runs are the evidence for tests passing; the badge in the README links to them.

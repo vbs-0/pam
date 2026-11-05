@@ -1,8 +1,9 @@
 # Edge-Case Catalogue
 
-Living document. Every case is handled in code **and** covered by a test before it is marked done.
-Status: `planned` → `done` (with the test that proves it). Labelled anomaly types from the brief are marked ★;
-`injected` means the labelled case is generated and its shape is tested, while the engine side is still to come.
+Living document. Each case lists where it is handled, how it was checked and its status:
+`done` = handled and checked (an automated test where one exists, otherwise marked `manual`);
+`partial` = handled, with a stated gap; `open` = not yet verified; `dropped` = decided against, with the reason.
+Labelled anomaly types from the brief are marked ★; `injected` means the labelled case is generated and its shape is tested.
 
 ## Data generation and ledger integrity (D)
 
@@ -29,11 +30,11 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | D19 | Local merchant not in the merchant master | `true_merchant_id` null; keyword fallback or UNCATEGORIZED | datagen/spending.py | test_generator::test_coverage_of_required_phenomena | done |
 | D20 | "ENTERPRISES"/"TRADERS" shops sell anything | True category varies; rules cannot know → exception queue | datagen/catalog.py | test_evaluation::test_starter_meets_acceptance_thresholds (per-class F1 in reports/<scale>/evaluation.md; ambiguous shops land in the UNCATEGORIZED queue) | done |
 | D21 | Two identical purchases same merchant, same day, same amount | Not duplicates (different RRN) | datagen, validate::duplicates | test_validate::test_clean_dataset_passes (duplicates on account+RRN+amount+time), test_detects_duplicate_pk_bad_fk_bad_enum | done |
-| D22 | Household with no budgets (5%) | Budget page shows NO_BUDGET lines; no insights crash | datagen/budgets.py, engine | api test_summary_recurring_insights_shapes | planned |
+| D22 | Household with no budgets (5%) | Budget page shows NO_BUDGET lines; no insights crash | engine/budgets.py | tests/engine/test_budgets_insights.py (status and lines) | done |
 | D23 | Budget revised mid-month | Version 2 effective; v1 kept as history | datagen/budgets.py | test_budgets_insights::test_latest_version_wins | done |
 | D24 | Self-employed irregular income | No salary series; NEFT credits → OTHER_INCOME | datagen/schedules.py | test_evaluation::test_every_salary_and_pension_series_found | done |
 | D25 | Retired household | Pension series (SALARY type), more health/grocery spend | datagen | test_evaluation::test_every_salary_and_pension_series_found | done |
-| D26 | Joint account | Spend counts toward the owner's budget; joint holder can view it | datagen/people.py, api/me.py | api test_transactions_keyset_pagination_and_isolation | planned |
+| D26 | Joint account | The joint holder sees the account in Books (flagged as shared); spend counts toward the owner's household | datagen/people.py, api/me.py | tests/datagen/test_people.py (joint holder is another user); no API-level test | partial |
 | D27 | Ground truth leaking into inputs | No `true_*` column in any input table or file | schema.py, validate | test_generator::test_ground_truth_not_in_inputs, validate::truth_isolation | done |
 | D28 | Windows checkout rewrites CSV line endings | `.gitattributes` marks CSV/SQL/JSON `-text` so checksums hold | .gitattributes | repro check on a fresh clone | done |
 | D29 | Same seed, different Python version / OS | RNG uses only `random.random()`; manifest has no timestamps | datagen/rand.py, writer.py | test_writer::test_repro_identical_across_interpreters (two fresh interpreters, PYTHONHASHSEED 1 and 2) | done |
@@ -71,7 +72,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | E06 | Debit and credit on the same account | Never a transfer | transfers.py | test_transfers_refunds::test_card_payment_and_window_and_same_account | done |
 | E07 | Two identical transfers on one day | One-to-one greedy pairing by smallest gap | transfers.py | test_transfers_refunds::test_two_identical_transfers_pair_one_to_one | done |
 | E08 | Credit leg posted before the debit (bank posting lag) | Window −1 day … +3 days | transfers.py | test_transfers_refunds::test_credit_before_debit_within_a_day | done |
-| E09 | Transfer-categorized txn with no counterpart | Stays TRANSFER, exception UNMATCHED_TRANSFER | pipeline.py | test_pipeline | planned |
+| E09 | Transfer-categorized txn with no counterpart | Stays TRANSFER, exception UNMATCHED_TRANSFER; paired and hand-locked ones raise nothing | engine/pipeline.py | test_pipeline::test_transfer_without_counterpart_becomes_unmatched_transfer_exception | done |
 | E10 | UPI debit failed and auto-reversed (same RRN) | Both legs REVERSAL, excluded from spend | refunds.py | test_transfers_refunds::test_refund_category_follows_original_and_reversal_by_rrn | done |
 | E11 | Over-refund (more than remaining) | Orphan refund + exception | refunds.py | test_transfers_refunds::test_partial_refunds_link_and_net | done |
 | E12 | Orphan refund from a non-expense category | Category UNCATEGORIZED, still reduces spend bucket | refunds.py | test_transfers_refunds::test_orphan_refund_non_expense_becomes_uncategorized | done |
@@ -106,7 +107,7 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | ID | Scenario | Expected handling | Where | Test | Status |
 |---|---|---|---|---|---|
 | A01 | Customer requests another household's txn, account list or override | 404, same as a missing id (no existence leak) | api/me.py | test_me::test_cannot_read_other_users_txn | done |
-| A02 | Expired, forged, `alg: none`, garbage tokens | 401 | api/deps.py | test_security::test_algorithm_confusion_rejected, test_local_token_roundtrip_and_failures; API: test_expired_and_forged_tokens_rejected | planned |
+| A02 | Expired, forged, `alg: none`, garbage tokens | 401 | api/deps.py, security.py | test_security::test_algorithm_confusion_rejected, test_local_token_roundtrip_and_failures; test_auth::test_missing_or_bad_tokens | done |
 | A03 | Token says ADMIN but DB says CUSTOMER; demotion while a token is live | DB read on every request wins; unknown login id → 401 | api/deps.py | test_auth::test_login_me_and_role_from_db, test_disabled_and_deleted_logins | done |
 | A04 | Disabled user with a valid token, or logging in | 403 (signed in, but not allowed) | api/deps.py, api/auth.py | test_auth::test_disabled_and_deleted_logins | done |
 | A05 | Firebase token with wrong aud / iss / unknown kid | 401 | security.py | test_security::test_firebase_bad_claims_rejected, test_firebase_unknown_kid_and_other_signer | done |
@@ -157,30 +158,32 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A50 | Reset link used twice, expired, or tampered | 400; link embeds a fingerprint of the current password hash, so it works once | security.py | test_reset::test_reset_changes_password_once..., test_bad_short_expired... | done |
 | A51 | Reset token presented as a login token | 401 (tokens with a purpose claim never authenticate) | security.py | test_reset::test_bad_short_expired... | done |
 | A52 | Reset spam, or SMTP down or unset | 3 per address and 10 per client per hour; send runs in the background and never fails the request; unset SMTP skips quietly | api/auth.py, mail.py | test_reset::test_forgot_is_rate_limited... | done |
+| A53 | UPI app account: custom app without a name, UPI app filed as a bank or card, credit limit on UPI, markup in the name, the same UPI ID twice | 422 (409 for the duplicate ID); names are trimmed and limited to simple characters | api/entry.py | test_entry::test_upi_app_accounts_and_custom_names | done |
+| A54 | Welcome and password-changed emails | Welcome only when an account is actually created (not on a duplicate sign-up); a notice after every reset; sending failures never fail the request. Sign-up is unverified, so a welcome mail can reach an address the sender does not own: it is plain text, has no action links and sign-up is limited to 5 per hour per client | api/auth.py, mail.py | test_reset::test_welcome_on_register_and_notice_after_reset | done |
 
 ## Web console (U)
 
 | ID | Scenario | Expected handling | Where | Test | Status |
 |---|---|---|---|---|---|
-| U01 | Loading / empty / error states | Skeleton matching layout, empty guidance, error + Retry on every query | QueryState.tsx | a11y.test.tsx + manual | planned |
-| U02 | Very long descriptors | Truncate with tooltip, full text in drawer | DataTable.tsx | manual + screenshot | planned |
-| U03 | Crore-scale amounts | `₹1,00,00,000.00` grouping, tabular numerals | money.ts | money.test.ts | planned |
-| U04 | Debit vs credit shown by color only | Sign and screen-reader text in addition to color | Amount component | a11y.test.tsx | planned |
-| U05 | Session expires mid-use | 401 → logout → login page with "Session expired" | api.ts, auth.tsx | manual | planned |
-| U06 | Firebase not configured | Google button hidden, demo login only | firebase.ts | manual | planned |
-| U07 | Rapid filter typing | 300 ms debounce; stale responses ignored by query keys | Transactions.tsx | manual | planned |
-| U08 | Double-click on submit | Button disabled while pending | dialogs | manual | planned |
-| U09 | Someone else changed the exception first | 409 → toast + refetch | Exceptions.tsx | manual | planned |
-| U10 | Reduced motion / dark mode / keyboard only | Respected / themed / fully operable | tokens.css, AppShell | a11y.test.tsx, Lighthouse | planned |
-| U11 | localStorage blocked (private mode) | Theme falls back to system, no crash | theme code | manual | planned |
+| U01 | Loading / empty / error states | Skeleton matching the layout, empty guidance, error with a Try again button on every query | components/ui.tsx (Skeleton, QueryState, Empty, ErrorBox) | manual | done |
+| U02 | Very long descriptors | Truncated in the list, full text on hover and in the entry drawer | pages/customer/Entries.tsx | manual | done |
+| U03 | Crore-scale amounts | `₹1,00,00,000.00` grouping, tabular numerals | lib/format.ts | web/src/lib/format.test.ts (large amounts) | done |
+| U04 | Debit vs credit shown by colour only | Amounts carry a typed sign (−₹ / ₹) so meaning never depends on colour | components/ui.tsx (Money), lib/format.ts | format.test.ts (signs negatives) | done |
+| U05 | Session expires mid-use | 401 → sign out → login page with "Your session ended" | lib/api.ts, lib/auth.tsx, pages/Login.tsx | manual | done |
+| U06 | Firebase not configured | Google button hidden when the `VITE_FIREBASE_*` values are absent; email sign-in still works | lib/firebase.ts, pages/Login.tsx | manual | done |
+| U07 | Rapid filter typing | 300 ms debounce; stale responses ignored because the query key includes the filter | pages/customer/Entries.tsx | manual | done |
+| U08 | Double-click on submit | Submit buttons disabled while the request is pending | pages/** | manual | done |
+| U09 | Someone else changed the exception first | API answers 409; the message is shown and the queue refetches | pages/staff/Exceptions.tsx, api/analyst.py | manual | done |
+| U10 | Reduced motion / dark mode / keyboard only | Reduced-motion and dark themes are styled; focus ring and labelled controls | index.css, components/Shell.tsx | manual; no keyboard-only or Lighthouse pass run | partial |
+| U11 | localStorage blocked (private mode) | Theme falls back to the system setting, no crash | components/Shell.tsx | manual | done |
 
 ## Android app (M)
 
 | ID | Scenario | Expected handling | Where | Test | Status |
 |---|---|---|---|---|---|
-| M01 | No `google-services.json` | Firebase disabled, demo login only | auth_controller.dart | manual | planned |
-| M02 | Non-customer signs in | Message + sign-out | auth_controller.dart | manual | planned |
-| M03 | Offline / timeout | Error view with Retry; cached month data still shown | async_view.dart | manual | planned |
-| M04 | Token expired | Back to login | client.dart | manual | planned |
-| M05 | 130% text scale, dark mode | No overflow, readable | screens | home_golden_test.dart | planned |
-| M06 | Category changed by mistake | Undo in snackbar restores previous category | txn_detail_sheet.dart | manual | planned |
+| M01 | No `google-services.json` in the build | Firebase is skipped at build time; the Google button explains it is not available in this build; email sign-in works | main.dart, screens/login.dart, android/app/build.gradle.kts | manual | done |
+| M02 | Staff role signs in on the phone | Message pointing to the web console, plus Sign out | main.dart (StaffNotice) | manual | done |
+| M03 | Offline / timeout | Error box with Retry on every screen; there is no offline cache | ui/widgets.dart | manual | partial |
+| M04 | Token expired | Back to the login screen with a notice | api.dart, main.dart | manual | done |
+| M05 | 130% text scale, dark mode | Dark mode is the primary theme and screens scroll; the 130% text scale has not been checked | screens | not verified | open |
+| M06 | Category changed by mistake | Not built as an undo: the category can be changed again from the same sheet, and each change is kept in the audit log | screens/entries.dart | n/a | dropped |

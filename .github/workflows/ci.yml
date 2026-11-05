@@ -1,0 +1,63 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: pam
+          POSTGRES_PASSWORD: pam
+          POSTGRES_DB: pam_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pam" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://pam:pam@localhost:5432/pam_test
+      DATABASE_URL: postgresql+psycopg://pam:pam@localhost:5432/pam_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen --python 3.12
+      - run: uv run ruff check app tests
+      - run: uv run pytest -q
+      - name: Dataset is reproducible
+        run: uv run python -m app.cli repro --scale starter --report /tmp/repro.json
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npx vitest run
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --no-fatal-infos

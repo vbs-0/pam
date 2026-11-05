@@ -83,7 +83,7 @@ export default function Entries() {
                     <td className="margin-rule font-semibold text-blue pl-3">{dayLabel(t.local_date)}</td>
                     <td>
                       <div className={struck ? "struck" : ""}>{t.merchant_name ?? t.descriptor}</div>
-                      <div className="text-xs text-muted truncate max-w-[420px]">{t.merchant_name ? t.descriptor : ""}{" "}<span className="opacity-80">{titleCase(t.channel)}</span></div>
+                      <div className="text-xs text-muted truncate max-w-[420px]" title={t.descriptor}>{t.merchant_name ? t.descriptor : ""}{" "}<span className="opacity-80">{titleCase(t.channel)}</span></div>
                     </td>
                     <td>
                       <div className="flex gap-2 items-start flex-wrap">
