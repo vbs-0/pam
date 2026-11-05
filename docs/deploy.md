@@ -26,6 +26,27 @@ deploy/deploy.sh vbs
 Ships the committed `backend/` and `docs/`, keeps the server `.env`, syncs dependencies, runs migrations, restarts
 and waits for `/readyz`; if the API does not come up it puts the previous version back.
 
+### Automatic deployment (CD)
+
+Every push to `main` that passes CI deploys itself: the `deploy` job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
+runs only after the backend, web and mobile jobs succeed, never for pull requests, and one deploy at a time. It does
+what you would do by hand:
+
+1. `bash deploy/deploy.sh vbs`: ship `backend/` and `docs/`, migrate, restart, wait for `/readyz`, roll back on failure.
+2. Build the web console (with the public `VITE_FIREBASE_*` identifiers) and unpack `dist` into `/opt/pam/www`.
+
+It logs in over SSH with a dedicated key. Three repository secrets (Settings, Secrets and variables, Actions) hold it:
+
+| Secret | Value |
+|---|---|
+| `DEPLOY_SSH_KEY` | private half of a key pair made only for this (`ssh-keygen -t ed25519 -C github-actions-pam-deploy`) |
+| `DEPLOY_HOST` | the server's public IP |
+| `DEPLOY_KNOWN_HOSTS` | one line, `<ip> ssh-ed25519 <host key>`, from `ssh <host> cat /etc/ssh/ssh_host_ed25519_key.pub`; the job refuses any other host |
+
+The public half goes into `~/.ssh/authorized_keys` on the server. To stop automatic deploys, delete that line (or the
+`deploy` job); manual `deploy/deploy.sh` keeps working. The APK is not built in CI (it needs the release keystore);
+publish it by hand as a GitHub release and copy it to `/opt/pam/www/downloads/pam.apk`.
+
 ## First-time setup (what was done once)
 
 1. `useradd --system --home-dir /opt/pam pam`; install uv to `/usr/local/bin`.

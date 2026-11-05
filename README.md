@@ -22,7 +22,7 @@ Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample h
 | `reports/` | Validation, evaluation and reproducibility reports for starter and full scale |
 | `docs/` | Data dictionary, edge-case register, infrastructure and deploy notes, AI disclosure, prompt history |
 | `deploy/` | systemd unit, nginx site, deploy script |
-| `.github/` | CI: backend tests, web build and tests, Flutter analysis |
+| `.github/` | CI (backend tests, web build and tests, Flutter analysis) and automatic deployment to the server after CI passes on `main` ([docs/deploy.md](docs/deploy.md)) |
 
 The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed, but the complete files are attached to the [v1.1.0 release](https://github.com/vbs-0/pam/releases/tag/v1.1.0) as a 67 MB zip, and `python -m app.cli generate --scale full` recreates them byte for byte; its manifest, provenance record and reports are in `reports/full/`. The data is synthetic only; see [docs/dataset-provenance.md](docs/dataset-provenance.md) for provenance, tamper checks (`docs/manifest-hashes.sha256`) and the exact reproducibility scope (locked Python 3.12 and `backend/uv.lock`). Generated files are never edited by hand.
 
