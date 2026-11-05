@@ -8,6 +8,7 @@ import 'books.dart';
 import 'plan.dart';
 import 'recurring.dart';
 import 'settings.dart';
+import 'sorting.dart';
 
 /// Everything that is not one of the four everyday tabs: planning, accounts, sharing, data and settings.
 class More extends StatelessWidget {
@@ -52,6 +53,7 @@ class More extends StatelessWidget {
         row(Icons.flag_outlined, 'Budgets', 'Limits per category, with rollover', () => BudgetsScreen(onChanged: onChanged)),
         row(Icons.notifications_none, 'Bills & alerts', 'Due soon, card limits, net worth', () => const BillsScreen()),
         row(Icons.savings_outlined, 'Savings goals', 'Targets and how much to set aside', () => const GoalsScreen()),
+        row(Icons.auto_fix_high_outlined, 'Sorting', 'Rules you made and optional AI help', () => const SortingScreen()),
         row(Icons.repeat, 'Recurring', 'Subscriptions, rent, salary', () => Scaffold(appBar: AppBar(title: const Text('Recurring')), body: const Recurring())),
       ]),
       group('Accounts', [

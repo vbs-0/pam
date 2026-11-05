@@ -6,6 +6,7 @@ import '../format.dart';
 import '../theme.dart';
 import '../ui/widgets.dart';
 import 'entry_tools.dart';
+import 'sorting.dart';
 
 List<Map<String, dynamic>>? _categories;
 Future<List<Map<String, dynamic>>> loadCategories() async =>
@@ -193,6 +194,7 @@ class _EntriesState extends State<Entries> {
             ActionChip(label: const Text('All months'), onPressed: () { _f.remove('date_from'); _f.remove('date_to'); _month = 'all'; _reload(); }),
             if (_active > 0) ...[const SizedBox(width: 8), ActionChip(avatar: const Icon(Icons.clear, size: 16), label: const Text('Clear filters'), onPressed: () { _f = {}; _q = ''; _reload(); })],
           ])),
+          if (_f['kind'] == 'UNKNOWN' && !_sample) AiInline(onDone: _reload),
           if (_loading) const Padding(padding: EdgeInsets.only(top: 12), child: Skeleton(rows: 8))
           else if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: ErrorBox(_error!, retry: _reload))
           else if (_items.isEmpty) EmptyState(_active == 0 ? 'No entries for this period' : 'No entries match these filters', hint: _active > 0 ? 'Clear a filter or widen the dates.' : _sample ? null : 'Tap Add entry to write your first one.')
@@ -282,16 +284,17 @@ class EntrySheet extends StatefulWidget {
 
 class _EntrySheetState extends State<EntrySheet> {
   String? _cat;
-  bool _busy = false, _changed = false, _confirm = false;
+  bool _busy = false, _changed = false, _confirm = false, _remember = true;
   late Future<Map<String, dynamic>> _f = _load();
   Future<Map<String, dynamic>> _load() async => (await Api.instance.get('/me/transactions/${widget.txnId}')) as Map<String, dynamic>;
 
   Future<void> _save() async {
     setState(() => _busy = true);
     try {
-      await Api.instance.post('/me/transactions/${widget.txnId}/category', {'category_code': _cat});
+      final r = await Api.instance.post('/me/transactions/${widget.txnId}/category', {'category_code': _cat, if (widget.canWrite) 'remember': _remember}) as Map?;
       _changed = true; _cat = null; _f = _load();
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Saved. Budgets are already updated.'), behavior: SnackBarBehavior.floating));
+      final extra = r?['rule'] == null ? '' : ' Similar entries will be filed here${(r!['also_sorted'] ?? 0) > 0 ? '; ${r['also_sorted']} more sorted now' : ''}.';
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Saved. Budgets are already updated.$extra'), behavior: SnackBarBehavior.floating));
     } catch (e) { if (mounted) showError(context, e); }
     if (mounted) setState(() => _busy = false);
   }
@@ -347,7 +350,8 @@ class _EntrySheetState extends State<EntrySheet> {
                 const SectionTitle('Change category'),
                 const SizedBox(height: 10),
                 CategoryDropdown(value: _cat, onChanged: (v) => setState(() => _cat = v)),
-                const SizedBox(height: 12),
+                if (widget.canWrite) CheckboxListTile(contentPadding: EdgeInsets.zero, controlAffinity: ListTileControlAffinity.leading, value: _remember, onChanged: (v) => setState(() => _remember = v ?? true), title: const Text('Remember for similar entries', style: TextStyle(fontSize: 14))),
+                const SizedBox(height: 4),
                 SizedBox(width: double.infinity, child: FilledButton(onPressed: _cat == null || _busy ? null : _save, child: const Text('Save category'))),
                 if (widget.canWrite) ...[
                   const SizedBox(height: 18),

@@ -4,6 +4,7 @@ import { Field, PageHead, QueryState, Section, Stamp } from "../../components/ui
 import { ApiError, del, download, get, post, put, tokenStore } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { dateTime, todayIso } from "../../lib/format";
+import Sorting from "./Sorting";
 import type { HouseholdInfo, NotifyPrefs, Profile } from "../../lib/types";
 
 /** Account, alerts, sharing and your data, in one place. */
@@ -15,6 +16,7 @@ export default function Settings() {
     <>
       <PageHead title="Settings" sub={me ? <>Signed in as <b>{me.email}</b></> : undefined} />
       <Notifications />
+      <Sorting canWrite={!!real} />
       {real ? <Household /> : <Section title="Share your register"><p className="text-sm text-muted">Sharing, backups and security settings are for your own register. This is a sample household, which is read-only.</p></Section>}
       <DataSection real={!!real} />
       {real && <Security />}

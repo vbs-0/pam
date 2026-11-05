@@ -4,6 +4,7 @@ import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router";
 import { CategorySelect, Drawer, Empty, ErrorBox, Field, Money, MonthBar, PageHead, Skeleton, Stamp, StatusStamp, useCategoryName } from "../../components/ui";
 import { ApiError, del, get, patch, post } from "../../lib/api";
+import { AiInline } from "./Sorting";
 import { DuplicateButton, ImportDrawer, NoteEditor, SplitForm, TransferDrawer } from "./EntryTools";
 import { currentMonth, rupees, shiftDays, dateTime, dayLabel, monthName, titleCase, todayIso, toPaise } from "../../lib/format";
 import type { Account, Profile, Txn, TxnPage } from "../../lib/types";
@@ -96,6 +97,8 @@ export default function Entries() {
         )}
       </div>
 
+      {kind === "UNKNOWN" && canWrite && <AiInline />}
+
       {list.isPending ? <Skeleton rows={8} h={22} /> : list.isError ? <ErrorBox error={list.error} retry={() => list.refetch()} /> : rows.length === 0 ? (
         <Empty
           title={filtered ? "No entries match these filters" : "No entries for this period"}
@@ -164,9 +167,9 @@ function TxnDrawer({ id, canWrite, accounts, onClose }: { id: string; canWrite: 
   const catName = useCategoryName();
   const refresh = useRefreshAll();
   const q = useQuery({ queryKey: ["txn", id], queryFn: () => get<Txn>(`/me/transactions/${id}`) });
-  const [cat, setCat] = useState(""), [reason, setReason] = useState(""), [edit, setEdit] = useState(false), [split, setSplit] = useState(false), [confirm, setConfirm] = useState(false);
+  const [remember, setRemember] = useState(true), [cat, setCat] = useState(""), [reason, setReason] = useState(""), [edit, setEdit] = useState(false), [split, setSplit] = useState(false), [confirm, setConfirm] = useState(false);
   const recat = useMutation({
-    mutationFn: () => post(`/me/transactions/${id}/category`, { category_code: cat, reason: reason.trim() || null }),
+    mutationFn: () => post<{ rule?: string; also_sorted?: number }>(`/me/transactions/${id}/category`, { category_code: cat, reason: reason.trim() || null, remember: canWrite && remember }),
     onSuccess: () => { setCat(""); setReason(""); refresh(); },
   });
   const remove = useMutation({ mutationFn: () => del(`/me/transactions/${id}`), onSuccess: () => { refresh(); onClose(); } });
@@ -201,9 +204,10 @@ function TxnDrawer({ id, canWrite, accounts, onClose }: { id: string; canWrite: 
             <div className="space-y-3">
               <CategorySelect value={cat} onChange={setCat} />
               <input className="field" placeholder="Why? (optional)" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} aria-label="Reason" />
+              {canWrite && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember for similar entries <span className="text-muted">({t.descriptor.length > 28 ? `${t.descriptor.slice(0, 28)}…` : t.descriptor})</span></label>}
               <button className="btn btn-solid" disabled={!cat || recat.isPending} onClick={() => recat.mutate()}>{recat.isPending ? "Saving…" : "Save category"}</button>
               {recat.isError && <p role="alert" className="text-red text-sm">{(recat.error as ApiError).message}</p>}
-              {recat.isSuccess && <p role="status" className="text-green text-sm">Saved. Budgets and totals are already updated.</p>}
+              {recat.isSuccess && <p role="status" className="text-green text-sm">Saved. Budgets and totals are already updated.{recat.data?.rule ? ` Similar entries ("${recat.data.rule}") will be filed here${recat.data.also_sorted ? `; ${recat.data.also_sorted} more sorted now` : ""}.` : ""}</p>}
             </div>
           </section>
 

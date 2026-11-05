@@ -67,7 +67,7 @@ class Op {
 
 /// Paths that cannot work without the server (they check passwords, parse uploads or change who may sign in).
 bool onlineOnly(String path) =>
-    path.startsWith('/auth/') || path.startsWith('/me/import') || path.startsWith('/me/restore') || path.startsWith('/me/household/') || path.startsWith('/me/export') || path.startsWith('/me/backup');
+    path.startsWith('/auth/') || path.startsWith('/me/import') || path.startsWith('/me/restore') || path.startsWith('/me/household/') || path.startsWith('/me/ai') || path.startsWith('/me/sorting-rules') || path.startsWith('/me/export') || path.startsWith('/me/backup');
 
 /// Changes made with no signal. They are written to disk before the app says "saved", sent in order when the server
 /// is reachable, and each carries a key so the server applies it once even if a send is cut off half way.
