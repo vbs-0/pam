@@ -5,13 +5,15 @@ I used Claude Code (Anthropic) as a pair-programmer for most of this project. [`
 ## Tools used
 
 - **Claude Code (Anthropic):** the main tool; every prompt is in [`prompt-history.md`](prompt-history.md).
+- **Impeccable (Claude Code design skill):** used to set the web console's visual direction; its notes are in `.impeccable/`.
+- **Gemini (runtime, optional):** not a development tool; the app can call it to suggest categories for unsorted entries when the server owner adds a key. Off by default (see README, Limitations).
 - **ChatGPT:** consulted for advice on choosing an SMTP relay. I pasted one reply into the Claude session, so that reply is reflected in the history, but the prompts I sent ChatGPT were not exported and are not reproduced. I did not follow its recommendation (SMTP2GO); I used a Gmail relay.
 
 ## Where AI accelerated the work
 
 - Scaffolding and boilerplate: FastAPI routers, Alembic migrations, React pages, Flutter screens, systemd/nginx/deploy scripts.
 - First drafts of the generator, the categorization rules, the recurring-series detector and the evaluation harness, which I then ran, measured and adjusted.
-- Test writing: most of the 190+ tests were drafted by the assistant from the edge-case register.
+- Test writing: most of the 200+ tests were drafted by the assistant from the edge-case register.
 - Documentation drafts (data dictionary generation, edge-case table, this README).
 - Server work over SSH: installing Postgres access, nginx, TLS, systemd, and stopping unrelated services.
 
@@ -32,5 +34,5 @@ I used Claude Code (Anthropic) as a pair-programmer for most of this project. [`
 
 - Visual polish was not pixel-reviewed by a designer; it was checked through layout assertions and the live site at desktop and phone widths.
 - The Android app was built and signed, but I have not exercised it across a range of devices.
-- Google sign-in has not been exercised end to end (no Firebase project configured).
+- Google sign-in is configured in the live deployment and was tried by hand on web and phone; it has no automated end-to-end test.
 - Continuous-integration runs are the evidence for tests passing; the badge in the README links to them.

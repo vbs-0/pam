@@ -26,11 +26,17 @@ Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample h
 
 The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed, but the complete files are attached to the [v1.1.0 release](https://github.com/vbs-0/pam/releases/tag/v1.1.0) as a 67 MB zip, and `python -m app.cli generate --scale full` recreates them byte for byte; its manifest, provenance record and reports are in `reports/full/`. The data is synthetic only; see [docs/dataset-provenance.md](docs/dataset-provenance.md) for provenance, tamper checks (`docs/manifest-hashes.sha256`) and the exact reproducibility scope (locked Python 3.12 and `backend/uv.lock`). Generated files are never edited by hand.
 
+## Try it as each role
+
+Live site: log in with the password the author gives you (not stored in the repo) or run locally and set `DEMO_PASSWORD` in `backend/.env`. The seeded accounts are `customer@pam.test`, `analyst@pam.test`, `reviewer@pam.test` and `admin@pam.test`, all with `DEMO_PASSWORD`. Each sees only its own screens.
+
 ## Run it
 
 Needs Python 3.12 with [uv](https://docs.astral.sh/uv/), Node 20+, Postgres 14+. Flutter is only for the mobile app.
 
 ```bash
+# once: create the Postgres role and two databases (psql as a superuser)
+#   CREATE ROLE pam LOGIN PASSWORD 'pam'; CREATE DATABASE pam OWNER pam; CREATE DATABASE pam_test OWNER pam;
 cd backend
 cp .env.example .env            # set DATABASE_URL, JWT_SECRET, DEMO_PASSWORD
 uv sync
@@ -39,6 +45,8 @@ uv run python -m app.cli all --scale starter     # generate, validate, load, run
 uv run uvicorn app.main:app --port 8000          # API on :8000, docs at /docs
 cd ../web && npm install && VITE_API_TARGET=http://localhost:8000 npm run dev
 ```
+
+On Windows PowerShell use `copy .env.example .env` and `$env:VITE_API_TARGET="http://localhost:8000"; npm run dev`.
 
 Verify key behaviour:
 
@@ -81,6 +89,23 @@ Per-issue recall: transfer double-count 400/400, TZ boundary 400/400, budget mis
 - **Postgres + in-process jobs.** One 1 GB server, so no Redis or queue. Jobs run in threads, a single-flight advisory lock stops overlapping runs, orphaned jobs are marked failed on restart. Job size is capped (`MAX_JOB_TRANSACTIONS`).
 - **Real users are first class.** New sign-ups get their own empty household. Entries they add are categorized instantly by re-running the engine for that household only. Sample households are read-only.
 - **Roles are read from the database on every request**, so a demoted admin loses access immediately; tokens only carry identity.
+
+## Assumptions
+
+Synthetic data only; INR in integer paise; days follow IST; one household per register; a category rule matches on the narration text, so similar narrations are treated alike.
+
+## Testing approach
+
+Backend: pytest against a real Postgres (engine, API, jobs, data generation). The evaluation compares engine output to hidden ground truth. Web: vitest and type/lint checks. Mobile: `flutter analyze` and offline unit tests. CI runs all of it on every push to `main`.
+
+## Future plans
+
+- **More Gemini help, still opt-in:** suggest budget limits from past months, explain an unusual month in plain words, and read pasted bank-SMS or statement text into entries. Same rules as sorting today: masked input, answers checked against allowed values, shown as reversible changes.
+- Push notifications for bills and budget alerts instead of daily email only.
+- Account Aggregator (RBI AA framework) import instead of CSV.
+- Per-member permissions in a shared household.
+- iOS app and staff screens on mobile.
+- Worker queue for large runs.
 
 ## Edge cases
 

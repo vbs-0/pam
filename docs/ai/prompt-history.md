@@ -105,7 +105,7 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 
 **P39.** Leave that. At least guide me to set up Gmail SMTP.
 
-**P40.** Done setting up. *(Pasted the connection check output.)* Also, the mail is redacted@example.com.
+**P40.** Done setting up. *(Pasted the connection check output.)* Also, here is the mail address to use. *(address redacted)*
 
 **P41.** Have you added this SMTP setup and the server setup information to the documents on GitHub?
 
@@ -117,13 +117,13 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 
 **P44.** *(Screenshot of the Firebase "Add Firebase to your Android app" step and the downloaded config file.)*
 
-**P45.** I messed up. We need to change the Firebase config to a new one; that one is my office account.
+**P45.** I messed up. We need to change the Firebase config to a new one; that one belongs to another project.
 
-**P46.** *(Screenshot and config from a new Firebase project.)* Use the same name and id, `pam.garudatechnologies.com`.
+**P46.** *(Screenshot and config from a new Firebase project.)* Use the same name and id as before. *(package id omitted)*
 
 **P47.** *(Screenshots showing Google enabled and the release fingerprint added, plus the new config file.)*
 
-**P48.** Make redacted@example.com the admin. Also install it on my phone using adb; the phone is connected to this PC.
+**P48.** Make my own address the admin. *(address redacted)* Also install it on my phone using adb; the phone is connected to this PC.
 
 **P49.** *(Screenshot of the web login saying Google sign-in is switched off.)* It's still off on the website.
 
