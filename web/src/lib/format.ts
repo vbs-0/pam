@@ -40,3 +40,10 @@ export const dayLabel = (iso: string) => {
 export const dateTime = (iso: string) =>
   new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 export const titleCase = (code: string) => code.toLowerCase().split("_").map((w) => w[0]?.toUpperCase() + w.slice(1)).join(" ");
+
+/** ISO date shifted by a number of days (UTC calendar arithmetic, so DST never shifts it). */
+export const shiftDays = (iso: string, by: number) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + by);
+  return d.toISOString().slice(0, 10);
+};

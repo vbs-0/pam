@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { Link } from "react-router";
 import { Empty, ErrorBox, LimitBar, Money, MonthBar, PageHead, QueryState, Section, Skeleton, Stamp, StatusStamp, useCategoryName, useMonth } from "../../components/ui";
 import { get } from "../../lib/api";
+import FolioExtras from "./FolioExtras";
 import { dayLabel, monthName, rupeesShort } from "../../lib/format";
 import type { Budgets, Insight, Profile, Series, Summary, Trend, TxnPage } from "../../lib/types";
 
@@ -65,6 +66,8 @@ export default function Folio() {
           );
         }}
       </QueryState>
+
+      {!sample || summary.data ? <FolioExtras month={month} summary={summary.data} budgets={budgets.data} /> : null}
 
       <div className="grid lg:grid-cols-[1.55fr_1fr] gap-x-10">
         <Section title="Against budget" right={<Link to={`/budgets?month=${month}`} className="text-sm">All budgets</Link>}>

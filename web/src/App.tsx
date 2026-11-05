@@ -12,6 +12,11 @@ const Entries = lazy(() => import("./pages/customer/Entries"));
 const Budgets = lazy(() => import("./pages/customer/Budgets"));
 const Recurring = lazy(() => import("./pages/customer/Recurring"));
 const Insights = lazy(() => import("./pages/customer/Insights"));
+const Calendar = lazy(() => import("./pages/customer/Calendar"));
+const Spend = lazy(() => import("./pages/customer/Spend"));
+const Bills = lazy(() => import("./pages/customer/Bills"));
+const Goals = lazy(() => import("./pages/customer/Goals"));
+const Settings = lazy(() => import("./pages/customer/Settings"));
 const Books = lazy(() => import("./pages/customer/Books"));
 const Exceptions = lazy(() => import("./pages/staff/Exceptions"));
 const Rules = lazy(() => import("./pages/staff/Rules"));
@@ -57,6 +62,11 @@ export default function App() {
             <Route path="/budgets" element={customer(<Budgets />)} />
             <Route path="/recurring" element={customer(<Recurring />)} />
             <Route path="/insights" element={customer(<Insights />)} />
+            <Route path="/calendar" element={customer(<Calendar />)} />
+            <Route path="/spend" element={customer(<Spend />)} />
+            <Route path="/bills" element={customer(<Bills />)} />
+            <Route path="/goals" element={customer(<Goals />)} />
+            <Route path="/settings" element={customer(<Settings />)} />
             <Route path="/books" element={customer(<Books />)} />
             <Route path="/exceptions" element={staff(["ANALYST", "ADMIN"], <Exceptions />)} />
             <Route path="/rules" element={staff(["ANALYST", "ADMIN"], <Rules />)} />

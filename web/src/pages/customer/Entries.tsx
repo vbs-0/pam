@@ -1,10 +1,11 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { ArrowLeftRight, Plus, Search, Upload, X } from "lucide-react";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router";
 import { CategorySelect, Drawer, Empty, ErrorBox, Field, Money, MonthBar, PageHead, Skeleton, Stamp, StatusStamp, useCategoryName } from "../../components/ui";
 import { ApiError, del, get, patch, post } from "../../lib/api";
-import { currentMonth, dateTime, dayLabel, monthName, titleCase, todayIso, toPaise } from "../../lib/format";
+import { DuplicateButton, ImportDrawer, NoteEditor, SplitForm, TransferDrawer } from "./EntryTools";
+import { currentMonth, rupees, shiftDays, dateTime, dayLabel, monthName, titleCase, todayIso, toPaise } from "../../lib/format";
 import type { Account, Profile, Txn, TxnPage } from "../../lib/types";
 
 const KINDS = ["EXPENSE", "INCOME", "TRANSFER", "REFUND", "REVERSAL", "UNKNOWN"];
@@ -15,6 +16,13 @@ export default function Entries() {
   const month = sp.get("month") ?? currentMonth();
   const allTime = sp.get("month") === "all";
   const category = sp.get("category") ?? "", account = sp.get("account") ?? "", kind = sp.get("kind") ?? "", q = sp.get("q") ?? "";
+  const from = sp.get("from") ?? "", to = sp.get("to") ?? "", merchant = sp.get("merchant") ?? "", tag = sp.get("tag") ?? "";
+  const minR = sp.get("min") ?? "", maxR = sp.get("max") ?? "";
+  const ranged = !!(from || to);
+  const tool = sp.get("tool");
+  const filtered = !!(q || category || account || kind || ranged || merchant || tag || minR || maxR);
+  const today = todayIso();
+  const quick = (f: string, t: string) => setSp((p) => { p.delete("month"); if (f) p.set("from", f); else p.delete("from"); if (t) p.set("to", t); else p.delete("to"); return p; }, { replace: true });
   const [search, setSearch] = useState(q);
   const [open, setOpen] = useState<string | null>(null);
   const adding = sp.get("add") === "1";
@@ -26,8 +34,11 @@ export default function Entries() {
   const profile = useQuery({ queryKey: ["profile"], queryFn: () => get<Profile>("/me/profile") });
   const accounts = useQuery({ queryKey: ["accounts"], queryFn: () => get<Account[]>("/me/accounts") });
   const list = useInfiniteQuery({
-    queryKey: ["entries", { month: allTime ? null : month, category, account, kind, q }],
-    queryFn: ({ pageParam }) => get<TxnPage>("/me/transactions", { month: allTime ? undefined : month, category, account_id: account, kind, q, cursor: pageParam, limit: 50 }),
+    queryKey: ["entries", { month: allTime || ranged ? null : month, category, account, kind, q, from, to, merchant, tag, minR, maxR }],
+    queryFn: ({ pageParam }) => get<TxnPage>("/me/transactions", {
+      month: allTime || ranged ? undefined : month, category, account_id: account, kind, q, merchant, tag, date_from: from, date_to: to,
+      min_paise: toPaise(minR) ?? undefined, max_paise: toPaise(maxR) ?? undefined, cursor: pageParam, limit: 50,
+    }),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (l) => l.next_cursor ?? undefined,
   });
@@ -37,11 +48,13 @@ export default function Entries() {
   return (
     <>
       <PageHead
-        title={`Entries${allTime ? "" : ` · ${monthName(month)}`}`}
+        title={`Entries${allTime || ranged ? "" : ` · ${monthName(month)}`}`}
         sub="Every payment in and out, in the order it was written."
         right={<>
-          {!allTime && <MonthBar month={month} onChange={(m) => set("month", m)} />}
+          {!allTime && !ranged && <MonthBar month={month} onChange={(m) => set("month", m)} />}
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={allTime} onChange={(e) => set("month", e.target.checked ? "all" : currentMonth())} /> All months</label>
+          {canWrite && <button className="btn" onClick={() => set("tool", "transfer")}><ArrowLeftRight size={16} aria-hidden /> Move money</button>}
+          {canWrite && <button className="btn" onClick={() => set("tool", "import")}><Upload size={16} aria-hidden /> Import CSV</button>}
           {canWrite && <button className="btn btn-solid" onClick={() => set("add", "1")}><Plus size={16} aria-hidden /> Add entry</button>}
         </>}
       />
@@ -65,24 +78,50 @@ export default function Entries() {
         )}</Field>
       </div>
 
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-3 mb-4" role="group" aria-label="Date and amount filters">
+        <div className="inline-flex border border-rule-strong">
+          <button type="button" className="px-3 py-2 text-sm hover:bg-blue-soft" aria-pressed={from === today && to === today} onClick={() => quick(today, today)}>Today</button>
+          <button type="button" className="px-3 py-2 text-sm hover:bg-blue-soft border-l border-rule-strong" aria-pressed={from === shiftDays(today, -6) && to === today} onClick={() => quick(shiftDays(today, -6), today)}>Last 7 days</button>
+          <button type="button" className="px-3 py-2 text-sm hover:bg-blue-soft border-l border-rule-strong" aria-pressed={from === shiftDays(today, -29) && to === today} onClick={() => quick(shiftDays(today, -29), today)}>Last 30 days</button>
+        </div>
+        <label className="text-sm">From<input type="date" className="field block" max={to || today} value={from} onChange={(e) => quick(e.target.value, to)} /></label>
+        <label className="text-sm">To<input type="date" className="field block" min={from} max={today} value={to} onChange={(e) => quick(from, e.target.value)} /></label>
+        <label className="text-sm">Amount from ₹<input className="field block w-28" inputMode="decimal" value={minR} onChange={(e) => set("min", e.target.value)} placeholder="0" /></label>
+        <label className="text-sm">to ₹<input className="field block w-28" inputMode="decimal" value={maxR} onChange={(e) => set("max", e.target.value)} placeholder="any" /></label>
+        {(merchant || tag) && (
+          <span className="flex gap-2">
+            {merchant && <button className="btn btn-ghost" onClick={() => set("merchant", "")}>Payee: {merchant} <X size={14} aria-hidden /></button>}
+            {tag && <button className="btn btn-ghost" onClick={() => set("tag", "")}>#{tag} <X size={14} aria-hidden /></button>}
+          </span>
+        )}
+      </div>
+
       {list.isPending ? <Skeleton rows={8} h={22} /> : list.isError ? <ErrorBox error={list.error} retry={() => list.refetch()} /> : rows.length === 0 ? (
         <Empty
-          title={q || category || account || kind ? "No entries match these filters" : "No entries for this period"}
-          hint={q || category || account || kind ? "Clear a filter or widen the month." : canWrite ? "Add your first entry to start the register." : undefined}
-          action={(q || category || account || kind) && <button className="btn" onClick={() => setSp(new URLSearchParams(allTime ? { month: "all" } : { month }), { replace: true })}>Clear filters</button>}
+          title={filtered ? "No entries match these filters" : "No entries for this period"}
+          hint={filtered ? "Clear a filter or widen the dates." : canWrite ? "Add your first entry to start the register." : undefined}
+          action={filtered && <button className="btn" onClick={() => setSp(new URLSearchParams(allTime ? { month: "all" } : { month }), { replace: true })}>Clear filters</button>}
         />
       ) : (
         <div className="overflow-x-auto">
           <table className="register min-w-[760px]">
             <thead><tr><th className="w-[84px]">Date</th><th>Narration</th><th>Category</th><th className="num">Money out</th><th className="num">Money in</th></tr></thead>
             <tbody>
-              {rows.map((t) => {
+              {rows.map((t, i) => {
                 const struck = t.kind === "TRANSFER" || t.kind === "REVERSAL";
+                const newDay = i === 0 || rows[i - 1].local_date !== t.local_date;
+                const dayOut = newDay ? rows.filter((r) => r.local_date === t.local_date && r.amount_paise < 0 && r.kind === "EXPENSE").reduce((s, r) => s - r.amount_paise, 0) : 0;
                 return (
-                  <tr key={t.txn_id} className="clickable" onClick={() => setOpen(t.txn_id)} onKeyDown={(e) => e.key === "Enter" && setOpen(t.txn_id)} tabIndex={0} aria-label={`${t.descriptor}, open details`}>
+                  <Fragment key={t.txn_id}>
+                  {newDay && (
+                    <tr className="bg-blue-soft"><th colSpan={5} scope="colgroup" className="text-left py-1.5 px-3 text-xs uppercase tracking-wider">
+                      {dayLabel(t.local_date)}{t.local_date === today && " · Today"}{dayOut > 0 && <span className="float-right normal-case tracking-normal font-semibold">Spent ₹{rupees(dayOut)}</span>}
+                    </th></tr>
+                  )}
+                  <tr className="clickable" onClick={() => setOpen(t.txn_id)} onKeyDown={(e) => e.key === "Enter" && setOpen(t.txn_id)} tabIndex={0} aria-label={`${t.descriptor}, open details`}>
                     <td className="margin-rule font-semibold text-blue pl-3">{dayLabel(t.local_date)}</td>
                     <td>
-                      <div className={struck ? "struck" : ""}>{t.merchant_name ?? t.descriptor}</div>
+                      <div className={struck ? "struck" : ""}>{t.merchant_name ?? t.descriptor}{!!t.tags?.length && t.tags.map((g) => <span key={g} className="ml-2 text-xs text-blue">#{g}</span>)}</div>
                       <div className="text-xs text-muted truncate max-w-[420px]" title={t.descriptor}>{t.merchant_name ? t.descriptor : ""}{" "}<span className="opacity-80">{titleCase(t.channel)}</span></div>
                     </td>
                     <td>
@@ -95,6 +134,7 @@ export default function Entries() {
                     <td className="num">{t.amount_paise < 0 && <Money paise={t.amount_paise} struck={struck} />}</td>
                     <td className="num">{t.amount_paise > 0 && <Money paise={t.amount_paise} struck={struck} tone={struck ? undefined : "blue"} />}</td>
                   </tr>
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -108,6 +148,8 @@ export default function Entries() {
       )}
 
       {open && <TxnDrawer id={open} canWrite={!!canWrite} accounts={accounts.data ?? []} onClose={() => setOpen(null)} />}
+      {tool === "transfer" && canWrite && <TransferDrawer accounts={accounts.data ?? []} onClose={() => set("tool", "")} />}
+      {tool === "import" && canWrite && <ImportDrawer accounts={accounts.data ?? []} onClose={() => set("tool", "")} />}
       {adding && canWrite && <AddEntry accounts={accounts.data ?? []} onClose={() => set("add", "")} />}
     </>
   );
@@ -122,7 +164,7 @@ function TxnDrawer({ id, canWrite, accounts, onClose }: { id: string; canWrite: 
   const catName = useCategoryName();
   const refresh = useRefreshAll();
   const q = useQuery({ queryKey: ["txn", id], queryFn: () => get<Txn>(`/me/transactions/${id}`) });
-  const [cat, setCat] = useState(""), [reason, setReason] = useState(""), [edit, setEdit] = useState(false), [confirm, setConfirm] = useState(false);
+  const [cat, setCat] = useState(""), [reason, setReason] = useState(""), [edit, setEdit] = useState(false), [split, setSplit] = useState(false), [confirm, setConfirm] = useState(false);
   const recat = useMutation({
     mutationFn: () => post(`/me/transactions/${id}/category`, { category_code: cat, reason: reason.trim() || null }),
     onSuccess: () => { setCat(""); setReason(""); refresh(); },
@@ -151,6 +193,9 @@ function TxnDrawer({ id, canWrite, accounts, onClose }: { id: string; canWrite: 
             {t.series_id && <><dt className="text-muted">Recurring</dt><dd>Part of series {t.series_id}</dd></>}
           </dl>
 
+          {canWrite && <NoteEditor key={t.txn_id + (t.note ?? "")} t={t} />}
+          {!canWrite && t.note && <p className="text-sm"><span className="text-muted">Note:</span> {t.note}</p>}
+
           <section aria-labelledby="recat">
             <h3 id="recat" className="font-semibold mb-2">Change category</h3>
             <div className="space-y-3">
@@ -173,7 +218,9 @@ function TxnDrawer({ id, canWrite, accounts, onClose }: { id: string; canWrite: 
 
           {canWrite && (
             <section className="border-t border-rule-strong pt-4 flex flex-wrap gap-2">
-              <button className="btn" onClick={() => setEdit((v) => !v)}>{edit ? "Close editor" : "Edit entry"}</button>
+              <button className="btn" onClick={() => { setEdit((v) => !v); setSplit(false); }}>{edit ? "Close editor" : "Edit entry"}</button>
+              {t.amount_paise < 0 && t.kind === "EXPENSE" && <button className="btn" onClick={() => { setSplit((v) => !v); setEdit(false); }}>{split ? "Close split" : "Split"}</button>}
+              <DuplicateButton t={t} onDone={onClose} />
               {!confirm ? <button className="btn btn-danger" onClick={() => setConfirm(true)}>Delete entry</button> : (
                 <>
                   <span className="self-center text-sm">Delete permanently?</span>
@@ -182,6 +229,7 @@ function TxnDrawer({ id, canWrite, accounts, onClose }: { id: string; canWrite: 
                 </>
               )}
               {remove.isError && <p role="alert" className="text-red text-sm w-full">{(remove.error as ApiError).message}</p>}
+              {split && <SplitForm t={t} onDone={onClose} />}
               {edit && <EditForm t={t} onDone={() => { setEdit(false); refresh(); }} />}
             </section>
           )}

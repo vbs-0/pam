@@ -142,3 +142,15 @@ table.register tr.clickable { cursor: pointer; }
 @keyframes topgrow { from { transform: scaleX(0); } to { transform: scaleX(.85); } }
 .spinner { display: inline-block; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -3px; margin-right: 8px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* growth animations for charts and bars */
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.bar-grow { transform-origin: left; animation: grow-x .6s cubic-bezier(.2,.7,.2,1) both; }
+.bar-grow-y { transform-box: fill-box; transform-origin: bottom; animation: grow-y .6s cubic-bezier(.2,.7,.2,1) both; }
+.donut-slice { animation: fade-in .5s ease both; cursor: pointer; transition: opacity .15s; }
+.donut-slice:hover { opacity: .8; }
+.cal-cell { transition: transform .12s, box-shadow .12s; }
+.cal-cell:hover, .cal-cell:focus-visible { transform: translateY(-1px); box-shadow: 0 0 0 2px var(--blue); outline: none; }
+@media (prefers-reduced-motion: reduce) { .bar-grow, .bar-grow-y, .donut-slice { animation: none; } .cal-cell { transition: none; } }

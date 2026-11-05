@@ -1,4 +1,4 @@
-import { BookOpen, ClipboardList, Download, FileSearch, Gauge, Home, LogOut, Moon, Repeat, ScrollText, Search, Sun, Target, Users, Wallet, Wrench, Lightbulb, ListChecks, ShieldCheck, Briefcase } from "lucide-react";
+import { BookOpen, ClipboardList, Download, FileSearch, Gauge, Home, LogOut, Moon, Repeat, ScrollText, Search, Sun, Target, Users, Wallet, Wrench, Lightbulb, ListChecks, ShieldCheck, Briefcase, CalendarDays, PieChart, Bell, PiggyBank, Settings as Cog } from "lucide-react";
 import { useEffect, useState, type ComponentType } from "react";
 import { NavLink, Outlet } from "react-router";
 import { household } from "../lib/api";
@@ -10,10 +10,15 @@ interface Item { to: string; label: string; icon: ComponentType<{ size?: number;
 const CUSTOMER: Item[] = [
   { to: "/", label: "Folio", icon: Home, end: true },
   { to: "/entries", label: "Entries", icon: ScrollText },
+  { to: "/calendar", label: "Calendar", icon: CalendarDays },
+  { to: "/spend", label: "Spend", icon: PieChart },
   { to: "/budgets", label: "Budgets", icon: Target },
+  { to: "/bills", label: "Bills", icon: Bell },
+  { to: "/goals", label: "Goals", icon: PiggyBank },
   { to: "/recurring", label: "Recurring", icon: Repeat },
   { to: "/insights", label: "Notes", icon: Lightbulb },
   { to: "/books", label: "Books", icon: Wallet },
+  { to: "/settings", label: "Settings", icon: Cog },
 ];
 const ANALYST: Item[] = [
   { to: "/exceptions", label: "Exceptions", icon: ListChecks },

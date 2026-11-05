@@ -14,7 +14,7 @@ from app import mail, schema
 from app.api.deps import Caller, current_user
 from app.config import settings
 from app.db import get_conn
-from app.households import REAL_FROM, create_household
+from app.households import REAL_FROM, create_household, delete_household, is_real
 from app.jobs.sql import next_number
 from app.security import (
     AuthError,
@@ -90,7 +90,8 @@ def _issue(conn: Connection, row, how: str, request: Request) -> TokenOut:
             "profile_user_id": row.profile_user_id}
     mobile = request.headers.get("x-pam-client") == "mobile"
     minutes = settings.jwt_ttl_minutes_mobile if mobile else settings.jwt_ttl_minutes
-    return TokenOut(access_token=issue_local_token(row.app_user_id, row.role, minutes),
+    pwd = getattr(row, "password_hash", None)
+    return TokenOut(access_token=issue_local_token(row.app_user_id, row.role, minutes, pwd),
                     expires_in=minutes * 60, user=user)
 
 
@@ -232,3 +233,98 @@ def _create(conn: Connection, uid: str, email: str, name: str):
 @router.get("/me")
 def me(caller: Caller = Depends(current_user)):
     return caller.__dict__
+
+
+# ---------- account security (signed in) ----------
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=200)
+    new_password: str = Field(min_length=10, max_length=128)
+
+
+class ChangeEmailIn(BaseModel):
+    password: str = Field(min_length=1, max_length=200)
+    new_email: str = Field(min_length=5, max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
+
+
+class DeleteAccountIn(BaseModel):
+    confirm_email: str = Field(min_length=3, max_length=120)
+    password: str | None = Field(None, max_length=200)
+
+
+def _row(conn, caller: Caller):
+    return conn.execute(text(f"SELECT {USER_COLS} FROM app_user WHERE app_user_id = :i FOR UPDATE"),
+                        {"i": caller.app_user_id}).one()
+
+
+def _audit(conn, actor: str, action: str, entity: str, request: Request, detail: str | None = None) -> None:
+    conn.execute(text("INSERT INTO audit_event (at, actor, action, entity_type, entity_id, request_id, detail) "
+                      "VALUES (now(), :a, :ac, 'APP_USER', :i, :r, CAST(:d AS jsonb))"),
+                 {"a": actor, "ac": action, "i": entity, "r": getattr(request.state, "request_id", None), "d": detail})
+
+
+@router.post("/change-password", response_model=TokenOut)
+def change_password(body: ChangePasswordIn, request: Request, tasks: BackgroundTasks,
+                    caller: Caller = Depends(current_user), conn: Connection = Depends(get_conn)):
+    """Wrong current password answers 400 (not 401), so a client never mistakes it for an expired session.
+    Every other device is signed out; this one gets a fresh token."""
+    row = _row(conn, caller)
+    if not row.password_hash:
+        raise AuthError("this login uses Google; use 'Forgot password' on the sign-in page to add one", status=400)
+    if not verify_password(row.password_hash, body.current_password):
+        raise AuthError("your current password is wrong", status=400)
+    if body.new_password == body.current_password:
+        raise AuthError("choose a password you have not used just now", status=422)
+    conn.execute(text("UPDATE app_user SET password_hash = :h WHERE app_user_id = :i"),
+                 {"h": hash_password(body.new_password), "i": caller.app_user_id})
+    _audit(conn, caller.email, "PASSWORD_CHANGE", caller.app_user_id, request)
+    conn.commit()
+    tasks.add_task(mail.password_changed, caller.email)
+    return _issue(conn, _row(conn, caller), "password_change", request)
+
+
+@router.post("/change-email", response_model=TokenOut)
+def change_email(body: ChangeEmailIn, request: Request, tasks: BackgroundTasks, caller: Caller = Depends(current_user),
+                 conn: Connection = Depends(get_conn)):
+    row = _row(conn, caller)
+    if not row.password_hash:
+        raise AuthError("this login uses Google; its email is your Google account's", status=400)
+    if not verify_password(row.password_hash, body.password):
+        raise AuthError("your password is wrong", status=400)
+    new = body.new_email.strip().lower()
+    if new == row.email:
+        raise AuthError("that is already your email", status=422)
+    if conn.execute(text("SELECT 1 FROM app_user WHERE email = :e"), {"e": new}).first():
+        raise AuthError("that email is already used by another login", status=409)
+    conn.execute(text("UPDATE app_user SET email = :e WHERE app_user_id = :i"), {"e": new, "i": caller.app_user_id})
+    _audit(conn, new, "EMAIL_CHANGE", caller.app_user_id, request, f'{{"from": "{row.email}"}}')
+    conn.commit()
+    tasks.add_task(mail.send, row.email, "Your PAM email was changed",
+                   f"The email on your PAM login was changed to {new}.\n\nIf that was not you, reset your password at "
+                   f"{settings.app_url}/forgot right away.")
+    return _issue(conn, _row(conn, caller), "email_change", request)
+
+
+@router.post("/delete-account")
+def delete_account(body: DeleteAccountIn, request: Request, caller: Caller = Depends(current_user),
+                   conn: Connection = Depends(get_conn)):
+    """Permanently remove this login and, if nobody else shares it, the household and all its entries.
+    Demo, sample-household and staff logins cannot be deleted. Wrong password or email answers 400, not 401."""
+    if caller.role != "CUSTOMER" or not is_real(caller.profile_user_id):
+        raise AuthError("this login cannot be deleted here", status=403)
+    row = _row(conn, caller)
+    if body.confirm_email.strip().lower() != row.email:
+        raise AuthError("type your email address exactly to confirm", status=400)
+    if row.password_hash and not verify_password(row.password_hash, body.password or ""):
+        raise AuthError("your password is wrong", status=400)
+    hh = row.profile_user_id
+    others = conn.execute(text("SELECT count(*) FROM app_user WHERE profile_user_id = :h AND app_user_id <> :i"),
+                          {"h": hh, "i": caller.app_user_id}).scalar()
+    if others == 0:
+        delete_household(conn, hh)
+    for sql in ("DELETE FROM notify_pref WHERE app_user_id = :i", "DELETE FROM app_user WHERE app_user_id = :i"):
+        conn.execute(text(sql), {"i": caller.app_user_id})
+    gone = str(others == 0).lower()
+    _audit(conn, row.email, "ACCOUNT_DELETE", caller.app_user_id, request, f'{{"household_deleted": {gone}}}')
+    conn.commit()
+    return {"detail": "Your account and its data have been deleted." if others == 0 else
+            "Your login was removed. The household stays for the other people in it."}

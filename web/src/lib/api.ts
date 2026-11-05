@@ -66,3 +66,20 @@ export const post = <T,>(path: string, body?: unknown) => api<T>("POST", path, {
 export const patch = <T,>(path: string, body: unknown) => api<T>("PATCH", path, { body });
 export const put = <T,>(path: string, body: unknown) => api<T>("PUT", path, { body });
 export const del = <T,>(path: string) => api<T>("DELETE", path);
+
+/** Fetch a file with the sign-in header and hand it to the browser as a download (links cannot carry the token). */
+export async function download(path: string, query: Query, filename: string): Promise<void> {
+  const token = tokenStore.get();
+  const hh = household.get();
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}${qs({ ...query, ...(hh ? { user_id: hh } : {}) })}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ApiError(0, "Can't reach the server. Check your connection and try again.");
+  }
+  if (!res.ok) throw new ApiError(res.status, res.status >= 500 ? "Something went wrong on the server." : "Could not download that file.");
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}

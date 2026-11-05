@@ -8,6 +8,7 @@ export interface Txn {
   category_code: string; kind: string; confidence: number | null; decision: string; overridden: boolean;
   link_txn_id?: string | null; series_id?: string | null; reference_no?: string | null; rule_id?: string | null;
   rule_version?: number | null;
+  note?: string; tags?: string[];
   overrides?: { override_id: string; category_code: string; actor: string; reason: string | null; created_at: string }[];
 }
 export interface TxnPage { items: Txn[]; next_cursor: string | null }
@@ -28,10 +29,10 @@ export interface Summary {
 }
 export interface BudgetLine {
   category_code: string; category_name: string | null; budget_paise: number | null; actual_paise: number;
-  ratio: number | null; status: "UNDER" | "NEAR" | "OVER" | "NO_BUDGET"; budget_ids: string[];
+  ratio: number | null; status: "UNDER" | "NEAR" | "OVER" | "NO_BUDGET"; budget_ids: string[]; carried_paise?: number;
 }
 export interface Budgets {
-  month: string; lines: BudgetLine[]; total_budget_paise: number; total_actual_paise: number;
+  month: string; carry_enabled?: string[]; lines: BudgetLine[]; total_budget_paise: number; total_actual_paise: number;
   remapped: { budget_id: string; submitted_code: string; resolved_code: string; resolution: string }[];
   unmapped: { budget_id: string; submitted_code: string; amount_paise: number }[];
 }
@@ -74,3 +75,21 @@ export interface TraceOut {
   truth?: Record<string, unknown> | null;     // reviewers and admins only
   exceptions: { exception_id: string; exception_type: string; status: string; events: { seq: number; from_status: string | null; to_status: string; actor: string; at: string; note: string | null }[] }[];
 }
+
+// ---- calendar, analytics, planning ----
+export interface DailyDay { date: string; spend_paise: number; income_paise: number; count: number }
+export interface Daily { month: string; days: DailyDay[]; total_spend_paise: number; busiest: string | null; daily_average_paise: number; days_elapsed: number; days_left: number }
+export interface CatSpend { code: string; name: string; spend_paise: number; previous_paise: number; change_paise: number; share: number }
+export interface SpendByCategory { month: string; previous_month: string; total_paise: number; previous_total_paise: number; change_paise: number; categories: CatSpend[] }
+export interface MerchantSpend { name: string; spend_paise: number; count: number; last_date: string; category_code: string }
+export interface WeekdaySpend { weekday: number; name: string; spend_paise: number; days: number; count: number; average_paise: number }
+export interface UpcomingItem { kind: "RECURRING" | "CARD"; id: string; name: string; direction: "DR" | "CR"; amount_paise: number; due: string; days_away: number; overdue: boolean; series_type: string; cadence: string; category_code: string | null }
+export interface Upcoming { days: number; items: UpcomingItem[]; due_out_paise: number; due_in_paise: number }
+export interface CardInfo { account_id: string; display_name: string; balance_paise: number; limit_paise: number | null; used_paise: number; available_paise: number | null; utilisation: number | null; due_day: number | null; statement_day: number | null; due_date: string | null; days_to_due: number | null }
+export interface NetWorth { net_worth_paise: number; assets_paise: number; liabilities_paise: number; accounts: { account_id: string; display_name: string; account_type: string; balance_paise: number }[]; cards: CardInfo[] }
+export interface AlertItem { type: string; severity: "ALERT" | "WARN" | "INFO"; title: string; detail: string; amount_paise: number }
+export interface Goal { goal_id: string; name: string; target_paise: number; saved_paise: number; remaining_paise: number; progress: number; deadline: string | null; days_left: number | null; monthly_needed_paise: number | null; completed: boolean; completed_at: string | null }
+export interface NotifyPrefs { email_digest: boolean; bills: boolean; budgets: boolean; cards: boolean; last_sent_on: string | null; email: string; mail_configured: boolean }
+export interface HouseholdInfo { household_id: string; you: string; owner: string | null; members: { app_user_id: string; email: string; joined: string; is_owner: boolean; you: boolean }[]; invites: { code: string; expires_at: string }[] }
+export interface ImportPreview { headers: string[]; suggested_mapping: Record<string, string>; rows_total: number; sample: string[][]; max_rows: number }
+export interface ImportResult { dry_run: boolean; rows_total: number; to_import: number; skipped_duplicates: number; error_count: number; errors: { row: number; message: string }[]; mapping: Record<string, string>; sample: { date: string; amount_paise: number; description: string }[]; imported: number }

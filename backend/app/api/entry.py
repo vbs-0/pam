@@ -295,19 +295,25 @@ def edit_transaction(txn_id: str, body: TxnPatch, request: Request, user: str = 
     return _result(conn, user, txn_id, refresh_household(conn, user), {})
 
 
-@router.delete("/transactions/{txn_id}", status_code=204)
-def delete_transaction(txn_id: str, request: Request, user: str = Depends(own),
-                       caller: Caller = Depends(current_user), conn: Connection = Depends(get_conn)):
-    t = _own_txn_row(conn, user, txn_id)
+def purge_txn(conn: Connection, txn_id: str) -> None:
+    """Remove a transaction and everything hanging off it. Caller commits and re-runs the household."""
     p = {"t": txn_id}
     for sql in ("UPDATE txn_enrichment SET link_txn_id = NULL WHERE link_txn_id = :t",
                 "DELETE FROM txn_enrichment WHERE txn_id = :t",
                 "DELETE FROM category_override WHERE txn_id = :t",
+                "DELETE FROM txn_note WHERE txn_id = :t",
                 "DELETE FROM exception_event WHERE exception_id IN (SELECT exception_id FROM exception_case "
                 "WHERE entity_type = 'TXN' AND entity_id = :t)",
                 "DELETE FROM exception_case WHERE entity_type = 'TXN' AND entity_id = :t",
                 "DELETE FROM txn WHERE txn_id = :t"):
         conn.execute(text(sql), p)
+
+
+@router.delete("/transactions/{txn_id}", status_code=204)
+def delete_transaction(txn_id: str, request: Request, user: str = Depends(own),
+                       caller: Caller = Depends(current_user), conn: Connection = Depends(get_conn)):
+    t = _own_txn_row(conn, user, txn_id)
+    purge_txn(conn, txn_id)
     audit(conn, caller.email, "TXN_DELETE", "TXN", txn_id, _rid(request), dict(t._mapping))
     conn.commit()
     refresh_household(conn, user)                       # the pair / refund link it was part of gets re-decided

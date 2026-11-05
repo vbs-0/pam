@@ -19,6 +19,7 @@ export default function Budgets() {
     mutationFn: (v: { code: string; amount: string }) => put("/me/budgets", { month, category_code: v.code, amount_paise: toPaise(v.amount) }),
     onSuccess: () => { qc.invalidateQueries(); setEditing(null); setNewCat(""); setNewAmt(""); },
   });
+  const carry = useMutation({ mutationFn: (v: { code: string; on: boolean }) => put("/me/budgets/carry", { category_code: v.code, enabled: v.on }), onSuccess: () => qc.invalidateQueries() });
   const remove = useMutation({ mutationFn: (code: string) => del(`/me/budgets/${month}/${code}`), onSuccess: () => qc.invalidateQueries() });
 
   return (
@@ -38,12 +39,14 @@ export default function Budgets() {
                 <tbody>
                   {b.lines.map((l) => <Row key={l.category_code} l={l} name={l.category_name ?? catName(l.category_code)} canWrite={!!canWrite}
                     editing={editing?.code === l.category_code ? editing : null} setEditing={setEditing}
-                    save={() => editing && save.mutate(editing)} saving={save.isPending} remove={() => remove.mutate(l.category_code)} />)}
+                    save={() => editing && save.mutate(editing)} saving={save.isPending} remove={() => remove.mutate(l.category_code)}
+                    carryOn={!!b.carry_enabled?.includes(l.category_code)} toggleCarry={(on) => carry.mutate({ code: l.category_code, on })} />)}
                 </tbody>
               </table></div>
             )}
             {save.isError && <p role="alert" className="text-red mt-3">{(save.error as ApiError).message}</p>}
             {remove.isError && <p role="alert" className="text-red mt-3">{(remove.error as ApiError).message}</p>}
+            {canWrite && b.lines.some((l) => l.budget_paise !== null) && <p className="text-xs text-muted mt-3">Tick “Roll over” on a category to add whatever you did not spend last month to this month’s limit.</p>}
 
             {canWrite && (
               <Section title="Set a limit">
@@ -75,7 +78,8 @@ export default function Budgets() {
   );
 }
 
-function Row({ l, name, canWrite, editing, setEditing, save, saving, remove }: {
+function Row({ l, name, canWrite, editing, setEditing, save, saving, remove, carryOn, toggleCarry }: {
+  carryOn: boolean; toggleCarry: (on: boolean) => void;
   l: BudgetLine; name: string; canWrite: boolean; editing: { code: string; amount: string } | null;
   setEditing: (v: { code: string; amount: string } | null) => void; save: () => void; saving: boolean; remove: () => void;
 }) {
@@ -91,11 +95,13 @@ function Row({ l, name, canWrite, editing, setEditing, save, saving, remove }: {
             <button type="button" className="btn btn-ghost !min-h-[32px]" onClick={() => setEditing(null)}>Cancel</button>
           </form>
         ) : l.budget_paise === null ? <span className="text-muted">—</span> : <Money paise={l.budget_paise} tone="muted" />}
+        {!!l.carried_paise && !editing && <div className="text-xs text-blue">incl. ₹{(l.carried_paise / 100).toLocaleString("en-IN")} rolled over</div>}
       </td>
       <td className="align-middle"><LimitBar actual={l.actual_paise} budget={l.budget_paise} status={l.status} /></td>
       <td><StatusStamp status={l.status} />{l.ratio !== null && <span className="ml-2 text-xs text-muted num">{Math.round(l.ratio * 100)}%</span>}</td>
       {canWrite && (
         <td className="whitespace-nowrap">
+          {l.budget_paise !== null && !editing && <label className="inline-flex items-center gap-1 text-xs mr-2"><input type="checkbox" checked={carryOn} onChange={(e) => toggleCarry(e.target.checked)} /> Roll over</label>}
           {!editing && <button className="btn btn-ghost !min-h-[32px]" aria-label={`Edit limit for ${name}`} onClick={() => setEditing({ code: l.category_code, amount: l.budget_paise === null ? "" : String(l.budget_paise / 100) })}><Pencil size={15} /></button>}
           {l.budget_paise !== null && !editing && <button className="btn btn-ghost !min-h-[32px] text-red" aria-label={`Remove limit for ${name}`} onClick={remove}><Trash2 size={15} /></button>}
         </td>

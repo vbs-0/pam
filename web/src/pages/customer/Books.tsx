@@ -1,8 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Empty, Field, Money, PageHead, QueryState, Section, Stamp, StatusStamp } from "../../components/ui";
+import { Drawer, Empty, Field, Money, PageHead, QueryState, Section, Stamp, StatusStamp } from "../../components/ui";
 import { ApiError, get, patch, post } from "../../lib/api";
-import { dayLabel, todayIso, toPaise } from "../../lib/format";
+import { dayLabel, rupees, todayIso, toPaise } from "../../lib/format";
 import type { Account, Profile } from "../../lib/types";
 
 const BANKS: Record<string, string> = { SBIN: "State Bank of India", HDFC: "HDFC Bank", ICIC: "ICICI Bank", UTIB: "Axis Bank", KKBK: "Kotak Mahindra Bank", BARB: "Bank of Baroda", PUNB: "Punjab National Bank", CNRB: "Canara Bank", OTHR: "Other bank" };
@@ -16,6 +16,7 @@ export default function Books() {
   const sample = profile.data?.sample;
   const close = useMutation({ mutationFn: (id: string) => post(`/me/accounts/${id}/close`, {}), onSuccess: () => qc.invalidateQueries() });
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Account | null>(null);
 
   return (
     <>
@@ -33,7 +34,8 @@ export default function Books() {
                     <td className="font-mono text-xs">{a.vpa ?? "—"}</td>
                     <td className="num"><Money paise={a.balance_paise} tone={a.balance_paise < 0 ? "red" : undefined} />{a.credit_limit_paise && <div className="text-xs text-muted">limit <Money paise={a.credit_limit_paise} /></div>}</td>
                     <td><StatusStamp status={a.status} /></td>
-                    <td>{!sample && a.status === "ACTIVE" && !a.shared_from_other_household && (confirm === a.account_id
+                    <td>{!sample && a.status === "ACTIVE" && !a.shared_from_other_household && confirm !== a.account_id && <button className="btn btn-ghost !min-h-[32px]" onClick={() => setEditing(a)}>Edit</button>}
+                      {!sample && a.status === "ACTIVE" && !a.shared_from_other_household && (confirm === a.account_id
                       ? <span className="flex gap-1"><button className="btn btn-danger !min-h-[32px]" disabled={close.isPending} onClick={() => close.mutate(a.account_id)}>Close it</button><button className="btn btn-ghost !min-h-[32px]" onClick={() => setConfirm(null)}>Keep</button></span>
                       : <button className="btn btn-ghost !min-h-[32px]" onClick={() => setConfirm(a.account_id)}>Close</button>)}</td>
                   </tr>
@@ -45,6 +47,8 @@ export default function Books() {
         {close.isError && <p role="alert" className="text-red mt-2">{(close.error as ApiError).message}</p>}
         {profile.data && !sample && <AddAccount />}
       </Section>
+
+      {editing && <EditAccount a={editing} onClose={() => setEditing(null)} />}
 
       <Section title="Household">
         <QueryState q={profile} rows={3}>{(p) => <ProfileForm p={p} />}</QueryState>
@@ -108,5 +112,47 @@ function ProfileForm({ p }: { p: Profile }) {
         {m.isSuccess && <span role="status" className="text-green text-sm">Saved</span>}{m.isError && <span role="alert" className="text-red text-sm">{(m.error as ApiError).message}</span>}</div>}
       {ro && <p className="text-muted text-sm sm:col-span-3">This is a sample household, so its details are read-only.</p>}
     </form>
+  );
+}
+
+function EditAccount({ a, onClose }: { a: Account; onClose: () => void }) {
+  const qc = useQueryClient();
+  const card = a.account_type === "CREDIT_CARD";
+  const [f, setF] = useState({ label: a.label ?? "", balance: String(a.balance_paise / 100), limit: a.credit_limit_paise ? String(a.credit_limit_paise / 100) : "", due: "", stmt: "", vpa: a.vpa ?? "" });
+  const up = (k: keyof typeof f) => (v: string) => setF((s) => ({ ...s, [k]: v }));
+  const bal = toPaise(f.balance.replace(/^-/, ""));
+  const signedBal = bal === null ? null : f.balance.trim().startsWith("-") ? -bal : bal;
+  const m = useMutation({
+    mutationFn: () => {
+      const body: Record<string, unknown> = { label: f.label.trim() };
+      if (signedBal !== null && signedBal !== a.balance_paise) body.balance_paise = signedBal;
+      if (card && f.limit && toPaise(f.limit)) body.credit_limit_paise = toPaise(f.limit);
+      if (card && f.due) body.due_day = Number(f.due);
+      if (card && f.stmt) body.statement_day = Number(f.stmt);
+      if (f.vpa.trim() !== (a.vpa ?? "")) body.vpa = f.vpa.trim();
+      return patch(`/me/accounts/${a.account_id}`, body);
+    },
+    onSuccess: () => { qc.invalidateQueries(); onClose(); },
+  });
+  const err = (n: string) => (m.error as ApiError | null)?.fields?.find((x) => x.field.endsWith(n))?.message;
+  return (
+    <Drawer title={`Edit ${a.display_name}`} onClose={onClose}>
+      <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
+        <Field label="Your name for it" hint="Leave empty to use the bank name" error={err("label")}>{(id) => <input id={id} className="field" maxLength={40} value={f.label} onChange={(e) => up("label")(e.target.value)} placeholder="Salary account" />}</Field>
+        <Field label={card ? "Amount owed today (₹, negative)" : "Balance today (₹)"} hint={`Currently ₹${rupees(a.balance_paise)}. Changing this corrects the opening balance; your entries stay as they are.`} error={err("balance_paise") ?? (signedBal === null ? "Enter an amount" : undefined)}>{(id) => <input id={id} className="field" inputMode="decimal" value={f.balance} onChange={(e) => up("balance")(e.target.value)} />}</Field>
+        {a.account_type !== "CREDIT_CARD" && <Field label="UPI ID" error={err("vpa")}>{(id) => <input id={id} className="field" value={f.vpa} onChange={(e) => up("vpa")(e.target.value)} placeholder="name@bank" />}</Field>}
+        {card && (
+          <>
+            <Field label="Credit limit (₹)" error={err("credit_limit_paise")}>{(id) => <input id={id} className="field" inputMode="decimal" value={f.limit} onChange={(e) => up("limit")(e.target.value)} />}</Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Bill due day" hint="1 to 31">{(id) => <input id={id} type="number" min={1} max={31} className="field" value={f.due} onChange={(e) => up("due")(e.target.value)} />}</Field>
+              <Field label="Statement day" hint="1 to 31">{(id) => <input id={id} type="number" min={1} max={31} className="field" value={f.stmt} onChange={(e) => up("stmt")(e.target.value)} />}</Field>
+            </div>
+          </>
+        )}
+        {m.isError && !(m.error as ApiError).fields?.length && <p role="alert" className="text-red text-sm">{(m.error as ApiError).message}</p>}
+        <button className="btn btn-solid w-full" disabled={m.isPending || signedBal === null}>{m.isPending ? "Saving…" : "Save changes"}</button>
+      </form>
+    </Drawer>
   );
 }

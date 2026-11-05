@@ -6,7 +6,7 @@ from fastapi import Depends, Header
 from sqlalchemy import Connection, text
 
 from app.db import get_conn
-from app.security import AuthError, verify_local_token
+from app.security import AuthError, session_fingerprint_ok, verify_local_token
 
 
 @dataclass(frozen=True)
@@ -22,12 +22,14 @@ def current_user(authorization: str | None = Header(None), conn: Connection = De
     if scheme.lower() != "bearer" or not token:
         raise AuthError("sign in first")
     claims = verify_local_token(token.strip())
-    row = conn.execute(text("SELECT app_user_id, email, role, profile_user_id, disabled FROM app_user "
+    row = conn.execute(text("SELECT app_user_id, email, role, profile_user_id, disabled, password_hash FROM app_user "
                             "WHERE app_user_id = :i"), {"i": claims["sub"]}).first()
     if row is None:
         raise AuthError("this login no longer exists")
     if row.disabled:
         raise AuthError("this login is disabled", status=403)
+    if not session_fingerprint_ok(claims, row.password_hash):
+        raise AuthError("your password was changed; sign in again")
     return Caller(row.app_user_id, row.email, row.role, row.profile_user_id)
 
 

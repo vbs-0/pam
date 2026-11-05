@@ -130,7 +130,7 @@ class _SetupGuideState extends State<SetupGuide> {
       future: _f,
       builder: (context, s) {
         final done = s.data;
-        if (done == null || (done[0] && done[1])) return const SizedBox.shrink();
+        if (done == null || done[0] || done[1]) return const SizedBox.shrink();
         const steps = [
           (Icons.account_balance_wallet_outlined, 'Add an account', 'A savings account, credit card or UPI app.', 3),
           (Icons.edit_note, 'Write your first entry', 'A payment, a salary credit or a bill.', 1),

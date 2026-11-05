@@ -49,11 +49,20 @@ def verify_password(hashed: str | None, password: str) -> bool:
         return False
 
 
-def issue_local_token(app_user_id: str, role: str, ttl_minutes: int | None = None) -> str:
+def issue_local_token(app_user_id: str, role: str, ttl_minutes: int | None = None,
+                      password_hash: str | None = None) -> str:
+    """`fp` ties the token to the current password: changing or resetting it signs every other device out."""
     now = int(time.time())
     claims = {"sub": app_user_id, "role": role, "iss": LOCAL_ISSUER, "iat": now,
               "exp": now + (ttl_minutes or settings.jwt_ttl_minutes) * 60}
+    if password_hash:
+        claims["fp"] = _fingerprint(password_hash)
     return jwt.encode(claims, settings.jwt_secret, algorithm="HS256")
+
+
+def session_fingerprint_ok(claims: dict, password_hash: str | None) -> bool:
+    """Tokens issued before this existed carry no fp and stay valid; otherwise it must match the stored hash."""
+    return "fp" not in claims or (password_hash is not None and claims["fp"] == _fingerprint(password_hash))
 
 
 RESET_TTL_S = 30 * 60

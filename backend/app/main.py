@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from starlette.middleware.gzip import GZipMiddleware
 
-from app.api import admin, analyst, auth, entry, errors, me, review
+from app.api import admin, analyst, analytics, auth, entries_plus, entry, errors, me, me_plus, review
 from app.config import settings
 from app.db import get_conn
 from app.logging import RequestIdMiddleware, setup_logging
@@ -21,7 +21,12 @@ async def lifespan(_app):
             fail_orphans(conn)                    # jobs cut off by the previous shutdown (A15)
     except Exception:                             # DB down at boot: /readyz reports it; don't crash the process
         logging.getLogger("pam").exception("startup: could not reach the database")
+    import asyncio
+
+    from app.digest import digest_loop
+    task = asyncio.create_task(digest_loop())
     yield
+    task.cancel()
 
 
 def create_app() -> FastAPI:
@@ -35,8 +40,8 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestIdMiddleware)
     errors.install(app)
     v1 = APIRouter(prefix="/api/v1")
-    for r in (auth.router, me.router, entry.router, analyst.router, analyst.ops, review.router,
-              admin.router):
+    for r in (auth.router, me.router, entry.router, entries_plus.router, me_plus.router, analytics.router,
+              analyst.router, analyst.ops, review.router, admin.router):
         v1.include_router(r)
     app.include_router(v1)
 

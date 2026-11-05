@@ -31,3 +31,37 @@ def next_txn_id(conn: Connection, year: int) -> str:
     last = conn.execute(text("SELECT max(txn_id) FROM txn WHERE txn_id LIKE :p"), {"p": f"TXN-{year}-9%"}).scalar()
     n = int(last.rsplit("-", 1)[1]) + 1 if last else REAL_TXN_BASE + 1
     return f"TXN-{year}-{n:08d}"
+
+
+def delete_household(conn: Connection, user_id: str) -> None:
+    """Remove a real household and everything it entered (accounts, entries, budgets, goals ...). Caller commits.
+    The audit log keeps its rows (who did what is not user data). Refuses synthetic households."""
+    if not is_real(user_id):
+        raise ValueError("only real households can be deleted")
+    p = {"u": user_id}
+    for sql in (
+        "DELETE FROM category_override WHERE txn_id IN (SELECT txn_id FROM txn WHERE user_id = :u)",
+        "DELETE FROM txn_note WHERE user_id = :u",
+        "DELETE FROM exception_event WHERE exception_id IN (SELECT exception_id FROM exception_case WHERE user_id = :u)",
+        "DELETE FROM exception_case WHERE user_id = :u",
+        "UPDATE txn_enrichment SET link_txn_id = NULL WHERE user_id = :u",
+        "DELETE FROM txn_enrichment WHERE user_id = :u",
+        "DELETE FROM txn WHERE user_id = :u",
+        "DELETE FROM recurring_series_event WHERE series_id IN (SELECT series_id FROM recurring_series WHERE user_id = :u)",
+        "DELETE FROM recurring_series_state WHERE series_id IN (SELECT series_id FROM recurring_series WHERE user_id = :u)",
+        "DELETE FROM recurring_series WHERE user_id = :u",
+        "DELETE FROM insight WHERE user_id = :u",
+        "DELETE FROM budget_resolution WHERE budget_id LIKE 'BUD-' || :u || '-%'",
+        "DELETE FROM budget WHERE user_id = :u",
+        "DELETE FROM account_balance_monthly WHERE account_id IN (SELECT account_id FROM account WHERE user_id = :u)",
+        "DELETE FROM account_event WHERE account_id IN (SELECT account_id FROM account WHERE user_id = :u)",
+        "DELETE FROM account_holder WHERE user_id = :u OR account_id IN (SELECT account_id FROM account WHERE user_id = :u)",
+        "DELETE FROM account_label WHERE account_id IN (SELECT account_id FROM account WHERE user_id = :u)",
+        "DELETE FROM account_meta WHERE account_id IN (SELECT account_id FROM account WHERE user_id = :u)",
+        "DELETE FROM account WHERE user_id = :u",
+        "DELETE FROM goal WHERE user_id = :u",
+        "DELETE FROM budget_carry WHERE user_id = :u",
+        "DELETE FROM household_invite WHERE household_id = :u",
+        "DELETE FROM user_profile WHERE user_id = :u",
+    ):
+        conn.execute(text(sql), p)

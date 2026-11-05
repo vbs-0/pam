@@ -101,7 +101,18 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    Prefs.seenWalkthrough(widget.me.id).then((seen) { if (!seen && mounted) setState(() => _walk = true); });
+    _maybeWalk();
+  }
+
+  Future<void> _maybeWalk() async {
+    if (await Prefs.seenWalkthrough(widget.me.id)) return;
+    var hasData = true; // on any error assume an existing user: never nag
+    try {
+      final r = await Future.wait([Api.instance.get('/me/accounts'), Api.instance.get('/me/transactions', {'limit': '1'})]);
+      hasData = (r[0] as List).isNotEmpty || ((r[1] as Map)['items'] as List).isNotEmpty;
+    } catch (_) {/* keep hasData = true */}
+    if (hasData) { await Prefs.markWalkthrough(widget.me.id); return; }
+    if (mounted) setState(() => _walk = true);
   }
 
   Future<void> _finishWalk() async {

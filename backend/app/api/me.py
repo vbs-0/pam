@@ -32,6 +32,7 @@ me = APIRouter(prefix="/me", tags=["customer"])
 TXN_FIELDS = ("txn_id", "local_date", "posted_at", "account_id", "amount_paise", "channel", "descriptor",
               "counterparty_vpa", "merchant_id", "merchant_name", "category_code", "kind", "confidence", "decision")
 HELD = "SELECT account_id FROM account_holder WHERE user_id = :u"
+CARRY_SQL = "SELECT category_code FROM budget_carry WHERE user_id = :u"
 
 
 def _txn(r) -> dict:
@@ -81,6 +82,9 @@ def transactions(user: str = Depends(household), run: str = Depends(run_id), lim
                  category: str | None = Query(None, max_length=40), account_id: str | None = Query(None, max_length=32),
                  kind: str | None = Query(None, pattern="^(EXPENSE|REFUND|INCOME|TRANSFER|REVERSAL|UNKNOWN)$"),
                  q: str | None = Query(None, min_length=1, max_length=60), cursor: str | None = None,
+                 date_from: date | None = None, date_to: date | None = None,
+                 min_paise: int | None = Query(None, ge=0), max_paise: int | None = Query(None, ge=0),
+                 merchant: str | None = Query(None, max_length=120), tag: str | None = Query(None, max_length=24),
                  conn: Connection = Depends(get_conn)):
     sql = [f"SELECT * FROM ({EFFECTIVE} AND t.account_id IN ({HELD})) x WHERE true"]
     p: dict = {"run": run, "u": user, "lim": limit + 1}
@@ -90,8 +94,26 @@ def transactions(user: str = Depends(household), run: str = Depends(run_id), lim
             sql.append(f"AND {col} = :{col}")
             p[col] = val
     if q:
-        sql.append(r"AND descriptor ILIKE :q ESCAPE '\'")
+        sql.append(r"AND (descriptor ILIKE :q ESCAPE '\' OR merchant_name ILIKE :q ESCAPE '\')")
         p["q"] = like_escape(q)
+    if date_from:
+        sql.append("AND local_date >= :df")
+        p["df"] = date_from
+    if date_to:
+        sql.append("AND local_date <= :dt")
+        p["dt"] = date_to
+    if min_paise is not None:
+        sql.append("AND abs(amount_paise) >= :mn")
+        p["mn"] = min_paise
+    if max_paise is not None:
+        sql.append("AND abs(amount_paise) <= :mx")
+        p["mx"] = max_paise
+    if merchant:
+        sql.append("AND COALESCE(merchant_name, descriptor) = :mer")
+        p["mer"] = merchant
+    if tag:
+        sql.append("AND txn_id IN (SELECT txn_id FROM txn_note WHERE :tag = ANY(tags))")
+        p["tag"] = tag.strip().lower()
     if cursor:
         d, tid = decode_cursor(cursor, 2)
         sql.append("AND (local_date, txn_id) < (:cd, :ct)")
@@ -100,7 +122,13 @@ def transactions(user: str = Depends(household), run: str = Depends(run_id), lim
     rows = conn.execute(text(" ".join(sql)), p).all()
     more = len(rows) > limit
     rows = rows[:limit]
-    return {"items": [_txn(r) for r in rows],
+    items = [_txn(r) for r in rows]
+    notes = {n.txn_id: n for n in conn.execute(text("SELECT txn_id, note, tags FROM txn_note WHERE txn_id = ANY(:ids)"),
+                                               {"ids": [i["txn_id"] for i in items]})} if items else {}
+    for i in items:
+        n = notes.get(i["txn_id"])
+        i["note"], i["tags"] = (n.note, list(n.tags)) if n else ("", [])
+    return {"items": items,
             "next_cursor": encode_cursor(rows[-1].local_date, rows[-1].txn_id) if more else None}
 
 
@@ -118,6 +146,8 @@ def transaction(txn_id: str, user: str = Depends(household), run: str = Depends(
     r = _own_txn(conn, run, user, txn_id)
     d = _txn(r) | {"reference_no": r.reference_no, "link_txn_id": r.link_txn_id, "series_id": r.series_id,
                    "rule_id": r.rule_id, "rule_version": r.rule_version}
+    n = conn.execute(text("SELECT note, tags FROM txn_note WHERE txn_id = :t"), {"t": txn_id}).first()
+    d["note"], d["tags"] = (n.note, list(n.tags)) if n else ("", [])
     d["overrides"] = [dict(o._mapping) for o in conn.execute(text(
         "SELECT override_id, category_code, actor, reason, created_at FROM category_override WHERE txn_id = :t "
         "ORDER BY created_at DESC, override_id DESC"), {"t": txn_id})]
@@ -176,7 +206,12 @@ def set_category(txn_id: str, body: CategoryIn, request: Request,
     return {"override_id": oid, "category_code": code}
 
 
-def _budget(conn, run, user, month):
+def _prev_month(m: str) -> str:
+    y, mo = int(m[:4]), int(m[5:])
+    return f"{y - (mo == 1)}-{12 if mo == 1 else mo - 1:02d}"
+
+
+def _budget(conn, run, user, month, carry: bool = True):
     rows = conn.execute(text(
         "SELECT b.budget_id, b.version, b.category_code AS submitted, b.amount_paise, r.resolved_category_code, "
         "r.resolution FROM budget_resolution r JOIN budget b USING (budget_id, version) "
@@ -184,6 +219,16 @@ def _budget(conn, run, user, month):
         {"run": run, "u": user, "m": month}).all()
     res = [BudgetResolution(r.budget_id, r.version, user, month, r.submitted, r.resolved_category_code, r.resolution,
                             r.amount_paise) for r in rows]
+    if carry:           # rollover: last month's unspent limit is added to this month's, for categories that opted in
+        on = {c for (c,) in conn.execute(text(CARRY_SQL), {"u": user})}
+        if on:
+            plines = _budget(conn, run, user, _prev_month(month), carry=False)[0]
+            have = {r.resolved_code for r in res}
+            for ln in plines:
+                left = (ln.budget_paise or 0) - ln.actual_paise
+                if ln.category_code in on and ln.category_code in have and left > 0:
+                    res.append(BudgetResolution(f"CARRY-{ln.category_code}", 1, user, month, ln.category_code,
+                                                ln.category_code, "VALID", left))
     spend = {c: v for c, v in conn.execute(text(
         f"SELECT category_code, -sum(amount_paise) FROM ({EFFECTIVE} AND e.user_id = :u AND e.local_month = :m) x "
         "WHERE kind IN ('EXPENSE', 'REFUND') OR (kind = 'UNKNOWN' AND amount_paise < 0) GROUP BY 1"),
@@ -200,10 +245,14 @@ def budgets(month: str = Depends(month_q), user: str = Depends(household), run: 
             conn: Connection = Depends(get_conn)):
     lines, res, _, _ = _budget(conn, run, user, month)
     names = dict(conn.execute(text("SELECT category_code, name FROM category")).all())
-    return {"month": month,
+    carried = {r.resolved_code: r.amount_paise for r in res if r.budget_id.startswith("CARRY-")}
+    carry_on = sorted(c for (c,) in conn.execute(text(CARRY_SQL), {"u": user}))
+    res = [r for r in res if not r.budget_id.startswith("CARRY-")]
+    return {"month": month, "carry_enabled": carry_on,
             "lines": [{"category_code": x.category_code, "category_name": names.get(x.category_code),
                        "budget_paise": x.budget_paise, "actual_paise": x.actual_paise, "ratio": x.ratio,
-                       "status": x.status, "budget_ids": list(x.budget_ids)} for x in lines],
+                       "status": x.status, "carried_paise": carried.get(x.category_code, 0),
+                       "budget_ids": [b for b in x.budget_ids if not str(b).startswith("CARRY-")]} for x in lines],
             "total_budget_paise": sum(x.budget_paise or 0 for x in lines),
             "total_actual_paise": sum(x.actual_paise for x in lines),
             "remapped": [{"budget_id": r.budget_id, "submitted_code": r.submitted_code, "resolved_code":
