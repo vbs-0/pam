@@ -378,6 +378,133 @@ def check_manifest(d: Data) -> CheckResult:
     return _result("manifest_and_volume", bad)
 
 
+# structural rules that the schema documents but a CHECK constraint cannot express ---------------------------------
+def check_account_rules(d: Data) -> CheckResult:
+    """Account id embeds its owner; only credit cards have a limit (and always do); a card has no UPI id."""
+    bad = []
+    for a in d.rows["account"]:
+        if "-".join(a[0].split("-")[1:3]) != a[1]:
+            bad.append(f"{a[0]} does not embed its owner {a[1]}")
+        card = a[2] == "CREDIT_CARD"
+        if card and (a[11] is None or a[11] <= 0):
+            bad.append(f"{a[0]} is a card without a positive limit")
+        if not card and a[11] is not None:
+            bad.append(f"{a[0]} has a credit limit but is not a card")
+        if card and a[5] is not None:
+            bad.append(f"{a[0]} is a card with a UPI id")
+    return _result("account_rules", bad)
+
+
+def check_holders(d: Data) -> CheckResult:
+    """Exactly one PRIMARY holder per account, who is the owner; every holder joins inside the account's life."""
+    bad, primary = [], Counter()
+    life = {a[0]: (a[7], a[8], a[1]) for a in d.rows["account"]}
+    for h in d.rows["account_holder"]:
+        opened, closed, owner = life[h[0]]
+        if h[2] == "PRIMARY":
+            primary[h[0]] += 1
+            if h[1] != owner:
+                bad.append(f"{h[0]} primary holder {h[1]} is not the owner {owner}")
+        if h[3] < opened or (closed is not None and h[3] > closed):
+            bad.append(f"{h[0]} holder {h[1]} joins on {h[3]}, outside the account's life")
+    bad += [f"{acc} has {primary[acc]} primary holders" for acc in life if primary[acc] != 1]
+    return _result("holders", bad)
+
+
+def check_balance_months(d: Data) -> CheckResult:
+    """Monthly balance rows are contiguous per account, chain (opening = last closing) and stay inside its life."""
+    bad = []
+    life = {a[0]: (a[7], a[8]) for a in d.rows["account"]}
+    by = defaultdict(list)
+    for r in d.rows["account_balance_monthly"]:
+        by[r[0]].append(r)
+    for acc, rows in by.items():
+        rows.sort(key=lambda r: r[1])
+        opened, closed = life[acc]
+        if rows[0][1] < month_key(opened) or (closed is not None and rows[-1][1] > month_key(closed)):
+            bad.append(f"{acc} has balance months outside its life")
+        for prev, cur in zip(rows, rows[1:], strict=False):
+            y, m = int(prev[1][:4]), int(prev[1][5:])
+            nxt = f"{y + (m == 12)}-{1 if m == 12 else m + 1:02d}"
+            if cur[1] != nxt:
+                bad.append(f"{acc} jumps from {prev[1]} to {cur[1]}")
+            elif cur[2] != prev[5]:
+                bad.append(f"{acc} {cur[1]} opens at {cur[2]} but {prev[1]} closed at {prev[5]}")
+    return _result("balance_months", bad)
+
+
+def check_effective_dates(d: Data) -> CheckResult:
+    """Rule versions are numbered 1..n with non-decreasing start dates, and a retired version starts first;
+    categories do not end before they start."""
+    bad = []
+    versions = defaultdict(list)
+    for r in d.rows["category_rule"]:
+        versions[r[0]].append(r)
+        if r[11] is not None and r[11] < r[10]:
+            bad.append(f"{r[0]} v{r[1]} retired before it started")
+    for rid, rows in versions.items():
+        rows.sort(key=lambda r: r[1])
+        if [r[1] for r in rows] != list(range(1, len(rows) + 1)):
+            bad.append(f"{rid} versions are {[r[1] for r in rows]}")
+        if any(b[10] < a[10] for a, b in zip(rows, rows[1:], strict=False)):
+            bad.append(f"{rid} versions start out of order")
+    for c in d.rows["category"]:
+        if c[5] is not None and c[5] < c[4]:
+            bad.append(f"category {c[0]} ends before it starts")
+    return _result("effective_dates", bad)
+
+
+def _copy_rows(sql: Path) -> dict[str, int]:
+    counts, current = {}, None
+    with open(sql, encoding="utf-8", newline="") as f:
+        for line in f:
+            if current is None:
+                if line.startswith("COPY "):
+                    current = line.split()[1].split(".")[-1]
+                    counts[current] = 0
+            elif line == "\\.\n":
+                current = None
+            else:
+                counts[current] += 1
+    return counts
+
+
+def check_artifacts(d: Data) -> CheckResult:
+    """Exactly the files the manifest lists (none missing, none extra) and, when the exports exist, that the JSON
+    and SQL carry the same row counts as the CSVs and match the checksums recorded in provenance.json."""
+    bad = []
+    listed = set(d.manifest["files"])
+    present = {f"{p.parent.name}/{p.name}" for folder in ("inputs", "ground_truth") for p in (d.dir / folder).glob("*")}
+    bad += [f"unexpected file {x}" for x in sorted(present - listed)]
+    json_dir, sql = d.dir / "json", d.dir / "seed.sql"
+    if json_dir.exists() and sql.exists():
+        counts = _copy_rows(sql)
+        for rel, meta in d.manifest["files"].items():
+            name = Path(rel).stem
+            jf = json_dir / f"{name}.json"
+            if not jf.exists():
+                bad.append(f"json/{name}.json missing")
+                continue
+            with open(jf, "rb") as f:
+                json_rows = max(sum(1 for _ in f) - 2, 0)
+            if json_rows != meta["rows"]:
+                bad.append(f"json/{name}.json has {json_rows} rows, the CSV has {meta['rows']}")
+            if counts.get(name) != meta["rows"]:
+                bad.append(f"seed.sql loads {counts.get(name)} rows into {name}, the CSV has {meta['rows']}")
+        prov = d.dir / "provenance.json"
+        if prov.exists():
+            p = json.loads(prov.read_text(encoding="utf-8"))
+            if p.get("manifest_sha256") != hashlib.sha256((d.dir / "manifest.json").read_bytes()).hexdigest():
+                bad.append("manifest.json differs from the checksum in provenance.json")
+            for rel, meta in p.get("exports", {}).items():
+                path = d.dir / rel
+                if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest() != meta["sha256"]:
+                    bad.append(f"{rel} differs from provenance.json")
+            if p.get("synthetic_only") is not True:
+                bad.append("provenance.json does not declare synthetic_only")
+    return _result("artifacts", bad, detail="file set, JSON and SQL row counts, provenance checksums")
+
+
 def check_coverage(d: Data) -> CheckResult:
     missing = set(schema.ISSUE_TYPES) - {a[1] for a in d.rows["anomaly"]}
     missing |= set(schema.TRUE_KINDS) - {lb[d.col("txn_label", "true_kind")] for lb in d.rows["txn_label"]}
@@ -390,7 +517,8 @@ def check_coverage(d: Data) -> CheckResult:
 CHECKS = [check_columns, check_pk_unique, check_fk_integrity, check_enums, check_id_formats, check_date_order,
           check_balances, check_cc_payments, check_interest_derivation, check_transfer_pairs_zero, check_lifecycle,
           check_duplicates, check_taxonomy_conformance, check_truth_isolation, check_sign_convention, check_manifest,
-          check_coverage]
+          check_coverage, check_account_rules, check_holders, check_balance_months, check_effective_dates,
+          check_artifacts]
 
 
 def validate_dataset(data_dir: Path) -> list[CheckResult]:

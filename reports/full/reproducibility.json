@@ -1,5 +1,9 @@
 {
   "match": true,
+  "csv_match": true,
+  "export_match": true,
+  "scope": "same locked Python and dependency environment; two fresh interpreters, PYTHONHASHSEED 1 and 2",
+  "python": "3.12.13",
   "runs": [
     "1938a37638e55c9649fd26a9c9aeb13cd8e0c33cbf2208d82e3a6d03598eee2e",
     "1938a37638e55c9649fd26a9c9aeb13cd8e0c33cbf2208d82e3a6d03598eee2e"
@@ -25,5 +29,24 @@
     "inputs/merchant_category.csv": "48ccbb229353143d2ee83bdf42697d79a8ce18e94c50342e585b101dcb4f0b7b",
     "inputs/txn.csv": "5f6d71f43fc138106686e0730672e056a80afa7d5e95aed029f43bbc6a69462a",
     "inputs/user_profile.csv": "e87a8e43dd24f5ab94b36311a2635c2af28de479510a62ee43497a5e3e509f36"
+  },
+  "exports": {
+    "json/user_profile.json": "d9a2bf9aa1b27a87912814cdfa5fc01332454690dc314946c87269f72374c49e",
+    "json/category.json": "3fe23354b18fcdf2a203c9fcd965a42e27e28b0f7647435ee651e8dbbed9ce54",
+    "json/category_synonym.json": "fd0521541805d3f44f6b480e63a12d679cb9a938cd32e3d89139615b43a8f0e1",
+    "json/merchant.json": "ca5aa7a39e92c28691317666bb51d4edf5f643fb64fb921468b87b0a4d40f851",
+    "json/merchant_alias.json": "402cecb385e30babeb82ac8ada4efcca21bb6a805047f12ccb833bffd37ab369",
+    "json/merchant_category.json": "f10a886574e45dac5c268a1d92a0d92a456eeaab2e25475c2b83dd4aa5deff79",
+    "json/category_rule.json": "5d0220f92d9393dc8b1589647de28f986003e592b3cb54dcfe0bae15d8cdc5ee",
+    "json/account.json": "e3967c2946b844371c95f048facf9157fe9b4dab905de0c0aed37d29f61033b2",
+    "json/account_holder.json": "566e497d90eb6ec0f28464a568211abe3badb9f78a1a82af08e1fea5e7fabf61",
+    "json/account_event.json": "8a9a6bfcc3bd9f299bf36e0fba4745424a0f953caadfe002d3f69b0e809cf6e2",
+    "json/account_balance_monthly.json": "d6c46b4792eebfc65f032f6ca8f860637d69420662319e09727378882fa53dcd",
+    "json/txn.json": "782ee78c4f52dd8b497604f3092eefd6791361f11c248ca205601cd1d7aee3dd",
+    "json/budget.json": "76e394f01d26c57ebb0322afd7ad5905c338af2840affa137cf0b0273ce25db9",
+    "json/recurring_truth.json": "a9ad3124aed4d5cecb039630d4053e64d98f316d4fa9ea87b2e5a4fbcd4c462b",
+    "json/txn_label.json": "8a24da23e2301de837f588b1b91e615e17503d483abc7e14f1d8d00a36408bf0",
+    "json/anomaly.json": "6aa13cfb8d81f2147def30904e615bfbfad33602b3f6da44d48c380956e7ace2",
+    "seed.sql": "7c5bc6575549d7bd5779a74d581871b6382ba87ff1bc269982a656b9e192c133"
   }
 }

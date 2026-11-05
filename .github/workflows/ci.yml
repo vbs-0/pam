@@ -29,8 +29,18 @@ jobs:
       - run: uv sync --frozen --python 3.12
       - run: uv run ruff check app tests
       - run: uv run pytest -q
-      - name: Dataset is reproducible
+      - name: Dataset is reproducible (CSV, JSON and SQL)
         run: uv run python -m app.cli repro --scale starter --report /tmp/repro.json
+      - name: Committed starter dataset is exactly what the generator produces
+        run: |
+          uv run python -m app.cli generate --scale starter --out /tmp/starter
+          uv run python -m app.cli export --scale starter --out /tmp/starter
+          for p in inputs ground_truth json; do diff -r /tmp/starter/$p ../data/starter/$p; done
+          diff /tmp/starter/manifest.json ../data/starter/manifest.json
+          diff /tmp/starter/seed.sql ../data/starter/seed.sql
+      - name: Published manifest hashes match the committed manifests
+        working-directory: .
+        run: sha256sum -c docs/manifest-hashes.sha256
 
   web:
     runs-on: ubuntu-latest

@@ -9,7 +9,7 @@ from pathlib import Path
 from sqlalchemy import text
 
 from app.datagen.generator import SCALES, GenParams, generate
-from app.datagen.writer import export_json, export_sql, repro, write_dataset
+from app.datagen.writer import export_json, export_sql, repro, write_dataset, write_provenance
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -39,7 +39,8 @@ def cmd_export(a) -> None:
         sys.exit(f"no dataset at {out}; run `generate` first")
     export_json(out)
     export_sql(out)
-    print(f"wrote {out / 'json'} and {out / 'seed.sql'}")
+    write_provenance(out)
+    print(f"wrote {out / 'json'}, {out / 'seed.sql'} and {out / 'provenance.json'}")
 
 
 def cmd_repro(a) -> None:

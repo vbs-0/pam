@@ -1,6 +1,6 @@
 # Dataset validation — starter
 
-Overall: **PASS** (17/17 checks pass)
+Overall: **PASS** (22/22 checks pass)
 
 | Check | Status | Violations | Labelled | Examples |
 |---|---|---|---|---|
@@ -21,3 +21,8 @@ Overall: **PASS** (17/17 checks pass)
 | `sign_convention` | PASS | 0 | 0 |  |
 | `manifest_and_volume` | PASS | 0 | 0 |  |
 | `coverage` | PASS | 0 | 0 | labelled issue types, true kinds and series types present |
+| `account_rules` | PASS | 0 | 0 |  |
+| `holders` | PASS | 0 | 0 |  |
+| `balance_months` | PASS | 0 | 0 |  |
+| `effective_dates` | PASS | 0 | 0 |  |
+| `artifacts` | PASS | 0 | 0 | file set, JSON and SQL row counts, provenance checksums |

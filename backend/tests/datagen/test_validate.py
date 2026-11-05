@@ -6,7 +6,7 @@ import pytest
 
 from app.datagen.generator import GenParams, generate
 from app.datagen.validate import render_markdown, validate_dataset
-from app.datagen.writer import write_dataset
+from app.datagen.writer import export_json, export_sql, write_dataset, write_provenance
 
 
 @pytest.fixture(scope="module")
@@ -42,7 +42,7 @@ def test_clean_dataset_passes(data_dir):
     res = _by_name(validate_dataset(data_dir))
     assert all(r.status != "FAIL" for r in res.values()), [r for r in res.values() if r.status == "FAIL"]
     assert res["taxonomy_conformance"].labelled > 0
-    assert len(res) == 17
+    assert len(res) == 22
     md = render_markdown(list(res.values()), "Dataset validation")
     assert "| `balances` | PASS |" in md
 
@@ -102,3 +102,63 @@ def test_manifest_detects_edit(tmp_path):
     d = _fresh(tmp_path)
     _corrupt(d / "inputs" / "category.csv", lambda r: r[1].__setitem__(1, "Renamed"), rehash=False)
     assert _by_name(validate_dataset(d))["manifest_and_volume"].status == "FAIL"
+
+
+def _first(rows, col, value):
+    return next(i for i, r in enumerate(rows) if i and r[col] == value)
+
+
+@pytest.mark.parametrize("table, mutate, check", [
+    # a credit limit on a savings account
+    ("account", lambda r: r[_first(r, 2, "SAVINGS")].__setitem__(11, "500000"), "account_rules"),
+    # a card without a limit
+    ("account", lambda r: r[_first(r, 2, "CREDIT_CARD")].__setitem__(11, ""), "account_rules"),
+    # an account id that does not embed its owner
+    ("account", lambda r: r[1].__setitem__(1, "USR-000099"), "account_rules"),
+    # an account that loses its only PRIMARY holder
+    ("account_holder", lambda r: r.pop(_first(r, 2, "PRIMARY")), "holders"),
+    # a holder who joins before the account exists
+    ("account_holder", lambda r: r[1].__setitem__(3, "2000-01-01"), "holders"),
+    # a hole in an account's monthly balances
+    ("account_balance_monthly", lambda r: r.pop(3), "balance_months"),
+    # a balance chain that does not continue
+    ("account_balance_monthly", lambda r: r[3].__setitem__(2, "123456789"), "balance_months"),
+    # a rule retired before it started
+    ("category_rule", lambda r: r[1].__setitem__(11, "2000-01-01T00:00:00Z"), "effective_dates"),
+    # a category that ends before it starts
+    ("category", lambda r: r[1].__setitem__(5, "2000-01-01"), "effective_dates"),
+])
+def test_structural_rules_are_enforced(tmp_path, table, mutate, check):
+    d = _fresh(tmp_path)
+    assert _by_name(validate_dataset(d))[check].status == "PASS"
+    _corrupt(d / "inputs" / f"{table}.csv", mutate)
+    assert _by_name(validate_dataset(d))[check].status == "FAIL"
+
+
+def test_artifact_set_and_exports_are_cross_checked(tmp_path):
+    d = _fresh(tmp_path)
+    export_json(d)
+    export_sql(d)
+    prov = write_provenance(d)
+    assert prov["synthetic_only"] is True and prov["exports"]["seed.sql"]["sha256"]
+    assert _by_name(validate_dataset(d))["artifacts"].status == "PASS"
+    # an extra file in the data folders
+    (d / "inputs" / "notes.csv").write_text("x\n", encoding="utf-8")
+    assert _by_name(validate_dataset(d))["artifacts"].status == "FAIL"
+    (d / "inputs" / "notes.csv").unlink()
+    # a JSON export that lost a row, and one that no longer matches provenance.json
+    j = d / "json" / "txn.json"
+    lines = j.read_text(encoding="utf-8").split("\n")
+    j.write_text("\n".join(lines[:5] + lines[6:]), encoding="utf-8")
+    assert _by_name(validate_dataset(d))["artifacts"].status == "FAIL"
+    # a seed.sql whose COPY block was shortened
+    d2 = _fresh(tmp_path / "second")
+    export_json(d2)
+    export_sql(d2)
+    write_provenance(d2)
+    sql = d2 / "seed.sql"
+    text = sql.read_text(encoding="utf-8")
+    i = text.index("COPY txn ")
+    j2 = text.index("\n", text.index("\n", i) + 1)
+    sql.write_text(text[:j2 + 1] + text[text.index("\n", j2 + 1) + 1:], encoding="utf-8")
+    assert _by_name(validate_dataset(d2))["artifacts"].status == "FAIL"

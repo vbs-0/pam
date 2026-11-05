@@ -22,7 +22,7 @@ Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample h
 | `deploy/` | systemd unit, nginx site, deploy script |
 | `.github/` | CI: backend tests, web build and tests, Flutter analysis |
 
-The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed. `python -m app.cli generate --scale full` recreates it byte for byte; its manifest and reports are in `reports/full/`.
+The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed. `python -m app.cli generate --scale full` recreates it byte for byte; its manifest, provenance record and reports are in `reports/full/`. The data is synthetic only; see [docs/dataset-provenance.md](docs/dataset-provenance.md) for provenance, tamper checks (`docs/manifest-hashes.sha256`) and the exact reproducibility scope (locked Python 3.12 and `backend/uv.lock`). Generated files are never edited by hand.
 
 ## Run it
 
