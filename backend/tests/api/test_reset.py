@@ -75,3 +75,19 @@ def test_forgot_is_rate_limited_and_skipped_without_smtp(client, outbox, monkeyp
     auth.FORGOTS.clear()
     outbox.clear()
     assert client.post("/api/v1/auth/forgot", json={"email": "analyst@pam.test"}).status_code == 202 and not outbox
+
+
+def test_welcome_on_register_and_notice_after_reset(client, outbox):
+    auth.SIGNUPS.clear()
+    r = client.post("/api/v1/auth/register", json={"email": "welcome@mail.test", "password": "long-enough-pass", "name": "Asha"})
+    assert r.status_code == 201
+    assert [(m[0], m[1]) for m in outbox] == [("welcome@mail.test", "Welcome to PAM")] and "Hi Asha" in outbox[0][2]
+    outbox.clear()
+    client.post("/api/v1/auth/forgot", json={"email": "welcome@mail.test"})
+    assert client.post("/api/v1/auth/reset", json={"token": _token(outbox), "password": "another-long-pass"}).status_code == 200
+    assert outbox[-1][1] == "Your PAM password was changed" and "/forgot" in outbox[-1][2]
+    # the duplicate sign-up that fails must not send another welcome
+    outbox.clear()
+    dup = client.post("/api/v1/auth/register", json={"email": "welcome@mail.test", "password": "long-enough-pass"})
+    assert dup.status_code == 409 and not outbox
+    auth.SIGNUPS.clear()

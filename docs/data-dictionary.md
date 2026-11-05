@@ -121,16 +121,16 @@ CategoryRule: versioned, conditional mapping rules. Never edited in place.
 
 ### `account`
 
-Account: savings or credit card. Owner is the household whose budget it affects.
+Account: savings, credit card or UPI app. Owner is the household whose budget it affects.
 
 | Column | Type | Required | Allowed values | Unit | Unique | Validation | Description |
 |---|---|---|---|---|---|---|---|
 | `account_id` | VARCHAR(32) | yes |  |  | PK | ^ACC-USR-\d{6}-\d{2}$ | Account id; embeds owner user id |
 | `user_id` | VARCHAR(32) | yes |  |  |  | = user id embedded in account_id; FK → `user_profile.user_id` | Owner profile |
-| `account_type` | VARCHAR(12) | yes | SAVINGS, CREDIT_CARD |  |  |  | Account type |
-| `bank_code` | VARCHAR(4) | yes | SBIN, HDFC, ICIC, UTIB, KKBK, BARB, PUNB, CNRB |  |  |  | Bank IFSC prefix |
+| `account_type` | VARCHAR(12) | yes | SAVINGS, CREDIT_CARD, UPI |  |  |  | Account type (UPI: a UPI app or wallet; real households only) |
+| `bank_code` | VARCHAR(4) | yes | SBIN, HDFC, ICIC, UTIB, KKBK, BARB, PUNB, CNRB, OTHR, PTYM, PHPE, GPAY, BHIM, AMZN |  |  |  | Bank IFSC prefix, UPI app code, or OTHR for a name the user typed |
 | `masked_number` | VARCHAR(20) | yes |  |  |  |  | Masked account/card number |
-| `vpa` | VARCHAR(64) | no |  |  | yes |  | UPI id of this account (savings only) |
+| `vpa` | VARCHAR(64) | no |  |  | yes |  | UPI id of this account (savings and UPI accounts) |
 | `currency` | VARCHAR(3) | yes | INR |  |  |  | ISO 4217 |
 | `opened_on` | DATE | yes |  |  |  |  | Open date |
 | `closed_on` | DATE | no |  |  |  | >= opened_on | Close date |

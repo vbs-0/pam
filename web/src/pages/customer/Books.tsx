@@ -2,10 +2,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Empty, Field, Money, PageHead, QueryState, Section, Stamp, StatusStamp } from "../../components/ui";
 import { ApiError, get, patch, post } from "../../lib/api";
-import { dayLabel, titleCase, todayIso, toPaise } from "../../lib/format";
+import { dayLabel, todayIso, toPaise } from "../../lib/format";
 import type { Account, Profile } from "../../lib/types";
 
-const BANKS: Record<string, string> = { SBIN: "State Bank of India", HDFC: "HDFC Bank", ICIC: "ICICI Bank", UTIB: "Axis Bank", KKBK: "Kotak Mahindra", BARB: "Bank of Baroda", PUNB: "Punjab National Bank", CNRB: "Canara Bank", OTHR: "Other bank" };
+const BANKS: Record<string, string> = { SBIN: "State Bank of India", HDFC: "HDFC Bank", ICIC: "ICICI Bank", UTIB: "Axis Bank", KKBK: "Kotak Mahindra Bank", BARB: "Bank of Baroda", PUNB: "Punjab National Bank", CNRB: "Canara Bank", OTHR: "Other bank" };
+const UPI_APPS: Record<string, string> = { PHPE: "PhonePe", GPAY: "Google Pay", PTYM: "Paytm", BHIM: "BHIM", AMZN: "Amazon Pay", OTHR: "Other (type a name)" };
+const ALL_NAMES: Record<string, string> = { ...BANKS, ...UPI_APPS, OTHR: "Other" };
 
 export default function Books() {
   const qc = useQueryClient();
@@ -20,14 +22,14 @@ export default function Books() {
       <PageHead title="Books" sub="Your accounts and household details." />
       <Section title="Accounts">
         <QueryState q={accounts}>
-          {(rows) => rows.length === 0 ? <Empty title="No accounts yet" hint="Add a savings account or credit card to start writing entries." /> : (
+          {(rows) => rows.length === 0 ? <Empty title="No accounts yet" hint="Add a savings account, credit card or UPI app to start writing entries." /> : (
             <div className="overflow-x-auto"><table className="register min-w-[640px]">
-              <thead><tr><th>Account</th><th>Bank</th><th>UPI ID</th><th className="num">Balance</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
+              <thead><tr><th>Account</th><th>Provider</th><th>UPI ID</th><th className="num">Balance</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 {rows.map((a) => (
                   <tr key={a.account_id}>
-                    <td><div>{titleCase(a.account_type)} {a.masked_number.slice(-4)}</div><div className="text-xs text-muted">Opened {dayLabel(a.opened_on)} {a.opened_on.slice(0, 4)}{a.holder_role === "JOINT" && <> · <Stamp>Joint</Stamp></>}</div></td>
-                    <td>{BANKS[a.bank_code] ?? a.bank_code}</td>
+                    <td><div>{a.display_name}</div><div className="text-xs text-muted">Opened {dayLabel(a.opened_on)} {a.opened_on.slice(0, 4)}{a.holder_role === "JOINT" && <> · <Stamp>Joint</Stamp></>}</div></td>
+                    <td>{a.label && a.account_type !== "UPI" ? `${a.label} (${ALL_NAMES[a.bank_code] ?? a.bank_code})` : ALL_NAMES[a.bank_code] ?? a.bank_code}</td>
                     <td className="font-mono text-xs">{a.vpa ?? "—"}</td>
                     <td className="num"><Money paise={a.balance_paise} tone={a.balance_paise < 0 ? "red" : undefined} />{a.credit_limit_paise && <div className="text-xs text-muted">limit <Money paise={a.credit_limit_paise} /></div>}</td>
                     <td><StatusStamp status={a.status} /></td>
@@ -53,25 +55,29 @@ export default function Books() {
 
 function AddAccount() {
   const qc = useQueryClient();
-  const [f, setF] = useState({ type: "SAVINGS", bank: "HDFC", last4: "", vpa: "", opening: "", opened: todayIso(), limit: "" });
+  const [f, setF] = useState({ type: "SAVINGS", bank: "HDFC", label: "", last4: "", vpa: "", opening: "", opened: todayIso(), limit: "" });
   const up = (k: keyof typeof f) => (v: string) => setF((s) => ({ ...s, [k]: v }));
   const m = useMutation({
     mutationFn: () => post("/me/accounts", {
-      account_type: f.type, bank_code: f.bank, last4: f.last4 || null, vpa: f.vpa || null, opened_on: f.opened,
+      account_type: f.type, bank_code: f.bank, label: f.label.trim() || null, last4: f.type === "UPI" ? null : f.last4 || null, vpa: f.vpa || null, opened_on: f.opened,
       opening_balance_paise: f.opening ? toPaise(f.opening) ?? 0 : 0, credit_limit_paise: f.type === "CREDIT_CARD" && f.limit ? toPaise(f.limit) : null,
     }),
-    onSuccess: () => { qc.invalidateQueries(); setF((s) => ({ ...s, last4: "", vpa: "", opening: "", limit: "" })); },
+    onSuccess: () => { qc.invalidateQueries(); setF((s) => ({ ...s, label: "", last4: "", vpa: "", opening: "", limit: "" })); },
   });
+  const isUpi = f.type === "UPI";
+  const setType = (type: string) => setF((s) => ({ ...s, type, bank: type === "UPI" ? "PHPE" : s.bank in BANKS ? s.bank : "HDFC", label: "" }));
+  const needsName = isUpi && f.bank === "OTHR";
   const err = (n: string) => (m.error as ApiError | null)?.fields?.find((x) => x.field.endsWith(n))?.message;
   return (
     <form className="mt-8 border border-rule-strong p-5 bg-sheet" onSubmit={(e: FormEvent) => { e.preventDefault(); m.mutate(); }}>
       <h3 className="font-semibold mb-3">Add an account</h3>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Field label="Type">{(id) => <select id={id} className="field" value={f.type} onChange={(e) => up("type")(e.target.value)}><option value="SAVINGS">Savings account</option><option value="CREDIT_CARD">Credit card</option></select>}</Field>
-        <Field label="Bank">{(id) => <select id={id} className="field" value={f.bank} onChange={(e) => up("bank")(e.target.value)}>{Object.entries(BANKS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>}</Field>
-        <Field label="Last 4 digits" hint="Optional" error={err("last4")}>{(id) => <input id={id} className="field" inputMode="numeric" maxLength={4} value={f.last4} onChange={(e) => up("last4")(e.target.value.replace(/\D/g, ""))} />}</Field>
-        {f.type === "SAVINGS" && <Field label="Your UPI ID" hint="Optional. Lets PAM recognise payments between your own accounts." error={err("vpa")}>{(id) => <input id={id} className="field" value={f.vpa} onChange={(e) => up("vpa")(e.target.value)} placeholder="name@okhdfcbank" />}</Field>}
-        <Field label={f.type === "CREDIT_CARD" ? "Amount owed today (₹)" : "Balance when you start (₹)"} hint="Optional. Leave blank for zero.">{(id) => <input id={id} className="field" inputMode="decimal" value={f.opening} onChange={(e) => up("opening")(e.target.value)} />}</Field>
+        <Field label="Type">{(id) => <select id={id} className="field" value={f.type} onChange={(e) => setType(e.target.value)}><option value="SAVINGS">Savings account</option><option value="CREDIT_CARD">Credit card</option><option value="UPI">UPI app (PhonePe, Paytm…)</option></select>}</Field>
+        <Field label={isUpi ? "UPI app" : "Bank"}>{(id) => <select id={id} className="field" value={f.bank} onChange={(e) => up("bank")(e.target.value)}>{Object.entries(isUpi ? UPI_APPS : BANKS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>}</Field>
+        {(needsName || (!isUpi && f.bank === "OTHR")) && <Field label={isUpi ? "App name" : "Bank name"} hint={isUpi ? undefined : "Optional"} error={err("label")}>{(id) => <input id={id} className="field" maxLength={40} required={needsName} value={f.label} onChange={(e) => up("label")(e.target.value)} placeholder={isUpi ? "e.g. Slice, Cred, Navi" : "e.g. Federal Bank"} />}</Field>}
+        {!isUpi && <Field label="Last 4 digits" hint="Optional" error={err("last4")}>{(id) => <input id={id} className="field" inputMode="numeric" maxLength={4} value={f.last4} onChange={(e) => up("last4")(e.target.value.replace(/\D/g, ""))} />}</Field>}
+        {f.type !== "CREDIT_CARD" && <Field label="Your UPI ID" hint="Optional. Lets PAM recognise payments between your own accounts." error={err("vpa")}>{(id) => <input id={id} className="field" value={f.vpa} onChange={(e) => up("vpa")(e.target.value)} placeholder={isUpi ? "name@ybl" : "name@okhdfcbank"} />}</Field>}
+        <Field label={f.type === "CREDIT_CARD" ? "Amount owed today (₹)" : isUpi ? "Wallet balance today (₹)" : "Balance when you start (₹)"} hint="Optional. Leave blank for zero.">{(id) => <input id={id} className="field" inputMode="decimal" value={f.opening} onChange={(e) => up("opening")(e.target.value)} />}</Field>
         {f.type === "CREDIT_CARD" && <Field label="Credit limit (₹)" hint="Optional">{(id) => <input id={id} className="field" inputMode="decimal" value={f.limit} onChange={(e) => up("limit")(e.target.value)} />}</Field>}
         <Field label="Opened on" error={err("opened_on")}>{(id) => <input id={id} type="date" className="field" max={todayIso()} value={f.opened} onChange={(e) => up("opened")(e.target.value)} />}</Field>
       </div>

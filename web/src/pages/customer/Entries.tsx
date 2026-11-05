@@ -55,7 +55,7 @@ export default function Entries() {
         <Field label="Account">{(id) => (
           <select id={id} className="field" value={account} onChange={(e) => set("account", e.target.value)}>
             <option value="">All accounts</option>
-            {accounts.data?.map((a) => <option key={a.account_id} value={a.account_id}>{titleCase(a.account_type)} {a.masked_number.slice(-4)} · {a.bank_code}</option>)}
+            {accounts.data?.map((a) => <option key={a.account_id} value={a.account_id}>{a.display_name}</option>)}
           </select>
         )}</Field>
         <Field label="Kind">{(id) => (
@@ -142,7 +142,7 @@ function TxnDrawer({ id, canWrite, accounts, onClose }: { id: string; canWrite: 
           </div>
           <dl className="grid grid-cols-[130px_1fr] gap-y-1.5 text-sm border-y border-rule py-3">
             <dt className="text-muted">Category</dt><dd>{catName(t.category_code)} {t.kind !== "EXPENSE" && <StatusStamp status={t.kind} />}</dd>
-            <dt className="text-muted">Account</dt><dd>{acct ? `${titleCase(acct.account_type)} ${acct.masked_number.slice(-4)} · ${acct.bank_code}` : t.account_id}</dd>
+            <dt className="text-muted">Account</dt><dd>{acct ? acct.display_name : t.account_id}</dd>
             <dt className="text-muted">Channel</dt><dd>{titleCase(t.channel)}{t.counterparty_vpa && <> · {t.counterparty_vpa}</>}</dd>
             {t.reference_no && <><dt className="text-muted">Reference</dt><dd className="font-mono text-xs">{t.reference_no}</dd></>}
             <dt className="text-muted">Why this category</dt>
@@ -282,7 +282,7 @@ function AddEntry({ accounts, onClose }: { accounts: Account[]; onClose: () => v
           <Field label="Date" error={fieldErr("date")}>{(id) => <input id={id} type="date" className="field" max={todayIso()} value={f.date} onChange={(e) => up("date")(e.target.value)} />}</Field>
           <Field label="Account">{(id) => (
             <select id={id} className="field" value={f.account_id} onChange={(e) => up("account_id")(e.target.value)}>
-              {open.map((a) => <option key={a.account_id} value={a.account_id}>{titleCase(a.account_type)} {a.masked_number.slice(-4)} · {a.bank_code}</option>)}
+              {open.map((a) => <option key={a.account_id} value={a.account_id}>{a.display_name}</option>)}
             </select>
           )}</Field>
         </div>

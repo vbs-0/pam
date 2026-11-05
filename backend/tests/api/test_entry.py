@@ -159,3 +159,31 @@ def test_full_run_and_reload_keep_real_households(client, me, api_db):
         assert c.execute(text("SELECT count(*) FROM account WHERE user_id = :u"), {"u": uid}).scalar() == 1
         run_pipeline(c)
     assert client.get(f"{V1}/me/transactions/{tid}", headers=h).json()["descriptor"] == "chai"
+
+
+def test_upi_app_accounts_and_custom_names(client, me):
+    h, _ = me
+    phonepe = _acct(client, h, account_type="UPI", bank_code="PHPE", vpa="asha@ybl", opening_balance_paise=250_000)
+    custom = _acct(client, h, account_type="UPI", bank_code="OTHR", label="  Slice   Pay ")
+    bank = _acct(client, h, bank_code="OTHR", label="Federal Bank", last4="4321")
+    rows = {a["account_id"]: a for a in client.get(f"{V1}/me/accounts", headers=h).json()}
+    assert rows[phonepe]["display_name"] == "PhonePe UPI" and rows[phonepe]["balance_paise"] == 250_000
+    assert rows[custom]["display_name"] == "Slice Pay" and rows[custom]["label"] == "Slice Pay"
+    assert rows[bank]["display_name"] == "Federal Bank savings ··4321"
+    # an entry on the UPI app is filed and counted like any other
+    r = client.post(f"{V1}/me/transactions", json={"account_id": phonepe, "date": D, "amount_paise": 12_000, "direction": "DR",
+                                                   "description": "Chai at stall", "category_code": "FOOD_DINING"}, headers=h)
+    assert r.status_code == 201 and r.json()["processed"]
+    # rejections: custom app without a name, UPI app as a bank, UPI app as card, credit limit on UPI, odd characters
+    bad = [
+        {"account_type": "UPI", "bank_code": "OTHR"},
+        {"account_type": "SAVINGS", "bank_code": "PHPE"},
+        {"account_type": "CREDIT_CARD", "bank_code": "GPAY"},
+        {"account_type": "UPI", "bank_code": "PTYM", "credit_limit_paise": 100_000},
+        {"account_type": "UPI", "bank_code": "OTHR", "label": "<script>"},
+        {"account_type": "UPI", "bank_code": "HDFC"},
+    ]
+    for body in bad:
+        assert client.post(f"{V1}/me/accounts", json=body | {"opened_on": "2025-01-01"}, headers=h).status_code == 422, body
+    assert client.post(f"{V1}/me/accounts", json={"account_type": "UPI", "bank_code": "PHPE", "vpa": "asha@ybl"},
+                       headers=h).status_code == 409           # the same UPI ID cannot be linked twice

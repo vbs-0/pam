@@ -79,9 +79,10 @@ def update_profile(body: ProfileIn, request: Request, user: str = Depends(own), 
 
 # ---------- accounts ----------
 class AccountIn(BaseModel):
-    account_type: str = Field(pattern="^(SAVINGS|CREDIT_CARD)$")
+    account_type: str = Field(pattern="^(" + "|".join(schema.ACCOUNT_TYPES) + ")$")
     bank_code: str = Field("OTHR", pattern="^(" + "|".join(schema.BANKS) + ")$")
     last4: str | None = Field(None, pattern=r"^\d{4}$")
+    label: str | None = Field(None, max_length=40, description="A name for the account; required for a custom UPI app")
     vpa: str | None = Field(None, max_length=64, description="Your own UPI ID on this account, e.g. name@okhdfcbank")
     opened_on: dt.date | None = None
     opening_balance_paise: int = Field(0, ge=-MAX_PAISE, le=MAX_PAISE)
@@ -92,6 +93,14 @@ class AccountIn(BaseModel):
     def check_vpa(cls, v):
         return _vpa(v)
 
+    @field_validator("label")
+    @classmethod
+    def check_label(cls, v):
+        v = " ".join((v or "").split())
+        if v and not re.fullmatch(r"[\w .&'()/-]{1,40}", v):
+            raise ValueError("Use letters, digits and simple punctuation in the name")
+        return v or None
+
 
 @router.post("/accounts", status_code=201)
 def create_account(body: AccountIn, request: Request, user: str = Depends(own),
@@ -99,8 +108,15 @@ def create_account(body: AccountIn, request: Request, user: str = Depends(own),
     opened = body.opened_on or today()
     if opened > today():
         raise HTTPException(422, "Opening date can't be in the future.")
-    if body.account_type == "SAVINGS" and body.credit_limit_paise:
+    if body.account_type != "CREDIT_CARD" and body.credit_limit_paise:
         raise HTTPException(422, "Only credit cards have a credit limit.")
+    is_app = body.bank_code in schema.UPI_PROVIDERS
+    if body.account_type == "UPI" and not (is_app or body.bank_code == "OTHR"):
+        raise HTTPException(422, "Pick a UPI app, or Other and type its name.")
+    if body.account_type != "UPI" and is_app:
+        raise HTTPException(422, "UPI apps are added as a UPI account, not as a bank account.")
+    if body.account_type == "UPI" and body.bank_code == "OTHR" and not body.label:
+        raise HTTPException(422, "Type a name for this UPI app.")
     if body.vpa and conn.execute(text("SELECT 1 FROM account WHERE vpa = :v"), {"v": body.vpa}).first():
         raise HTTPException(409, "That UPI ID is already linked to another account.")
     conn.execute(text("SELECT pg_advisory_xact_lock(hashtext(:u))"), {"u": user})
@@ -114,6 +130,8 @@ def create_account(body: AccountIn, request: Request, user: str = Depends(own),
         "INSERT INTO account VALUES (:a, :u, :t, :b, :m, :v, 'INR', :o, NULL, 'ACTIVE', :bal, :lim)"),
         {"a": acc, "u": user, "t": body.account_type, "b": body.bank_code, "m": masked, "v": body.vpa, "o": opened,
          "bal": body.opening_balance_paise, "lim": body.credit_limit_paise})
+    if body.label:
+        conn.execute(text("INSERT INTO account_label VALUES (:a, :l)"), {"a": acc, "l": body.label})
     conn.execute(text("INSERT INTO account_holder VALUES (:a, :u, 'PRIMARY', :o)"), {"a": acc, "u": user, "o": opened})
     _account_event(conn, acc, "OPENED", opened)
     audit(conn, caller.email, "ACCOUNT_CREATE", "ACCOUNT", acc, _rid(request), body.model_dump())

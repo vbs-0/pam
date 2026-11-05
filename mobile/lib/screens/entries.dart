@@ -313,7 +313,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                 const SizedBox(width: 10),
                 Expanded(child: DropdownButtonFormField<String>(
                   initialValue: _account, isExpanded: true, decoration: const InputDecoration(labelText: 'Account'),
-                  items: [for (final a in accts) DropdownMenuItem(value: a['account_id'] as String, child: Text('${titleCase(a['account_type'] as String)} ${(a['masked_number'] as String).substring((a['masked_number'] as String).length - 4)}', overflow: TextOverflow.ellipsis))],
+                  items: [for (final a in accts) DropdownMenuItem(value: a['account_id'] as String, child: Text(a['display_name'] as String, overflow: TextOverflow.ellipsis))],
                   onChanged: (v) => setState(() => _account = v),
                 )),
               ]),

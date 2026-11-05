@@ -13,7 +13,7 @@ export interface Txn {
 export interface TxnPage { items: Txn[]; next_cursor: string | null }
 export interface Category { code: string; name: string; group: string; kind: string; active: boolean; replaced_by: string | null }
 export interface Account {
-  account_id: string; account_type: "SAVINGS" | "CREDIT_CARD"; bank_code: string; masked_number: string; vpa: string | null;
+  account_id: string; account_type: "SAVINGS" | "CREDIT_CARD" | "UPI"; bank_code: string; masked_number: string; vpa: string | null; label: string | null; display_name: string;
   status: string; opened_on: string; closed_on: string | null; credit_limit_paise: number | null; holder_role: string;
   balance_paise: number; shared_from_other_household: boolean;
 }

@@ -115,7 +115,7 @@ SIGNUPS: dict[str, list[float]] = {}
 
 
 @router.post("/register", response_model=TokenOut, status_code=201)
-def register(body: RegisterIn, request: Request, conn: Connection = Depends(get_conn)):
+def register(body: RegisterIn, request: Request, tasks: BackgroundTasks, conn: Connection = Depends(get_conn)):
     """Email + password sign-up for a new, empty household (works without Google). 5 per hour per address.
     ponytail: no email verification yet (needs outbound mail); a Google sign-in later takes the login over (A48)."""
     if not settings.allow_signup:
@@ -137,6 +137,7 @@ def register(body: RegisterIn, request: Request, conn: Connection = Depends(get_
                       "disabled, created_at) VALUES (:i, :e, 'CUSTOMER', :p, :h, NULL, false, now())"),
                  {"i": app_id, "e": email, "p": profile, "h": hash_password(body.password)})
     row = conn.execute(text(f"SELECT {USER_COLS} FROM app_user WHERE app_user_id = :i"), {"i": app_id}).first()
+    tasks.add_task(mail.welcome, email, body.name)      # rate-limited with sign-up itself (5/hour/client)
     return _issue(conn, row, "register", request)
 
 
@@ -168,7 +169,7 @@ def forgot(body: ForgotIn, request: Request, tasks: BackgroundTasks, conn: Conne
 
 
 @router.post("/reset")
-def reset(body: ResetIn, request: Request, conn: Connection = Depends(get_conn)):
+def reset(body: ResetIn, request: Request, tasks: BackgroundTasks, conn: Connection = Depends(get_conn)):
     claims = read_reset_token(body.token)
     row = conn.execute(text("SELECT app_user_id, email, password_hash, disabled FROM app_user "
                             "WHERE app_user_id = :i FOR UPDATE"), {"i": claims["sub"]}).first()
@@ -182,11 +183,12 @@ def reset(body: ResetIn, request: Request, conn: Connection = Depends(get_conn))
     conn.commit()
     with _fails_lock:
         _fails.pop(row.email, None)
+    tasks.add_task(mail.password_changed, row.email)
     return {"detail": "Password changed. You can sign in now."}
 
 
 @router.post("/firebase", response_model=TokenOut)
-def firebase(body: FirebaseIn, request: Request, conn: Connection = Depends(get_conn)):
+def firebase(body: FirebaseIn, request: Request, tasks: BackgroundTasks, conn: Connection = Depends(get_conn)):
     claims = verify_firebase_token(body.id_token)
     uid, email = claims["sub"], (claims.get("email") or "").strip().lower()
     if not email or not claims.get("email_verified"):
@@ -204,7 +206,9 @@ def firebase(body: FirebaseIn, request: Request, conn: Connection = Depends(get_
                               "ELSE password_hash END WHERE app_user_id = :i"),
                          {"u": uid, "i": row.app_user_id, "d": drop})
         else:
-            row = _create(conn, uid, email, (claims.get("name") or "").strip())
+            name = (claims.get("name") or "").strip()
+            row = _create(conn, uid, email, name)
+            tasks.add_task(mail.welcome, email, name)
     if row.disabled:
         conn.commit()
         raise AuthError("this login is disabled", status=403)

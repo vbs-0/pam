@@ -34,7 +34,13 @@ metadata = MetaData(naming_convention={
 CHANNELS = ["UPI", "IMPS", "NEFT", "RTGS", "NACH", "CARD_POS", "CARD_ECOM", "ATM", "BBPS", "INTERNAL"]
 KINDS = ["EXPENSE", "INCOME", "TRANSFER", "REFUND", "REVERSAL", "UNKNOWN"]
 TRUE_KINDS = KINDS[:-1]
-BANKS = ["SBIN", "HDFC", "ICIC", "UTIB", "KKBK", "BARB", "PUNB", "CNRB", "OTHR"]   # OTHR: real households only
+UPI_PROVIDERS = {"PTYM": "Paytm", "PHPE": "PhonePe", "GPAY": "Google Pay", "BHIM": "BHIM", "AMZN": "Amazon Pay"}
+BANK_NAMES = {"SBIN": "State Bank of India", "HDFC": "HDFC Bank", "ICIC": "ICICI Bank", "UTIB": "Axis Bank",
+              "KKBK": "Kotak Mahindra Bank", "BARB": "Bank of Baroda", "PUNB": "Punjab National Bank",
+              "CNRB": "Canara Bank"}
+# provider codes and OTHR (a name the user types) exist for real households only; the generator never emits them
+BANKS = [*BANK_NAMES, "OTHR", *UPI_PROVIDERS]
+ACCOUNT_TYPES = ["SAVINGS", "CREDIT_CARD", "UPI"]
 ISSUE_TYPES = ["TRANSFER_DOUBLE_COUNT", "REFUND_AS_EXPENSE", "RECURRING_SKIP", "RECURRING_NOT_SKIP",
                "TZ_BOUNDARY", "BUDGET_CATEGORY_MISMATCH"]
 EXCEPTION_TYPES = ["UNCATEGORIZED", "UNMATCHED_TRANSFER", "ORPHAN_REFUND", "BUDGET_CATEGORY_UNMAPPED",
@@ -148,10 +154,11 @@ account = table(
     "account",
     col("account_id", ID, "Account id; embeds owner user id", pk=True, rule=r"^ACC-USR-\d{6}-\d{2}$"),
     col("user_id", ID, "Owner profile", fk="user_profile.user_id", rule="= user id embedded in account_id"),
-    col("account_type", String(12), "Account type", allowed=["SAVINGS", "CREDIT_CARD"]),
-    col("bank_code", String(4), "Bank IFSC prefix", allowed=BANKS),
+    col("account_type", String(12), "Account type (UPI: a UPI app or wallet; real households only)",
+        allowed=ACCOUNT_TYPES),
+    col("bank_code", String(4), "Bank IFSC prefix, UPI app code, or OTHR for a name the user typed", allowed=BANKS),
     col("masked_number", String(20), "Masked account/card number"),
-    col("vpa", String(64), "UPI id of this account (savings only)", null=True, unique=True),
+    col("vpa", String(64), "UPI id of this account (savings and UPI accounts)", null=True, unique=True),
     col("currency", String(3), "ISO 4217", allowed=["INR"]),
     col("opened_on", Date, "Open date"),
     col("closed_on", Date, "Close date", null=True, rule=">= opened_on"),
@@ -162,7 +169,7 @@ account = table(
     col("credit_limit_paise", BigInteger, "Card limit", null=True, unit="paise"),
     CheckConstraint("closed_on IS NULL OR closed_on >= opened_on", name="close_after_open"),
     CheckConstraint("(status = 'CLOSED') = (closed_on IS NOT NULL)", name="status_matches_close"),
-    comment="Account: savings or credit card. Owner is the household whose budget it affects.")
+    comment="Account: savings, credit card or UPI app. Owner is the household whose budget it affects.")
 
 account_holder = table(
     "account_holder",

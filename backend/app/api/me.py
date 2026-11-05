@@ -52,13 +52,27 @@ def categories(conn: Connection = Depends(get_conn), _: Caller = Depends(current
 @me.get("/accounts")
 def accounts(user: str = Depends(household), conn: Connection = Depends(get_conn)):
     rows = conn.execute(text(
-        "SELECT a.account_id, a.account_type, a.bank_code, a.masked_number, a.vpa, a.status, a.opened_on, "
+        "SELECT a.account_id, a.account_type, a.bank_code, a.masked_number, a.vpa, l.label, a.status, a.opened_on, "
         "a.closed_on, a.credit_limit_paise, h.holder_role, a.user_id <> :u AS shared_from_other_household, "
         "a.opening_balance_paise + COALESCE((SELECT sum(amount_paise) FROM txn t WHERE t.account_id = a.account_id),"
         " 0) AS balance_paise "
-        "FROM account_holder h JOIN account a USING (account_id) WHERE h.user_id = :u ORDER BY a.account_id"),
+        "FROM account_holder h JOIN account a USING (account_id) LEFT JOIN account_label l USING (account_id) "
+        "WHERE h.user_id = :u ORDER BY a.account_id"),
         {"u": user})
-    return [dict(r._mapping) for r in rows]
+    return [{**r._mapping, "display_name": display_name(r)} for r in rows]
+
+
+TYPE_NAMES = {"SAVINGS": "Savings", "CREDIT_CARD": "Credit card", "UPI": "UPI"}
+
+
+def display_name(a) -> str:
+    """'HDFC Bank savings ··4321', 'PhonePe UPI', or the user's own name for it."""
+    last4 = a.masked_number[-4:]
+    base = a.label or schema.UPI_PROVIDERS.get(a.bank_code) or schema.BANK_NAMES.get(a.bank_code) or "Other bank"
+    if a.account_type == "UPI":
+        return a.label or f"{base} UPI"
+    kind = TYPE_NAMES.get(a.account_type, a.account_type).lower()
+    return f"{base} {kind} ··{last4}" if last4 != "0000" else f"{base} {kind}"
 
 
 @me.get("/transactions")
