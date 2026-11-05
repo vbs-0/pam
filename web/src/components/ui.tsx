@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useIsFetching, useIsMutating, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, RefreshCw, X } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
@@ -199,4 +199,25 @@ export function Logo({ size = 32 }: { size?: number }) {
       <img src="/logo-dark.png" width={size} height={size} alt="" className="logo-dark" />
     </span>
   );
+}
+
+/** Full-screen loading state: the logo breathes above a sliding bar. Used while the session or a page chunk loads. */
+export function Splash() {
+  return (
+    <div role="status" aria-label="Loading" className="min-h-screen flex flex-col items-center justify-center gap-3 text-blue">
+      <span className="splash-logo"><Logo size={72} /></span>
+      <span className="text-sm font-bold tracking-[0.2em]">PAM</span>
+      <span className="splash-bar" aria-hidden />
+    </div>
+  );
+}
+
+/** Thin progress bar along the top edge while any request is in flight (hidden when idle). */
+export function TopBar() {
+  const busy = useIsFetching() + useIsMutating() > 0;
+  return <div aria-hidden className={`topbar ${busy ? "topbar-on" : ""}`} />;
+}
+
+export function Spinner({ size = 16 }: { size?: number }) {
+  return <span className="spinner" style={{ width: size, height: size }} aria-hidden />;
 }

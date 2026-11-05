@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router";
-import { Field, Logo } from "../components/ui";
+import { Field, Logo, Spinner } from "../components/ui";
 import { homeFor } from "../components/Shell";
 import { ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -59,7 +59,7 @@ export default function Login() {
           <Field label="Password" hint={mode === "up" ? "At least 10 characters" : undefined}>{(id) => <input id={id} className="field" type="password" autoComplete={mode === "in" ? "current-password" : "new-password"} required minLength={mode === "up" ? 10 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
           {mode === "in" && <p className="text-sm -mt-2"><Link to="/forgot" className="underline text-blue">Forgot your password?</Link></p>}
           {error && <p role="alert" className="text-red text-sm border border-red bg-red-soft px-3 py-2">{error}</p>}
-          <button className="btn btn-solid w-full" disabled={busy || !email || !password}>{busy ? "One moment…" : mode === "in" ? "Sign in" : "Create account"}</button>
+          <button className="btn btn-solid w-full" disabled={busy || !email || !password}>{busy ? <><Spinner />One moment…</> : mode === "in" ? "Sign in" : "Create account"}</button>
           {googleEnabled && <button type="button" className="btn w-full" disabled={busy} onClick={withGoogle}>Continue with Google</button>}
           <p className="text-sm text-center">{mode === "in" ? "New here? " : "Already have an account? "}<button type="button" className="underline text-blue font-semibold" onClick={() => { setMode(mode === "in" ? "up" : "in"); setError(null); }}>{mode === "in" ? "Create an account" : "Sign in"}</button></p>
           <div className="text-sm text-muted border-t border-rule pt-4 space-y-1">

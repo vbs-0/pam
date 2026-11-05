@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import Shell, { homeFor } from "./components/Shell";
-import { Skeleton } from "./components/ui";
+import { Splash, TopBar } from "./components/ui";
 import { useAuth } from "./lib/auth";
 import type { Role } from "./lib/types";
 import Login from "./pages/Login";
@@ -37,7 +37,7 @@ const staff = (roles: Role[], el: ReactNode) => <Guard roles={roles}>{el}</Guard
 
 function Gate() {
   const { me, loading } = useAuth();
-  if (loading) return <div className="p-10 max-w-md mx-auto"><Skeleton rows={4} /></div>;
+  if (loading) return <Splash />;
   if (!me) return <Navigate to="/login" replace />;
   return <Shell />;
 }
@@ -45,7 +45,8 @@ function Gate() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<div className="p-10 max-w-xl mx-auto"><Skeleton rows={4} /></div>}>
+      <TopBar />
+      <Suspense fallback={<Splash />}>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/forgot" element={<Forgot />} />
