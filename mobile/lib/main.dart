@@ -63,7 +63,7 @@ class StaffNotice extends StatelessWidget {
   const StaffNotice({super.key, required this.me, required this.onSignOut});
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('PAM')),
+        appBar: AppBar(title: Row(children: [Image.asset(Theme.of(context).brightness == Brightness.dark ? 'assets/logo-dark.png' : 'assets/logo-light.png', width: 30, height: 30), const SizedBox(width: 10), const Text('PAM')])),
         body: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

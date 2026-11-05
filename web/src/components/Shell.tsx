@@ -68,6 +68,7 @@ export default function Shell() {
     <div className="min-h-screen md:grid md:grid-cols-[232px_1fr]">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-paper focus:p-3">Skip to content</a>
       <aside className="md:sticky md:top-0 md:h-screen border-b md:border-b-0 md:border-r border-rule-strong bg-sheet flex md:flex-col">
+        <div className="md:hidden flex items-center px-3 border-r border-rule"><Logo size={28} /></div>
         <div className="hidden md:block px-5 pt-6 pb-5 border-b border-rule">
           <div className="flex items-center gap-2.5">
             <Logo size={34} />

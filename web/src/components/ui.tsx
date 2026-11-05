@@ -195,8 +195,8 @@ export function LimitBar({ actual, budget, status }: { actual: number; budget: n
 export function Logo({ size = 32 }: { size?: number }) {
   return (
     <span className="inline-flex shrink-0" aria-hidden>
-      <img src="/logo-light.png" width={size} height={size} alt="" className="logo-light rounded-md" />
-      <img src="/logo-dark.png" width={size} height={size} alt="" className="logo-dark rounded-md" />
+      <img src="/logo-light.png" width={size} height={size} alt="" className="logo-light " />
+      <img src="/logo-dark.png" width={size} height={size} alt="" className="logo-dark" />
     </span>
   );
 }

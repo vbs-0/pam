@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: AutofillGroup(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset(Theme.of(context).brightness == Brightness.dark ? 'assets/logo-dark.png' : 'assets/logo-light.png', width: 44, height: 44)),
+                      Image.asset(Theme.of(context).brightness == Brightness.dark ? 'assets/logo-dark.png' : 'assets/logo-light.png', width: 48, height: 48),
                       const SizedBox(width: 10),
                       Text('PAM', style: TextStyle(color: k.blue, fontWeight: FontWeight.w800, fontSize: 15, letterSpacing: 2)),
                     ]),
