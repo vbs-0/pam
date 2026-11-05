@@ -184,7 +184,21 @@ Labelled anomaly types from the brief are marked ★; `injected` means the label
 |---|---|---|---|---|---|
 | M01 | No `google-services.json` in the build | Firebase is skipped at build time; the Google button explains it is not available in this build; email sign-in works | main.dart, screens/login.dart, android/app/build.gradle.kts | manual | done |
 | M02 | Staff role signs in on the phone | Message pointing to the web console, plus Sign out | main.dart (StaffNotice) | manual | done |
-| M03 | Offline / timeout | Error box with Retry on every screen; there is no offline cache | ui/widgets.dart | manual | partial |
+| M03 | Offline / timeout | Reads fall back to the last copy saved on the phone with an Offline banner; writes show a clear message; screens with no saved copy show an error box with Retry | api.dart, main.dart | manual | done |
 | M04 | Token expired | Back to the login screen with a notice | api.dart, main.dart | manual | done |
 | M05 | 130% text scale, dark mode | Dark mode is the primary theme and screens scroll; the 130% text scale has not been checked | screens | not verified | open |
 | M06 | Category changed by mistake | Not built as an undo: the category can be changed again from the same sheet, and each change is kept in the audit log | screens/entries.dart | n/a | dropped |
+| M07 | Existing user opens the app on a new phone | The walkthrough and Getting-started card appear only when the household has no accounts and no entries; any error while checking counts as an existing user | main.dart, screens/onboarding.dart | manual | done |
+| M08 | Signed out while home-screen widgets are placed | Widgets switch to "Sign in" and the saved figures are erased | widgets_sync.dart | manual | done |
+| M09 | Widget data is old | Each widget prints the time it was saved; it never fetches by itself, so it cannot show a number that looks live | PamWidgets.kt | manual | done |
+| M10 | Cache of someone else's data | The on-device copy is wiped on sign out | api.dart | manual | done |
+| X01 | Calendar day with entries but no spend | Marked with a dot, not shaded as zero | web Calendar.tsx, mobile calendar.dart | manual | done |
+| X02 | Split that does not add up | Rejected server-side (parts must sum to the original) and the button stays disabled with the remainder shown | entries_plus.py | test_extras | done |
+| X03 | Transfer between the same account / identical accounts | Rejected; a real transfer is written as a matched pair the engine pairs, so it never counts as spend | entries_plus.py | test_extras | done |
+| X04 | CSV import: wrong columns, bank formats, repeated import, huge file | Header detection plus editable column mapping; dry run before saving; rows already present are skipped; max 5,000 rows / 2 MB; formula-looking cells neutralised on export | entries_plus.py | test_extras | done |
+| X05 | Restore a backup into a register that already has data | Refused; restore only fills an empty register | entries_plus.py | test_extras | done |
+| X06 | Change password while another device is signed in | The password hash is tied to the session token, so the other device is signed out; the current device gets a fresh token; a wrong current password is a 400, not a sign-out | auth.py, security.py | test_extras | done |
+| X07 | Delete account when the register is shared | The household is only deleted when the user is the sole member; demo, staff and sample accounts are refused | auth.py | test_extras | done |
+| X08 | Join a household with a bad, used or expired code | Unknown, used and expired codes are refused with a message, as is joining your own household; joining needs an empty register; leaving gives a fresh empty one | me_plus.py | test_extras | done |
+| X09 | Budget rollover after an over-spent month | Carry is never negative; it is added to the limit only for categories the user opted in | me.py | test_extras | done |
+| X10 | Daily email with nothing to report, or mail not configured | Nothing is sent; the settings page says when the server cannot send mail | digest.py | test_extras | done |

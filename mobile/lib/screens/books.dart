@@ -4,6 +4,7 @@ import '../api.dart';
 import '../format.dart';
 import '../theme.dart';
 import '../ui/widgets.dart';
+import 'entry_tools.dart';
 
 const _banks = {'SBIN': 'State Bank of India', 'HDFC': 'HDFC Bank', 'ICIC': 'ICICI Bank', 'UTIB': 'Axis Bank', 'KKBK': 'Kotak Mahindra Bank', 'BARB': 'Bank of Baroda', 'PUNB': 'Punjab National Bank', 'CNRB': 'Canara Bank', 'OTHR': 'Other bank'};
 const _upiApps = {'PHPE': 'PhonePe', 'GPAY': 'Google Pay', 'PTYM': 'Paytm', 'BHIM': 'BHIM', 'AMZN': 'Amazon Pay', 'OTHR': 'Other (type a name)'};
@@ -22,16 +23,29 @@ class _BooksState extends State<Books> {
     if (ok == true) widget.onChanged();
   }
 
+  int _rev = 0;
+
+  Future<void> _edit(Map<String, dynamic> a) async {
+    final ok = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, useSafeArea: true, builder: (_) => _EditAccount(a));
+    if (ok == true) { setState(() => _rev++); widget.onChanged(); }
+  }
+
+  Future<void> _move() async {
+    final ok = await showModalBottomSheet<bool>(context: context, isScrollControlled: true, useSafeArea: true, builder: (_) => const TransferSheet());
+    if (ok == true) { setState(() => _rev++); widget.onChanged(); }
+  }
+
   @override
   Widget build(BuildContext context) {
     final k = Palette.of(context);
     return RefreshIndicator(
-      onRefresh: () async => setState(() {}),
+      onRefresh: () async => setState(() => _rev++),
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
         const Text('Books', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -.4)),
         const SizedBox(height: 4),
         Text(widget.me.email, style: TextStyle(color: k.muted)),
         Loader<List<dynamic>>(
+          key: ValueKey(_rev),
           load: () async {
             final r = await Future.wait([Api.instance.get('/me/accounts'), Api.instance.get('/me/profile')]);
             return r;
@@ -40,11 +54,16 @@ class _BooksState extends State<Books> {
             final accts = (r[0] as List).cast<Map<String, dynamic>>();
             final sample = (r[1] as Map<String, dynamic>)['sample'] == true;
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SectionTitle('Accounts', trailing: sample ? null : TextButton.icon(onPressed: _add, icon: const Icon(Icons.add, size: 18), label: const Text('Add'))),
+              SectionTitle('Accounts', trailing: sample ? null : Row(mainAxisSize: MainAxisSize.min, children: [
+                if (accts.length > 1) TextButton.icon(onPressed: _move, icon: const Icon(Icons.swap_horiz, size: 18), label: const Text('Move money')),
+                TextButton.icon(onPressed: _add, icon: const Icon(Icons.add, size: 18), label: const Text('Add')),
+              ])),
               if (sample) Padding(padding: const EdgeInsets.only(top: 8), child: Stamp('Sample household · read-only', k.blue)),
               if (accts.isEmpty) const EmptyState('No accounts yet', hint: 'Add a savings account, credit card or UPI app to start writing entries.'),
               for (final a in accts)
-                Container(
+                InkWell(
+                  onTap: sample || a['status'] != 'ACTIVE' || a['shared_from_other_household'] == true ? null : () => _edit(a),
+                  child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(border: Border(bottom: BorderSide(color: k.rule))),
                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -59,6 +78,8 @@ class _BooksState extends State<Books> {
                     ]),
                   ]),
                 ),
+                ),
+              if (!sample && accts.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 10), child: Text('Tap an account to rename it, correct its balance or set a card\'s limit and due day.', style: TextStyle(color: k.muted, fontSize: 12))),
             ]);
           },
         ),
@@ -128,6 +149,80 @@ class _AddAccountState extends State<_AddAccount> {
           if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: k.red, fontWeight: FontWeight.w600))),
           const SizedBox(height: 16),
           SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _save, child: Text(_busy ? 'Adding…' : 'Add account'))),
+        ]),
+      ),
+    );
+  }
+}
+
+
+class _EditAccount extends StatefulWidget {
+  final Map<String, dynamic> a;
+  const _EditAccount(this.a);
+  @override
+  State<_EditAccount> createState() => _EditAccountState();
+}
+
+class _EditAccountState extends State<_EditAccount> {
+  late final _label = TextEditingController(text: widget.a['label'] as String? ?? '');
+  late final _balance = TextEditingController(text: '${(widget.a['balance_paise'] as int) / 100}'.replaceAll(RegExp(r'\.0$'), ''));
+  late final _limit = TextEditingController(text: widget.a['credit_limit_paise'] == null ? '' : '${(widget.a['credit_limit_paise'] as int) / 100}'.replaceAll(RegExp(r'\.0$'), ''));
+  late final _vpa = TextEditingController(text: widget.a['vpa'] as String? ?? '');
+  final _due = TextEditingController(), _stmt = TextEditingController();
+  bool _busy = false;
+  String? _error;
+  bool get _card => widget.a['account_type'] == 'CREDIT_CARD';
+
+  @override
+  void dispose() { _label.dispose(); _balance.dispose(); _limit.dispose(); _vpa.dispose(); _due.dispose(); _stmt.dispose(); super.dispose(); }
+
+  Future<void> _save() async {
+    final raw = _balance.text.trim();
+    final neg = raw.startsWith('-');
+    final bal = toPaise(neg ? raw.substring(1) : raw);
+    if (bal == null) { setState(() => _error = 'Enter the balance as a number'); return; }
+    final signed = neg ? -bal : bal;
+    final body = <String, dynamic>{'label': _label.text.trim()};
+    if (signed != widget.a['balance_paise']) body['balance_paise'] = signed;
+    if (_card && _limit.text.isNotEmpty && toPaise(_limit.text) != null) body['credit_limit_paise'] = toPaise(_limit.text);
+    if (_card && _due.text.isNotEmpty) body['due_day'] = int.tryParse(_due.text);
+    if (_card && _stmt.text.isNotEmpty) body['statement_day'] = int.tryParse(_stmt.text);
+    if (!_card && _vpa.text.trim() != (widget.a['vpa'] ?? '')) body['vpa'] = _vpa.text.trim();
+    setState(() { _busy = true; _error = null; });
+    try {
+      await Api.instance.patch('/me/accounts/${widget.a['account_id']}', body);
+      if (mounted) Navigator.pop(context, true);
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } finally { if (mounted) setState(() => _busy = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final k = Palette.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+      child: SingleChildScrollView(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [Expanded(child: Text('Edit ${widget.a['display_name']}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700))), IconButton(tooltip: 'Close', onPressed: () => Navigator.pop(context, false), icon: const Icon(Icons.close))]),
+          const SizedBox(height: 8),
+          TextField(controller: _label, maxLength: 40, decoration: const InputDecoration(labelText: 'Your name for it', helperText: 'Leave empty to use the bank name', counterText: '')),
+          const SizedBox(height: 12),
+          TextField(controller: _balance, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), decoration: InputDecoration(labelText: _card ? 'Amount owed today (₹, negative)' : 'Balance today (₹)', helperText: 'Corrects the opening balance; your entries stay as they are.', helperMaxLines: 2)),
+          if (!_card) ...[const SizedBox(height: 12), TextField(controller: _vpa, autocorrect: false, decoration: const InputDecoration(labelText: 'UPI ID'))],
+          if (_card) ...[
+            const SizedBox(height: 12),
+            TextField(controller: _limit, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Credit limit (₹)')),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: TextField(controller: _due, keyboardType: TextInputType.number, maxLength: 2, decoration: const InputDecoration(labelText: 'Bill due day', helperText: '1 to 31', counterText: ''))),
+              const SizedBox(width: 10),
+              Expanded(child: TextField(controller: _stmt, keyboardType: TextInputType.number, maxLength: 2, decoration: const InputDecoration(labelText: 'Statement day', helperText: '1 to 31', counterText: ''))),
+            ]),
+          ],
+          if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: k.red, fontWeight: FontWeight.w600))),
+          const SizedBox(height: 16),
+          SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _save, child: Text(_busy ? 'Saving…' : 'Save changes'))),
         ]),
       ),
     );

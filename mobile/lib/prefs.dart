@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Version shown on the About screen. Keep in step with `version:` in pubspec.yaml.
-const appVersion = '1.2.1';
+const appVersion = '1.3.0';
 
 /// Small on-device preferences (theme choice, which users have seen the walkthrough). Never throws: a storage
 /// failure just means the default is used.

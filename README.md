@@ -17,7 +17,7 @@ Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample h
 |---|---|
 | `backend/` | FastAPI + Postgres. Data generator, decision engine, jobs, REST API, Alembic migrations, 200+ tests |
 | `web/` | React 19 + Vite + Tailwind console for all four roles (customer, analyst, reviewer, admin), light and dark |
-| `mobile/` | Small Flutter Android app for customers (folio, entries, recurring, books; email and Google sign-in) |
+| `mobile/` | Flutter Android app for customers: folio, entries with filters, calendar heatmap, spend analytics, budgets with rollover, bills and net worth, goals, CSV import, export and backup, household sharing, offline copy, three home-screen widgets; email and Google sign-in |
 | `data/starter/` | The starter dataset: 50 households, 25,000 transactions (committed) |
 | `reports/` | Validation, evaluation and reproducibility reports for starter and full scale |
 | `docs/` | Data dictionary, edge-case register, infrastructure and deploy notes, AI disclosure, prompt history |
@@ -93,7 +93,10 @@ Per-issue recall: transfer double-count 400/400, TZ boundary 400/400, budget mis
 - **Email is limited to account mail.** A welcome message on sign-up, a reset link and a "password changed" notice, sent through an SMTP relay on port 587 (the host's cloud blocks port 25). Sign-up does not verify the address, so there is no verified-email gate on using the app.
 - **Refund recall is just over target (0.909 vs 0.90).** Missed links are mostly refunds that arrive after a long gap with a changed descriptor; they surface as exceptions rather than being linked wrongly.
 - **Single node.** Fine for the challenge load; a worker queue would be the next step for larger runs.
-- The mobile app is a thin customer client: no budgets editor, no staff screens.
+- **Mobile has no staff screens** (analyst, reviewer and admin work in the web console).
+- **Offline mode is read-only.** With no signal the app shows the last copy it saved on the phone, marked with an Offline banner; adding or editing needs a connection. The home-screen widgets show the figures saved the last time the app was open, with that time printed on them, and do not fetch on their own.
+- **Daily email needs the owner's SMTP relay.** The setting is stored per user, but nothing is sent if the server has no mail configured (the app says so).
+- **Household sharing is invite-code only.** One code works once, expires, and a joiner must have an empty register; there is no per-member permission level.
 - Visual design was checked at desktop and phone widths through DOM and layout checks and the live site; there is no automated visual-regression suite.
 
 ## AI use

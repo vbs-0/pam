@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_today_desc">How much you have spent today</string>
+    <string name="widget_budget_desc">This month against your budget limits</string>
+    <string name="widget_bills_desc">The next bills and income due</string>
+</resources>
