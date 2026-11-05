@@ -82,7 +82,7 @@ Per-issue recall: transfer double-count 400/400, TZ boundary 400/400, budget mis
 ## Limitations (honest list)
 
 - **Google sign-in is wired but disabled** until a Firebase project id is configured (`FIREBASE_PROJECT_ID`). Email and password work everywhere. The mobile app has email sign-in only.
-- **No outbound email.** The host's cloud provider blocks port 25 and has no reverse DNS, so password-reset mail is not sent. Planned: an authenticated relay on port 587.
+- **Email is for password reset only.** Sign-up does not verify the address, and no mail is sent on registration. Outbound mail uses any SMTP relay (`SMTP_*` settings); the host's cloud blocks port 25, so a relay on port 587 is required.
 - **Refund recall is just over target (0.909 vs 0.90).** Missed links are mostly refunds that arrive after a long gap with a changed descriptor; they surface as exceptions rather than being linked wrongly.
 - **Single node.** Fine for the challenge load; a worker queue would be the next step for larger runs.
 - The mobile app is a thin customer client: no budgets editor, no staff screens.

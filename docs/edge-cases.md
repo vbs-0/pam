@@ -153,6 +153,10 @@ Status: `planned` → `done` (with the test that proves it). Labelled anomaly ty
 | A46 | Customer login switched to a missing household, or a customer with no household | 422 | api/admin.py | test_review_admin::test_admin_user_management | done |
 | A47 | Reviewer before any evaluation | 404 telling an admin to run one | api/review.py | (covered by _evaluated_run) | done |
 | A48 | Register or Google sign-in with an email that already has a login | Self-registered password dropped on Google link; Google never inherits another household; duplicate email rejected | api/auth.py | tests/api/test_auth.py | done |
+| A49 | Reset requested for an unknown, Google-only or disabled login | Same 202 answer as a real one, nothing sent (no account enumeration) | api/auth.py | test_reset::test_forgot_is_uniform... | done |
+| A50 | Reset link used twice, expired, or tampered | 400; link embeds a fingerprint of the current password hash, so it works once | security.py | test_reset::test_reset_changes_password_once..., test_bad_short_expired... | done |
+| A51 | Reset token presented as a login token | 401 (tokens with a purpose claim never authenticate) | security.py | test_reset::test_bad_short_expired... | done |
+| A52 | Reset spam, or SMTP down or unset | 3 per address and 10 per client per hour; send runs in the background and never fails the request; unset SMTP skips quietly | api/auth.py, mail.py | test_reset::test_forgot_is_rate_limited... | done |
 
 ## Web console (U)
 
