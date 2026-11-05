@@ -146,7 +146,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
   bool _sample = true;
 
   Future<List<Map<String, dynamic>>> _load() async {
-    _sample = await _isSample();
+    final sample = await _isSample();
+    if (mounted && sample != _sample) setState(() => _sample = sample);
     return ((await Api.instance.get('/me/goals')) as List).cast<Map<String, dynamic>>();
   }
 
@@ -335,7 +336,8 @@ class _BudgetsScreenState extends State<BudgetsScreen> {
   bool _sample = true;
 
   Future<Map<String, dynamic>> _load() async {
-    _sample = await _isSample();
+    final sample = await _isSample();
+    if (mounted && sample != _sample) setState(() => _sample = sample);
     return (await Api.instance.get('/me/budgets', {'month': _month})) as Map<String, dynamic>;
   }
 
