@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../api.dart';
@@ -18,6 +19,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() { _email.dispose(); _password.dispose(); _name.dispose(); super.dispose(); }
+
+  Future<void> _google() async {
+    setState(() { _busy = true; _error = null; });
+    try {
+      final cred = await FirebaseAuth.instance.signInWithProvider(GoogleAuthProvider());
+      final token = await cred.user?.getIdToken();
+      if (token == null) throw ApiException(0, 'Google did not return a sign-in token.');
+      widget.onSignedIn(await Api.instance.google(token));
+    } on ApiException catch (e) {
+      setState(() => _error = e.message);
+    } on FirebaseAuthException catch (e) {
+      if (e.code != 'web-context-canceled' && e.code != 'canceled') setState(() => _error = 'Google sign-in did not complete (${e.code}).');
+    } catch (_) {
+      setState(() => _error = 'Google sign-in is not available in this build.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   Future<void> _submit() async {
     setState(() { _busy = true; _error = null; });
@@ -72,6 +91,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
                     SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'One moment…' : _signUp ? 'Create account' : 'Sign in'))),
+                    const SizedBox(height: 10),
+                    SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _busy ? null : _google, icon: const Icon(Icons.g_mobiledata, size: 28), label: const Text('Continue with Google'))),
                     const SizedBox(height: 6),
                     Center(child: TextButton(onPressed: () => setState(() { _signUp = !_signUp; _error = null; }), child: Text(_signUp ? 'Already have an account? Sign in' : 'New here? Create an account'))),
                     if (!_signUp) Center(child: Text('Forgot your password? Reset it at pam.is-cool.dev/forgot', style: TextStyle(color: k.muted, fontSize: 13), textAlign: TextAlign.center)),

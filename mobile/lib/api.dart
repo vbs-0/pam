@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 /// Server address. Override at build time: flutter build apk --dart-define=API_BASE=https://host/api/v1
@@ -40,6 +41,8 @@ class Api {
   Future<Me> register(String email, String password, String name) async =>
       _auth('/auth/register', {'email': email, 'password': password, 'name': name});
 
+  Future<Me> google(String idToken) async => _auth('/auth/firebase', {'id_token': idToken});
+
   Future<Me> _auth(String path, Map<String, dynamic> body) async {
     final r = await _send('POST', path, body: body, auth: false);
     _token = r['access_token'] as String;
@@ -51,6 +54,7 @@ class Api {
 
   Future<void> signOut() async {
     _token = null;
+    try { await FirebaseAuth.instance.signOut(); } catch (_) {}
     try { await _store.delete(key: 'token'); } catch (_) {}
   }
 

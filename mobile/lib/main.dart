@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'api.dart';
@@ -8,8 +9,9 @@ import 'screens/login.dart';
 import 'screens/recurring.dart';
 import 'theme.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try { await Firebase.initializeApp(); } catch (_) {/* no config in this build: email sign-in only */}
   runApp(const PamApp());
 }
 
