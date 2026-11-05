@@ -4,7 +4,6 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
 }
 
 val keyProps = Properties().apply {
@@ -24,7 +23,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "pam.garudatechnologies.com"   // must match the Firebase app registration
+        applicationId = "dev.is_cool.pam_mobile"   // must match the Firebase app registration if Google sign-in is configured
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -59,4 +58,9 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Google sign-in only when this build ships a (git-ignored) Firebase config
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }

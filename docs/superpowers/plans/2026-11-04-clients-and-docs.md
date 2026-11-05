@@ -658,7 +658,7 @@ Feel and polish (part of done, not optional):
 
 ### Task D2: Publish (only with the user's explicit go-ahead)
 
-- [ ] **Step 1:** Ask the user for the repository name and explicit permission to create a **new public** GitHub repository and push (their global rules allow pushing only to the emplinx repos unless they say otherwise in that message).
+- [ ] **Step 1:** Ask the user for the repository name and explicit permission to create a **new public** GitHub repository and push.
 - [ ] **Step 2 (after "yes"):** `gh repo create vbs-0/<name> --public --source . --remote origin --push`; verify the repo page renders the README and that `data/full/` and secrets are absent.
 - [ ] **Step 3:** Keep the repo public and editable; the owner submits the URL themselves.
 
