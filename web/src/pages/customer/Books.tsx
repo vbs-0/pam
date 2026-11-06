@@ -152,8 +152,8 @@ function EditAccount({ a, onClose }: { a: Account; onClose: () => void }) {
           <>
             <Field label="Credit limit (₹)" error={err("credit_limit_paise")}>{(id) => <input id={id} className="field" inputMode="decimal" value={f.limit} onChange={(e) => up("limit")(money(e.target.value))} />}</Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Bill due day" hint="1 to 31">{(id) => <input id={id} type="number" min={1} max={31} className="field" value={f.due} onChange={(e) => up("due")(e.target.value)} />}</Field>
-              <Field label="Statement day" hint="1 to 31">{(id) => <input id={id} type="number" min={1} max={31} className="field" value={f.stmt} onChange={(e) => up("stmt")(e.target.value)} />}</Field>
+              <Field label="Bill due day" hint="1 to 31">{(id) => <input id={id} inputMode="numeric" maxLength={2} className="field" value={f.due} onChange={(e) => up("due")(e.target.value.replace(/\D/g, "").slice(0, 2))} />}</Field>
+              <Field label="Statement day" hint="1 to 31">{(id) => <input id={id} inputMode="numeric" maxLength={2} className="field" value={f.stmt} onChange={(e) => up("stmt")(e.target.value.replace(/\D/g, "").slice(0, 2))} />}</Field>
             </div>
           </>
         )}
