@@ -134,3 +134,41 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 **P52.** Proceed with the must-do list: test the README from a fresh clone, update the edge-case register, add CI, update the docs and prompt history. Also add welcome emails and so on, and tell me if anything else is left.
 
 **P53.** Also add UPI accounts, with Paytm, PhonePe and so on and a custom option, alongside savings account and credit card.
+
+## 9. Future plans, README, and the redesign
+
+**P54.** Put the Gemini idea on the future plans along with some others. *(Pasted an audit to read once.)* Remember not to push anywhere for now.
+
+**P55.** Yes, rewrite the git history. *(Answering whether to rewrite it to remove a personal address.)*
+
+**P56.** Check the features file and the images folder. The README should show some screenshots, the current folder structure and more, and look like a professional app page.
+
+**P57.** On a separate copy, use the Framer connector to redesign the whole web UI locally and show me.
+
+**P58.** All of them look ugly. Wait, let me give you a reference: my Webflow site. Take all its animations, designs, colours and flows and redesign completely. *(Shared the site link, a screen recording and the preview link.)* I need all the animations, the whole workflow, hover reactions. Remember not to push anywhere.
+
+**P59.** The hover animations did not come, and neither did the animations while scrolling the page.
+
+**P60.** *(Screenshots.)* Fix things like this. Some text is not clearly visible on both the dark and light themes. Text in the foreground looks ugly while the background pop-up animations play, and this happens on every page. All the graphs and charts should use the same styling and animations too.
+
+**P61.** *(Screenshots.)* The popup comes out of the border. The donut looks ugly. Can we make it a line with those animations as in my screenshot? The hover animation is not applying to the calendar icon, and each month in the calendar should grow when hovered.
+
+**P62.** *(Screenshot.)* When the page opens, the ball should start from the beginning and travel to the current place. Spending above income should glow light red, only on the part of the line above the income line. Make the line a bit thinner.
+
+**P63.** *(Screenshots.)* The cards load suddenly instead of smoothly. Cards should slide up like the text does. Above the income line is red and below it is green, as I said. Use a real green, and make the ball float smoothly instead of reacting so quickly.
+
+**P64.** *(Screenshots.)* The text still does not load along with the card. Why are the lower blocks left like that, like kids left on the street?
+
+**P65.** Now build the mobile app too with a similar UI, and remember I need the animations as well.
+
+**P66.** While you build the app in the background, remove the black ticker bar from everywhere. Also both the left and right spaces on every page are empty; fill them, but that does not mean stretch everything and make it ugly.
+
+**P67.** *(Screenshots of the new app.)* All of it works fine. Push the new web UI and the Flutter code to git with new web screenshots. One small issue in Flutter: the text looks struck out. I changed some things in the prompt history, so keep them. Deploy everything to the website as well.
+
+**P68.** This text is not visible on the dark theme, fix it. Also put our GitHub repo link icon on the login page.
+
+**P69.** Why is this page's data always loading, why is it not cached?
+
+**P70.** What is today's entries versus the Folio total? *(Screenshots.)* Then: that 611 was income, so it should show plus, why does it show minus?
+
+**P71.** Push everywhere, even to git. Also update the prompt history, and respect the existing information in it: do not edit or flag it.
