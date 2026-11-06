@@ -163,7 +163,7 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 
 **P66.** While you build the app in the background, remove the black ticker bar from everywhere. Also both the left and right spaces on every page are empty; fill them, but that does not mean stretch everything and make it ugly.
 
-**P67.** *(Screenshots of the new app.)* All of it works fine. Push the new web UI and the Flutter code to git with new web screenshots. One small issue in Flutter: the text looks struck out. I changed some things in the prompt history, so keep them. Deploy everything to the website as well.
+**P67.** *(Screenshots of the new app.)* All of it works fine. let me Push the new web UI and the Flutter code to git with new web screenshots. One small issue in Flutter: the text looks struck out. I changed some things in the prompt history, so keep them. wait i'll Deploy everything to the website as well.
 
 **P68.** This text is not visible on the dark theme, fix it. Also put our GitHub repo link icon on the login page.
 
@@ -179,8 +179,7 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 
 **P74.** I want our application on Komi Store. *(Screenshots of the store search.)*
 
-**P75.** I am done working. What else is left? Put the demo password on git, or tell me and I will put it manually, since everyone needs to sign in. Have you mentioned all four logins with their passwords?
+**P75.** I am done working. What else is left? let me Put the demo password on git, or tell me and I will put it manually, since everyone needs to sign in. Have you mentioned all four logins with their passwords?
 
-**P76.** Are the admin and staff accounts not in the problem statement? Then remove the other accounts' data, keep only dummy data, set the password to password123 for those roles as well, and put it on git, so everything is synthetic and anyone can look until the judges finish.
+**P76.** Are the admin and staff accounts not in the problem statement? Then lets remove the other accounts' data, keep only dummy data, set the password to password123 for those roles as well, and put it on git, so everything is synthetic and anyone can look until the judges finish.
 
-**P77.** Can you finish, or is something still left before I submit?
