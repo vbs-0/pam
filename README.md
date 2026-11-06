@@ -113,7 +113,16 @@ The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 
 
 ## Try it as each role
 
-Live site: log in with the password the author gives you (not stored in the repo) or run locally and set `DEMO_PASSWORD` in `backend/.env`. The seeded accounts are `customer@pam.test`, `analyst@pam.test`, `reviewer@pam.test` and `admin@pam.test`, all with `DEMO_PASSWORD`. Each sees only its own screens.
+Live site, for judging: every login on https://pam.is-cool.dev holds synthetic data only, so the password is public and the same for all of them: **`password123`**.
+
+| Role | Email | Sees |
+|---|---|---|
+| Customer (read-only sample household) | `usr-000001@pam.is-cool.dev` or `customer@pam.test` | Folio, entries, budgets, bills, goals, recurring, books |
+| Operations analyst | `analyst@pam.test` | Exception queue, rules, metrics, transaction trace |
+| Risk reviewer | `reviewer@pam.test` | Anomalies against ground truth, audit log, trace |
+| Administrator | `admin@pam.test` | Jobs, users, exports, households, reproducibility check |
+
+These demo logins are for the judging window only; the site will get a private password afterwards. When you run it yourself, set your own `DEMO_PASSWORD` in `backend/.env` (12 or more characters in prod). Each role sees only its own screens.
 
 ## Run it
 

@@ -58,7 +58,7 @@ publish it by hand as a GitHub release and copy it to `/opt/pam/www/downloads/pa
    `load`, `seed-users`, `pipeline`, `evaluate --db`.
 5. Install the unit and the nginx site, `certbot --nginx -d pam.is-cool.dev --redirect`.
 
-Staff password: `ssh vbs sudo grep DEMO_PASSWORD /opt/pam/app/backend/.env`.
+Staff password (private): `ssh vbs sudo grep DEMO_PASSWORD /opt/pam/app/backend/.env`. During judging the four `@pam.test` logins and the sample households are set to the public demo password `password123` directly in the database (the env value is unchanged, because prod refuses a short `DEMO_PASSWORD`); a backup from before that reset is in `/var/backups/pam/` on the server. `seed-users` never overwrites existing logins, so they keep this password until someone changes it; to go back to a private staff password, update those four `app_user` rows (or delete them and re-run `seed-users`).
 
 ## Sizing
 
