@@ -1,17 +1,102 @@
-<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo-dark.png"><img src="docs/brand/logo-light.png" alt="PAM" width="140"></picture></p>
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/brand/logo-dark.png"><img src="docs/brand/logo-light.png" alt="PAM" width="120"></picture></p>
 
-# PAM: Payment Account Manager
+<h1 align="center">PAM: Payment Account Manager</h1>
 
-[![CI](https://github.com/vbs-0/pam/actions/workflows/ci.yml/badge.svg)](https://github.com/vbs-0/pam/actions/workflows/ci.yml)
+<p align="center"><b>What did we really spend, what repeats, and are we inside budget?</b><br>
+A household finance register for Indian UPI, bank and card transactions: web console, Android app and API.</p>
 
-PAM turns a household's bank and UPI transactions into answers to three questions: **what did we really spend, what repeats, and are we inside budget?** It categorizes every transaction, maps recurring payments (salary, rent, EMIs, subscriptions, bills), and compares spending with monthly budgets. Everything it decides is traceable to a rule, a version and a confidence, and every exception goes to a human queue.
+<p align="center">
+<a href="https://github.com/vbs-0/pam/actions/workflows/ci.yml"><img src="https://github.com/vbs-0/pam/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<img src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" alt="Python 3.12">
+<img src="https://img.shields.io/badge/FastAPI-Postgres-009688?logo=fastapi&logoColor=white" alt="FastAPI and Postgres">
+<img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19">
+<img src="https://img.shields.io/badge/Flutter-Android-02569B?logo=flutter&logoColor=white" alt="Flutter">
+<img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
+</p>
+
+<p align="center">
+<a href="https://pam.is-cool.dev"><b>Live demo</b></a> ·
+<a href="https://pam.is-cool.dev/downloads/pam.apk"><b>Android APK</b></a> ·
+<a href="https://pam.is-cool.dev/docs">API docs</a> ·
+<a href="docs/features.md">Feature list</a> ·
+<a href="docs/screenshots.md">All screenshots</a> ·
+<a href="https://github.com/vbs-0/pam/releases">Releases</a>
+</p>
+
+<p align="center"><picture><source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/web/02d-home-dark.png"><img src="docs/screenshots/web/02-home.png" alt="PAM folio: true spend, budgets against actual, margin notes" width="900"></picture></p>
+
+PAM turns a household's bank and UPI transactions into answers to three questions. It categorizes every transaction, maps recurring payments (salary, rent, EMIs, subscriptions, bills), and compares spending with monthly budgets. Everything it decides is traceable to a rule, a version and a confidence, and every exception goes to a human queue.
 
 Indian context throughout: UPI/IMPS/NEFT/card channels, amounts in integer **paise**, business dates in **IST**, UTC storage.
 
-**Live:** https://pam.is-cool.dev (web console) · https://pam.is-cool.dev/docs (API) · [Android APK](https://pam.is-cool.dev/downloads/pam.apk) · [Releases](https://github.com/vbs-0/pam/releases)
-Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample household, or create an account (email or Google) to get your own empty household and enter real data: savings accounts, credit cards and UPI apps (PhonePe, Google Pay, Paytm, BHIM, Amazon Pay or a name of your own).
+**Try it now:** open the [live demo](https://pam.is-cool.dev) and sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample household, or create an account (email or Google) for your own empty household: savings accounts, credit cards and UPI apps (PhonePe, Google Pay, Paytm, BHIM, Amazon Pay or your own name).
 
-## What is in the repo
+## Highlights
+
+| | |
+|---|---|
+| **True spend, not naive spend** | Own-account transfers, card-bill payments, refunds and UPI reversals are matched and left out, so the headline figure is what the household actually spent (naive ledger: +129% too high on the starter data, PAM: 0%). |
+| **Every decision is explainable** | Rule id, version, confidence and override history on every transaction; append-only audit log; trace view for analysts and reviewers. |
+| **Remember my choice, optional AI** | Fix one category and similar entries follow. Optional Gemini sorting sends only masked narration and applies visible, reversible overrides. |
+| **Works offline** | The Android app and the web PWA queue changes safely and sync silently when the network returns; idempotency keys make retries safe. |
+| **Four roles** | Customer, analyst, reviewer and admin consoles, each with only its own screens. |
+| **Reproducible data** | Fixed seed, byte-identical regeneration, 22 dataset checks, nine output checks, evaluation against hidden ground truth. |
+
+## Screens
+
+**Web console** (light and dark, desktop first, installable PWA)
+
+| Folio | Entries | Budgets |
+|---|---|---|
+| <img src="docs/screenshots/web/02-home.png" alt="Folio"> | <img src="docs/screenshots/web/03-entries.png" alt="Entries"> | <img src="docs/screenshots/web/04-budgets.png" alt="Budgets"> |
+| **Recurring** | **Calendar** | **Spend** |
+| <img src="docs/screenshots/web/05-recurring.png" alt="Recurring"> | <img src="docs/screenshots/web/07-calendar.png" alt="Calendar"> | <img src="docs/screenshots/web/08-spend.png" alt="Spend"> |
+
+**Staff consoles**
+
+| Exceptions (analyst) | Metrics (analyst) | Anomalies (reviewer) | Admin jobs |
+|---|---|---|---|
+| <img src="docs/screenshots/web/20-exceptions.png" alt="Exceptions"> | <img src="docs/screenshots/web/22-metrics.png" alt="Metrics"> | <img src="docs/screenshots/web/24-anomalies.png" alt="Anomalies"> | <img src="docs/screenshots/web/41-admin-jobs.png" alt="Admin jobs"> |
+
+**Android app** (offline-first, three home-screen widgets)
+
+| Home | Entries | Calendar | Spend | Budgets | Dark |
+|---|---|---|---|---|---|
+| <img src="docs/screenshots/android/01-home.png" alt="Home"> | <img src="docs/screenshots/android/02-entries.png" alt="Entries"> | <img src="docs/screenshots/android/03-calendar.png" alt="Calendar"> | <img src="docs/screenshots/android/04-spend.png" alt="Spend"> | <img src="docs/screenshots/android/06-budgets.png" alt="Budgets"> | <img src="docs/screenshots/android/18-home-dark.png" alt="Home dark"> |
+
+Every screen: [docs/screenshots.md](docs/screenshots.md). Everything the product does, read from the code: [docs/features.md](docs/features.md).
+
+## How it fits together
+
+```mermaid
+flowchart LR
+  D[Synthetic data generator<br/>fixed seed] --> L[Load into Postgres]
+  U[Your own entries,<br/>CSV import] --> L
+  L --> E[Decision engine<br/>categorize, link, recur, budget]
+  E --> A[FastAPI /api/v1]
+  A --> W[Web console<br/>4 roles]
+  A --> M[Android app<br/>offline-first]
+  E --> V[Evaluation vs hidden ground truth]
+```
+
+## Repository layout
+
+```text
+pam/
+├── backend/            FastAPI app, engine, data generator, jobs, migrations, tests
+│   ├── app/{api,engine,datagen,jobs}/
+│   ├── migrations/     Alembic 0001..0006
+│   └── tests/{api,engine,datagen,jobs}/
+├── web/                React 19 + Vite + Tailwind console, PWA (src/pages/{customer,staff,admin})
+├── mobile/             Flutter Android app, widgets, offline outbox
+├── data/starter/       committed dataset: 50 households, 25,000 transactions
+├── reports/            validation, evaluation, reproducibility (starter and full)
+├── docs/               data dictionary, edge cases, deploy, AI disclosure, screenshots
+├── deploy/             systemd unit, nginx site, deploy script
+└── .github/workflows/  CI and continuous deployment
+```
+
+## What is in the repo (details)
 
 | Path | What |
 |---|---|
@@ -25,10 +110,6 @@ Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample h
 | `.github/` | CI (backend tests, web build and tests, Flutter analysis) and automatic deployment to the server after CI passes on `main` ([docs/deploy.md](docs/deploy.md)) |
 
 The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed, but the complete files are attached to the [v1.1.0 release](https://github.com/vbs-0/pam/releases/tag/v1.1.0) as a 67 MB zip, and `python -m app.cli generate --scale full` recreates them byte for byte; its manifest, provenance record and reports are in `reports/full/`. The data is synthetic only; see [docs/dataset-provenance.md](docs/dataset-provenance.md) for provenance, tamper checks (`docs/manifest-hashes.sha256`) and the exact reproducibility scope (locked Python 3.12 and `backend/uv.lock`). Generated files are never edited by hand.
-
-## Screens and features
-
-Screenshots of every web and app screen: [`docs/screenshots.md`](docs/screenshots.md). Complete feature list read from the code, with file and line evidence: [`docs/features.md`](docs/features.md).
 
 ## Try it as each role
 
