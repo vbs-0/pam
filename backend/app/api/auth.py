@@ -41,7 +41,7 @@ class LoginIn(BaseModel):
 
 class RegisterIn(BaseModel):
     email: str = Field(min_length=5, max_length=120, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
-    password: str = Field(min_length=10, max_length=128)
+    password: str = Field(min_length=6, max_length=128)
     name: str = Field("", max_length=80)
 
 
@@ -51,7 +51,7 @@ class ForgotIn(BaseModel):
 
 class ResetIn(BaseModel):
     token: str = Field(min_length=20, max_length=2000)
-    password: str = Field(min_length=10, max_length=128)
+    password: str = Field(min_length=6, max_length=128)
 
 
 class FirebaseIn(BaseModel):
@@ -238,7 +238,7 @@ def me(caller: Caller = Depends(current_user)):
 # ---------- account security (signed in) ----------
 class ChangePasswordIn(BaseModel):
     current_password: str = Field(min_length=1, max_length=200)
-    new_password: str = Field(min_length=10, max_length=128)
+    new_password: str = Field(min_length=6, max_length=128)
 
 
 class ChangeEmailIn(BaseModel):

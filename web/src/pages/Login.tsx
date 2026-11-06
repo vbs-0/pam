@@ -25,6 +25,7 @@ export default function Login() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (mode === "up" && password.length < 6) { setError("Your password needs at least 6 characters."); return; }
     setBusy(true); setError(null);
     try { await (mode === "in" ? login(email.trim(), password) : register(email.trim(), password, name.trim())); }
     catch (err) { setError(err instanceof ApiError ? err.message : "Could not sign in."); }
@@ -56,7 +57,7 @@ export default function Login() {
           {expired && <p role="status" className="text-amber border border-amber px-3 py-2 text-sm">Your session ended. Please sign in again.</p>}
           {mode === "up" && <Field label="Your name" hint="Optional">{(id) => <input id={id} className="field" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />}</Field>}
           <Field label="Email">{(id) => <input id={id} className="field" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />}</Field>
-          <Field label="Password" hint={mode === "up" ? "At least 10 characters" : undefined}>{(id) => <input id={id} className="field" type="password" autoComplete={mode === "in" ? "current-password" : "new-password"} required minLength={mode === "up" ? 10 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
+          <Field label="Password" hint={mode === "up" ? "At least 6 characters" : undefined}>{(id) => <input id={id} className="field" type="password" autoComplete={mode === "in" ? "current-password" : "new-password"} required minLength={mode === "up" ? 10 : undefined} value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
           {mode === "in" && <p className="text-sm -mt-2"><Link to="/forgot" className="underline text-blue">Forgot your password?</Link></p>}
           {error && <p role="alert" className="text-red text-sm border border-red bg-red-soft px-3 py-2">{error}</p>}
           <button className="btn btn-solid w-full" disabled={busy || !email || !password}>{busy ? <><Spinner />One moment…</> : mode === "in" ? "Sign in" : "Create account"}</button>

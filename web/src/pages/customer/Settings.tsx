@@ -172,11 +172,11 @@ function Row({ title, sub, active, onToggle, danger, children }: { title: string
 function ChangePassword({ onDone }: { onDone: () => void }) {
   const [cur, setCur] = useState(""), [pw, setPw] = useState(""), [again, setAgain] = useState("");
   const m = useMutation({ mutationFn: () => post<{ access_token: string }>("/auth/change-password", { current_password: cur, new_password: pw }), onSuccess: (d) => { tokenStore.set(d.access_token); setCur(""); setPw(""); setAgain(""); onDone(); } });
-  const bad = pw.length < 10 ? "At least 10 characters" : pw !== again ? "The two new passwords differ" : "";
+  const bad = pw.length < 6 ? "At least 6 characters" : pw !== again ? "The two new passwords differ" : "";
   return (
     <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (!bad && cur) m.mutate(); }}>
       <Field label="Current password">{(id) => <input id={id} type="password" autoComplete="current-password" className="field" value={cur} onChange={(e) => setCur(e.target.value)} />}</Field>
-      <Field label="New password" hint="At least 10 characters">{(id) => <input id={id} type="password" autoComplete="new-password" className="field" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
+      <Field label="New password" hint="At least 6 characters">{(id) => <input id={id} type="password" autoComplete="new-password" className="field" value={pw} onChange={(e) => setPw(e.target.value)} />}</Field>
       <Field label="New password again" error={again && bad ? bad : undefined}>{(id) => <input id={id} type="password" autoComplete="new-password" className="field" value={again} onChange={(e) => setAgain(e.target.value)} />}</Field>
       <button className="btn btn-solid" disabled={!!bad || !cur || m.isPending}>{m.isPending ? "Saving…" : "Change password"}</button> <Msg m={m} />
       {m.isSuccess && <p role="status" className="text-green text-sm">Password changed. Other devices were signed out.</p>}

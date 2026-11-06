@@ -51,6 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _submit() async {
+    if (_signUp && _password.text.length < 6) { setState(() => _error = 'Your password needs at least 6 characters.'); return; }
     setState(() { _busy = true; _error = null; });
     try {
       final email = _email.text.trim();
@@ -97,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: _password, obscureText: !_show, autofillHints: [_signUp ? AutofillHints.newPassword : AutofillHints.password],
                       onSubmitted: (_) => _submit(),
-                      decoration: InputDecoration(labelText: 'Password', helperText: _signUp ? 'At least 10 characters' : null,
+                      decoration: InputDecoration(labelText: 'Password', helperText: _signUp ? 'At least 6 characters' : null,
                           suffixIcon: IconButton(tooltip: _show ? 'Hide password' : 'Show password', icon: Icon(_show ? Icons.visibility_off : Icons.visibility), onPressed: () => setState(() => _show = !_show))),
                     ),
                     if (_error != null) Padding(

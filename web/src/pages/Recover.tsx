@@ -76,7 +76,7 @@ export function Reset() {
     </Page>
   );
   return (
-    <Page title="Choose a new password" lead="At least 10 characters. Older reset links stop working once you save.">
+    <Page title="Choose a new password" lead="At least 6 characters. Older reset links stop working once you save.">
       {done ? (
         <>
           <p role="status" className="border border-blue px-3 py-2 text-sm">Password changed.</p>
@@ -84,10 +84,10 @@ export function Reset() {
         </>
       ) : (
         <form onSubmit={submit} className="space-y-5" noValidate>
-          <Field label="New password">{(id) => <input id={id} className="field" type="password" autoComplete="new-password" required minLength={10} value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
+          <Field label="New password">{(id) => <input id={id} className="field" type="password" autoComplete="new-password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />}</Field>
           <Field label="Type it again" hint={mismatch ? "The two passwords differ" : undefined}>{(id) => <input id={id} className="field" type="password" autoComplete="new-password" required value={again} onChange={(e) => setAgain(e.target.value)} />}</Field>
           {error && <p role="alert" className="text-red text-sm border border-red bg-red-soft px-3 py-2">{error} <Link to="/forgot" className="underline font-semibold">Get a new link</Link></p>}
-          <button className="btn btn-solid w-full" disabled={busy || password.length < 10 || password !== again}>{busy ? "Saving…" : "Save password"}</button>
+          <button className="btn btn-solid w-full" disabled={busy || password.length < 6 || password !== again}>{busy ? "Saving…" : "Save password"}</button>
         </form>
       )}
     </Page>

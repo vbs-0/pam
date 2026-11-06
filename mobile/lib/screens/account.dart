@@ -40,7 +40,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
   void dispose() { for (final c in [_cur, _new, _again, _mailPw, _mail, _delMail, _delPw]) { c.dispose(); } super.dispose(); }
 
   Future<void> _password() async {
-    if (_new.text.length < 10) { setState(() { _pwErr = 'Use at least 10 characters'; _pwOk = null; }); return; }
+    if (_new.text.length < 6) { setState(() { _pwErr = 'Use at least 6 characters'; _pwOk = null; }); return; }
     if (_new.text != _again.text) { setState(() { _pwErr = 'The two new passwords differ'; _pwOk = null; }); return; }
     setState(() { _busy = true; _pwErr = null; _pwOk = null; });
     try {
@@ -97,7 +97,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
         const SizedBox(height: 10),
         _field(_cur, 'Current password', secret: true),
         const SizedBox(height: 10),
-        _field(_new, 'New password', secret: true, helper: 'At least 10 characters'),
+        _field(_new, 'New password', secret: true, helper: 'At least 6 characters'),
         const SizedBox(height: 10),
         _field(_again, 'New password again', secret: true),
         _msg(k, _pwErr, _pwOk),

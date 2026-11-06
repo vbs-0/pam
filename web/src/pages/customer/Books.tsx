@@ -9,6 +9,13 @@ const BANKS: Record<string, string> = { SBIN: "State Bank of India", HDFC: "HDFC
 const UPI_APPS: Record<string, string> = { PHPE: "PhonePe", GPAY: "Google Pay", PTYM: "Paytm", BHIM: "BHIM", AMZN: "Amazon Pay", OTHR: "Other (type a name)" };
 const ALL_NAMES: Record<string, string> = { ...BANKS, ...UPI_APPS, OTHR: "Other" };
 
+/** Keeps only what a rupee amount can contain: digits and one dot with at most two decimals (a leading minus when allowed). */
+const money = (v: string, minus = false) => {
+  const neg = minus && v.trim().startsWith("-");
+  const [a, ...r] = v.replace(/[^\d.]/g, "").split(".");
+  return (neg ? "-" : "") + (r.length ? `${a}.${r.join("").slice(0, 2)}` : a);
+};
+
 export default function Books() {
   const qc = useQueryClient();
   const profile = useQuery({ queryKey: ["profile"], queryFn: () => get<Profile>("/me/profile") });
@@ -81,8 +88,8 @@ function AddAccount() {
         {(needsName || (!isUpi && f.bank === "OTHR")) && <Field label={isUpi ? "App name" : "Bank name"} hint={isUpi ? undefined : "Optional"} error={err("label")}>{(id) => <input id={id} className="field" maxLength={40} required={needsName} value={f.label} onChange={(e) => up("label")(e.target.value)} placeholder={isUpi ? "e.g. Slice, Cred, Navi" : "e.g. Federal Bank"} />}</Field>}
         {!isUpi && <Field label="Last 4 digits" hint="Optional" error={err("last4")}>{(id) => <input id={id} className="field" inputMode="numeric" maxLength={4} value={f.last4} onChange={(e) => up("last4")(e.target.value.replace(/\D/g, ""))} />}</Field>}
         {f.type !== "CREDIT_CARD" && <Field label="Your UPI ID" hint="Optional. Lets PAM recognise payments between your own accounts." error={err("vpa")}>{(id) => <input id={id} className="field" value={f.vpa} onChange={(e) => up("vpa")(e.target.value)} placeholder={isUpi ? "name@ybl" : "name@okhdfcbank"} />}</Field>}
-        <Field label={f.type === "CREDIT_CARD" ? "Amount owed today (₹)" : isUpi ? "Wallet balance today (₹)" : "Balance when you start (₹)"} hint="Optional. Leave blank for zero.">{(id) => <input id={id} className="field" inputMode="decimal" value={f.opening} onChange={(e) => up("opening")(e.target.value)} />}</Field>
-        {f.type === "CREDIT_CARD" && <Field label="Credit limit (₹)" hint="Optional">{(id) => <input id={id} className="field" inputMode="decimal" value={f.limit} onChange={(e) => up("limit")(e.target.value)} />}</Field>}
+        <Field label={f.type === "CREDIT_CARD" ? "Amount owed today (₹)" : isUpi ? "Wallet balance today (₹)" : "Balance when you start (₹)"} hint="Optional. Leave blank for zero.">{(id) => <input id={id} className="field" inputMode="decimal" value={f.opening} onChange={(e) => up("opening")(money(e.target.value))} />}</Field>
+        {f.type === "CREDIT_CARD" && <Field label="Credit limit (₹)" hint="Optional">{(id) => <input id={id} className="field" inputMode="decimal" value={f.limit} onChange={(e) => up("limit")(money(e.target.value))} />}</Field>}
         <Field label="Opened on" error={err("opened_on")}>{(id) => <input id={id} type="date" className="field" max={todayIso()} value={f.opened} onChange={(e) => up("opened")(e.target.value)} />}</Field>
       </div>
       {m.isError && !(m.error as ApiError).fields?.length && <p role="alert" className="text-red mt-3 text-sm">{(m.error as ApiError).message}</p>}
@@ -104,9 +111,9 @@ function ProfileForm({ p }: { p: Profile }) {
     <form className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
       <Field label="Household name">{(id) => <input id={id} className="field" disabled={ro} value={f.name} onChange={(e) => up("name")(e.target.value)} maxLength={80} />}</Field>
       <Field label="City">{(id) => <input id={id} className="field" disabled={ro} value={f.city} onChange={(e) => up("city")(e.target.value)} maxLength={40} />}</Field>
-      <Field label="State code" hint="Two letters, e.g. MH">{(id) => <input id={id} className="field uppercase" disabled={ro} value={f.state} onChange={(e) => up("state")(e.target.value.toUpperCase().slice(0, 2))} maxLength={2} />}</Field>
-      <Field label="Monthly income (₹)" hint="Optional. Used for the savings rate.">{(id) => <input id={id} className="field" disabled={ro} inputMode="decimal" value={f.income} onChange={(e) => up("income")(e.target.value)} />}</Field>
-      <Field label="People in the household">{(id) => <input id={id} className="field" type="number" min={1} max={20} disabled={ro} value={f.size} onChange={(e) => up("size")(e.target.value)} />}</Field>
+      <Field label="State code" hint="Two letters, e.g. MH">{(id) => <input id={id} className="field uppercase" disabled={ro} value={f.state} onChange={(e) => up("state")(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 2))} maxLength={2} />}</Field>
+      <Field label="Monthly income (₹)" hint="Optional. Used for the savings rate.">{(id) => <input id={id} className="field" disabled={ro} inputMode="decimal" value={f.income} onChange={(e) => up("income")(money(e.target.value))} />}</Field>
+      <Field label="People in the household">{(id) => <input id={id} className="field" inputMode="numeric" disabled={ro} value={f.size} onChange={(e) => up("size")(e.target.value.replace(/\D/g, "").slice(0, 2))} />}</Field>
       <Field label="Income type">{(id) => <select id={id} className="field" disabled={ro} value={f.persona} onChange={(e) => up("persona")(e.target.value)}><option value="SALARIED">Salaried</option><option value="SELF_EMPLOYED">Self-employed</option><option value="RETIRED">Retired</option></select>}</Field>
       {!ro && <div className="sm:col-span-2 lg:col-span-3 flex items-center gap-3"><button className="btn btn-solid" disabled={m.isPending}>{m.isPending ? "Saving…" : "Save details"}</button>
         {m.isSuccess && <span role="status" className="text-green text-sm">Saved</span>}{m.isError && <span role="alert" className="text-red text-sm">{(m.error as ApiError).message}</span>}</div>}
@@ -143,7 +150,7 @@ function EditAccount({ a, onClose }: { a: Account; onClose: () => void }) {
         {a.account_type !== "CREDIT_CARD" && <Field label="UPI ID" error={err("vpa")}>{(id) => <input id={id} className="field" value={f.vpa} onChange={(e) => up("vpa")(e.target.value)} placeholder="name@bank" />}</Field>}
         {card && (
           <>
-            <Field label="Credit limit (₹)" error={err("credit_limit_paise")}>{(id) => <input id={id} className="field" inputMode="decimal" value={f.limit} onChange={(e) => up("limit")(e.target.value)} />}</Field>
+            <Field label="Credit limit (₹)" error={err("credit_limit_paise")}>{(id) => <input id={id} className="field" inputMode="decimal" value={f.limit} onChange={(e) => up("limit")(money(e.target.value))} />}</Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Bill due day" hint="1 to 31">{(id) => <input id={id} type="number" min={1} max={31} className="field" value={f.due} onChange={(e) => up("due")(e.target.value)} />}</Field>
               <Field label="Statement day" hint="1 to 31">{(id) => <input id={id} type="number" min={1} max={31} className="field" value={f.stmt} onChange={(e) => up("stmt")(e.target.value)} />}</Field>
