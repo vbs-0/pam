@@ -499,7 +499,7 @@ class _DayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final k = Palette.of(context);
-    final out = all.where((t) => t['local_date'] == day && (t['amount_paise'] as int) < 0 && t['kind'] == 'EXPENSE').fold<int>(0, (s, t) => s - (t['amount_paise'] as int));
+    final out = all.where((t) => t['local_date'] == day && (t['amount_paise'] as int) < 0 && (t['kind'] == 'EXPENSE' || t['kind'] == 'UNKNOWN')).fold<int>(0, (s, t) => s - (t['amount_paise'] as int));
     return Container(
       margin: const EdgeInsets.only(top: 8), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), color: k.blueSoft,
       child: Row(children: [

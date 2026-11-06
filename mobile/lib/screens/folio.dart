@@ -25,7 +25,8 @@ class _FolioState extends State<Folio> {
       api.get('/me/budgets', {'month': _month}),
       api.get('/me/insights', {'month': _month}),
       api.get('/me/profile'),
-      api.get('/me/trend', {'months': '12'}),
+      // the chart is a bonus: if it is slow or fails, the rest of the page still opens
+      api.get('/me/trend', {'months': '12'}).timeout(const Duration(seconds: 6)).catchError((_) => <dynamic>[]),
     ]);
     return {'summary': r[0], 'budgets': r[1], 'insights': r[2], 'profile': r[3], 'trend': r[4]};
   }

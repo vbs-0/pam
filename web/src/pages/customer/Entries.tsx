@@ -113,7 +113,7 @@ export default function Entries() {
               {rows.map((t, i) => {
                 const struck = t.kind === "TRANSFER" || t.kind === "REVERSAL";
                 const newDay = i === 0 || rows[i - 1].local_date !== t.local_date;
-                const dayOut = newDay ? rows.filter((r) => r.local_date === t.local_date && r.amount_paise < 0 && r.kind === "EXPENSE").reduce((s, r) => s - r.amount_paise, 0) : 0;
+                const dayOut = newDay ? rows.filter((r) => r.local_date === t.local_date && r.amount_paise < 0 && (r.kind === "EXPENSE" || r.kind === "UNKNOWN")).reduce((s, r) => s - r.amount_paise, 0) : 0;
                 return (
                   <Fragment key={t.txn_id}>
                   {newDay && (

@@ -95,12 +95,25 @@ class Api {
     }
     final key = _ckey(path, q);
     dynamic data;
+    // Stale-while-revalidate: if the server is slow but this screen was seen before, show the saved copy now and let the
+    // request finish in the background, so the next visit is fresh. Lists and details keep going to the server.
+    final saved = (isList || isDetail) ? null : await _recall(key);
     try {
-      data = await _send('GET', path, query: q);
+      final req = _send('GET', path, query: q);
+      if (saved != null) {
+        data = await req.timeout(const Duration(milliseconds: 1500), onTimeout: () {
+          req.then((d) { if (offline.value) offline.value = false; _remember(key, d); }).catchError((_) {});
+          throw _UseSaved();
+        });
+      } else {
+        data = await req;
+      }
       if (offline.value) offline.value = false;
       _remember(key, data);
       if (isList) local.remember(((data as Map)['items'] as List).cast<Map<String, dynamic>>());
       if (isDetail && data is Map) local.remember([data.cast<String, dynamic>()]);
+    } on _UseSaved {
+      data = saved!.value;
     } on ApiException catch (e) {
       if (e.status != 0) rethrow;
       if (isList && local.mirror.isNotEmpty) { offline.value = true; return local.listFor(q); }
@@ -247,3 +260,5 @@ class Api {
     return data;
   }
 }
+
+class _UseSaved implements Exception {}
