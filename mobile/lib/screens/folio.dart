@@ -79,7 +79,7 @@ class _FolioState extends State<Folio> {
                 const SizedBox(height: 12),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Expanded(child: SlideUp(index: 1, child: ShapeCard(shape: CardShape.tab, color: k.sand, radius: 22, padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                      child: _Fig('INCOME', CountUp(income, (v) => Text(inr(v), style: const TextStyle(fontFamily: serif, fontSize: 24, color: Color(0xFF191919)))))))),
+                      child: _Fig('INCOME', CountUp(income, (v) => Text(inr(v), style: TextStyle(fontFamily: serif, fontSize: 24, color: k.ink))))))),
                   const SizedBox(width: 12),
                   Expanded(child: SlideUp(index: 2, child: ShapeCard(shape: CardShape.tab, color: const Color(0xFF191919), radius: 22, padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                       child: _Fig('KEPT', rate == null ? const Text('—', style: TextStyle(fontFamily: serif, fontSize: 24, color: Color(0xFFFCF9EB))) : CountUp((rate * 100).round(), (v) => Text('$v%', style: TextStyle(fontFamily: serif, fontSize: 24, color: rate < 0 ? const Color(0xFFFF7A52) : const Color(0xFFFCF9EB)))), light: true)))),
@@ -128,7 +128,7 @@ class _Fig extends StatelessWidget {
   const _Fig(this.label, this.child, {this.light = false});
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: TextStyle(color: light ? const Color(0xFFBDB8A8) : const Color(0xFF5E5A50), fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1)),
+        Text(label, style: TextStyle(color: light ? const Color(0xFFBDB8A8) : Palette.of(context).muted, fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1)),
         const SizedBox(height: 2),
         child,
       ]);
