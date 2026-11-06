@@ -28,3 +28,9 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+
+// Amount and number fields take digits only: letters typed or pasted into them are refused before they land.
+document.addEventListener("beforeinput", (e) => {
+  const el = e.target as HTMLInputElement;
+  if (el?.tagName === "INPUT" && (el.inputMode === "decimal" || el.inputMode === "numeric") && e.data && /[^\d.,₹\s-]/.test(e.data)) e.preventDefault();
+});

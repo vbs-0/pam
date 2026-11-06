@@ -146,7 +146,7 @@ function EditAccount({ a, onClose }: { a: Account; onClose: () => void }) {
     <Drawer title={`Edit ${a.display_name}`} onClose={onClose}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
         <Field label="Your name for it" hint="Leave empty to use the bank name" error={err("label")}>{(id) => <input id={id} className="field" maxLength={40} value={f.label} onChange={(e) => up("label")(e.target.value)} placeholder="Salary account" />}</Field>
-        <Field label={card ? "Amount owed today (₹, negative)" : "Balance today (₹)"} hint={`Currently ₹${rupees(a.balance_paise)}. Changing this corrects the opening balance; your entries stay as they are.`} error={err("balance_paise") ?? (signedBal === null ? "Enter an amount" : undefined)}>{(id) => <input id={id} className="field" inputMode="decimal" value={f.balance} onChange={(e) => up("balance")(e.target.value)} />}</Field>
+        <Field label={card ? "Amount owed today (₹, negative)" : "Balance today (₹)"} hint={`Currently ₹${rupees(a.balance_paise)}. Changing this corrects the opening balance; your entries stay as they are.`} error={err("balance_paise") ?? (signedBal === null ? "Enter an amount" : undefined)}>{(id) => <input id={id} className="field" inputMode="decimal" value={f.balance} onChange={(e) => up("balance")(money(e.target.value, card))} />}</Field>
         {a.account_type !== "CREDIT_CARD" && <Field label="UPI ID" error={err("vpa")}>{(id) => <input id={id} className="field" value={f.vpa} onChange={(e) => up("vpa")(e.target.value)} placeholder="name@bank" />}</Field>}
         {card && (
           <>
