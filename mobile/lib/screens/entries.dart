@@ -259,7 +259,8 @@ class CategoryDropdown extends StatelessWidget {
   final String? value;
   final ValueChanged<String?> onChanged;
   final String blank;
-  const CategoryDropdown({super.key, required this.value, required this.onChanged, this.blank = 'Choose a category'});
+  final ValueChanged<Map<String, dynamic>>? onPickedCategory;
+  const CategoryDropdown({super.key, required this.value, required this.onChanged, this.blank = 'Choose a category', this.onPickedCategory});
   @override
   Widget build(BuildContext context) => FutureBuilder<List<Map<String, dynamic>>>(
         future: loadCategories(),
@@ -268,7 +269,11 @@ class CategoryDropdown extends StatelessWidget {
           return DropdownButtonFormField<String>(
             initialValue: value, isExpanded: true, decoration: InputDecoration(labelText: 'Category', hintText: blank),
             items: [for (final c in cats) DropdownMenuItem(value: c['code'] as String, child: Text(c['name'] as String, overflow: TextOverflow.ellipsis))],
-            onChanged: s.hasData ? onChanged : null,
+            onChanged: s.hasData ? (v) {
+              onChanged(v);
+              final hit = cats.where((c) => c['code'] == v);
+              if (hit.isNotEmpty) onPickedCategory?.call(hit.first);
+            } : null,
           );
         },
       );
@@ -455,7 +460,9 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
                 )),
               ]),
               const SizedBox(height: 12),
-              CategoryDropdown(value: _cat, onChanged: (v) => setState(() => _cat = v), blank: 'Let PAM decide'),
+              CategoryDropdown(value: _cat, onChanged: (v) => setState(() => _cat = v), blank: 'Let PAM decide',
+                  // choosing an income category (Salary, Interest…) means the money came in, so flip the switch for the user
+                  onPickedCategory: (c) { if (c['kind'] == 'INCOME' && _out) setState(() => _out = false); }),
               if (_error != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(_error!, style: TextStyle(color: k.red, fontWeight: FontWeight.w600))),
               const SizedBox(height: 16),
               SizedBox(width: double.infinity, child: FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'Writing…' : 'Write entry'))),
