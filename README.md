@@ -91,7 +91,7 @@ pam/
 ├── mobile/             Flutter Android app, widgets, offline outbox
 ├── data/starter/       committed dataset: 50 households, 25,000 transactions
 ├── reports/            validation, evaluation, reproducibility (starter and full)
-├── docs/               data dictionary, edge cases, deploy, AI disclosure, screenshots
+├── docs/               data dictionary, edge cases, deploy, AI disclosure, screenshots, feature list (features.md)
 ├── deploy/             systemd unit, nginx site, deploy script
 └── .github/workflows/  CI and continuous deployment
 ```
@@ -105,7 +105,7 @@ pam/
 | `mobile/` | Flutter Android app for customers: folio, entries with filters, calendar heatmap, spend analytics, budgets with rollover, bills and net worth, goals, CSV import, export and backup, household sharing, offline copy, three home-screen widgets; email and Google sign-in |
 | `data/starter/` | The starter dataset: 50 households, 25,000 transactions (committed) |
 | `reports/` | Validation, evaluation and reproducibility reports for starter and full scale |
-| `docs/` | Data dictionary, edge-case register, infrastructure and deploy notes, AI disclosure, prompt history |
+| `docs/` | Data dictionary, edge-case register, [feature list](docs/features.md), infrastructure and deploy notes, AI disclosure, prompt history |
 | `deploy/` | systemd unit, nginx site, deploy script |
 | `.github/` | CI (backend tests, web build and tests, Flutter analysis) and automatic deployment to the server after CI passes on `main` ([docs/deploy.md](docs/deploy.md)) |
 

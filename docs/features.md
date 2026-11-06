@@ -398,7 +398,7 @@ Surfaces: backend (FastAPI + Postgres), web console (React), Android app (Flutte
 
 ## Web console — Authentication flows
 339. Login and register share one form that flips between sign-in and start-up modes (`Login.tsx:11`).
-340. Registration asks for an optional name and enforces a ten-character minimum password (`Login.tsx:59`).
+340. Registration asks for an optional name and enforces a six-character minimum password (`Login.tsx:59`; was ten until 6 Nov, see the section at the end).
 341. The Google popup button hides entirely when the Firebase environment variables are unset (`Login.tsx:63`).
 342. Firebase auth is dynamically imported only when the Google button is actually pressed (`firebase.ts:11`).
 343. Forgot-password posts the email and shows the server detail for a 30-minute link (`Recover.tsx:34`).
@@ -595,7 +595,7 @@ Surfaces: backend (FastAPI + Postgres), web console (React), Android app (Flutte
 488. Google sign-in shows a degraded "not available in this build" message when initialisation throws (login.dart:47).
 489. Login fields carry autofill hints for name, email and password so the keyboard offers stored credentials (login.dart:95).
 490. The password field toggles visibility through a suffix eye icon that flips obscureText (login.dart:101).
-491. Sign-up mode adds a name field and helper text requiring at least ten characters (login.dart:100).
+491. Sign-up mode adds a name field and helper text requiring at least six characters (login.dart:100; was ten until 6 Nov).
 492. An expired-session banner reads "Your session ended. Please sign in again." above the form (login.dart:89).
 493. A sample-household hint tells explorers to sign in as usr-000001@pam.is-cool.dev with password123, read-only (login.dart:116).
 494. Password reset is delegated: the screen points to pam.is-cool.dev/forgot instead of resetting in-app (login.dart:114).
@@ -1079,3 +1079,26 @@ Surfaces: backend (FastAPI + Postgres), web console (React), Android app (Flutte
 860. Seven schema tests assert every column documented with a primary key and truth-free inputs; six evaluation tests check thresholds while two health tests verify healthz and request-id echo.
 861. The web suite is one Vitest file format.test.ts with six it cases; five Flutter tests cover offline queue, edit, split, local filters and goal change.
 862. Backend pytest defines markers db and slow while addopts deselect via -m 'not slow'; ruff enforces line-length 120 with select E F I B UP SIM.
+
+## Added after 5 Nov 2026 (redesign, Spend look-back, demo reset)
+These items were written from the commits made after the list above was generated, not regenerated from the code; file names are the places to look.
+
+863. Web redesign: paper, ink and orange palette with Instrument Serif headings and a light and a dark theme, defined as CSS variables (`web/src/index.css`).
+864. Cards take the new shapes: an orange hero card with a cut corner and diagonal hatch, sand and ink folder-tab stat cards, and white rounded panels for the lower blocks (`Folio.tsx`, `index.css`).
+865. Motion on the web: blocks slide up as they scroll into view (transforms only, never a fade over text), buttons fill from the left on hover, links get a wavy underline, and `?motion=off` turns it all off; the browser's reduced-motion setting is respected unless motion is switched on (`web/src/lib/motion.ts`, `index.css`).
+866. A custom month picker replaces the browser's month input: a pill with arrows and a twelve-month grid whose months grow on hover (`components/ui.tsx`, `MonthBar`).
+867. Folio's twelve-month chart is one spend line against income: it draws itself, a dot rides it to the selected month and glides to whichever month you hover, and the line glows red where spend is above income and green where it is below (`Folio.tsx`, `TrendChart`).
+868. Donut, bars and weekday columns share the new palette: the ring draws in slice by slice, bars are pills, columns have rounded tops (`components/charts.tsx`).
+869. The page area grows to 1680 px on wide screens and Spend shows the category ring and the comparison table side by side; the bottom ticker bar was removed (`index.css`, `Spend.tsx`).
+870. The web login page links to the GitHub repository with the GitHub mark (`pages/Login.tsx`).
+871. Android 1.6.0 uses the same palette and the bundled Instrument Serif fonts, with slide-up, press and cut-corner card widgets (`mobile/lib/theme.dart`, `lib/ui/motion.dart`).
+872. Android Folio has an animated twelve-month trend line you can touch or drag, with the same red and green glow and a gliding dot (`lib/ui/trendline.dart`).
+873. Android month bar is a pill with a twelve-month grid sheet; section titles draw a line under themselves and budget bars grow in (`lib/ui/widgets.dart`).
+874. Android reads show the saved copy straight away when the server has not answered within 1.5 seconds, and refresh it in the background; Folio's chart loads separately with a six-second limit so it never blocks the page (`lib/api.dart`, `screens/folio.dart`).
+875. Day totals in Entries count unsorted debits too, so they add up to Folio's true spend (`Entries.tsx`, `entries.dart`).
+876. Adding an entry on Android: picking an income category such as Interest or Salary switches the toggle to Money in (`screens/entries.dart`).
+877. Spend has a look-back choice (3, 6, 12 months or all time) for top payees and the weekday pattern on web and Android; the API now accepts up to 120 months (`Spend.tsx`, `spend.dart`, `app/api/analytics.py`).
+878. The password minimum is six characters for sign-up, reset and change; sign-up says so before sending instead of showing "Some fields are invalid" (`app/api/auth.py`, `Login.tsx`, `login.dart`).
+879. Number fields take digits only: amounts accept digits and one decimal point, household size and due days are digits, the state code is letters only, and a page-wide guard refuses letters typed or pasted into numeric inputs (`Books.tsx`, `main.tsx`).
+880. For judging, the live site holds synthetic data only; the four `@pam.test` role logins and the sample households use the public demo password `password123`, set in the database, and the README lists them (`README.md`, `docs/deploy.md`).
+881. Release v1.6.0 publishes `pam-1.6.0.apk` on GitHub; the repository topics now include android, apk, expense-tracker, budget-tracker and upi-payments so app stores that index GitHub can find it.
