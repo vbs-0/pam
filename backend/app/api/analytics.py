@@ -138,7 +138,7 @@ def spend_by_category(
 
 @router.get("/merchants")
 def merchants(
-    months: int = Query(6, ge=1, le=36),
+    months: int = Query(6, ge=1, le=120),
     limit: int = Query(15, ge=1, le=50),
     user: str = Depends(household),
     run: str = Depends(run_id),
@@ -174,7 +174,7 @@ def _months_ago(n: int) -> str:
 
 @router.get("/weekday")
 def weekday(
-    months: int = Query(6, ge=1, le=36),
+    months: int = Query(6, ge=1, le=120),
     user: str = Depends(household),
     run: str = Depends(run_id),
     conn: Connection = Depends(get_conn),

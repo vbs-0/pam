@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { BarList, Delta, Donut, WeekdayBars } from "../../components/charts";
@@ -7,15 +8,19 @@ import { get } from "../../lib/api";
 import { monthName, rupees } from "../../lib/format";
 import type { MerchantSpend, SpendByCategory, WeekdaySpend } from "../../lib/types";
 
+const RANGES = [{ m: 3, label: "3 months" }, { m: 6, label: "6 months" }, { m: 12, label: "12 months" }, { m: 120, label: "All time" }];
+
 interface TrendRow { month: string; spend_paise: number; income_paise: number }
 
 /** Where the money went: categories with change against last month, top payees, the weekly pattern, and a year of months. */
 export default function Spend() {
   const [month, setMonth] = useMonth();
   const nav = useNavigate();
+  const [range, setRange] = useState(6);
+  const rangeLabel = RANGES.find((r) => r.m === range)!.label;
   const cats = useQuery({ queryKey: ["spend-cats", month], queryFn: () => get<SpendByCategory>("/me/spend-by-category", { month }) });
-  const merchants = useQuery({ queryKey: ["merchants"], queryFn: () => get<MerchantSpend[]>("/me/merchants", { months: 6, limit: 10 }) });
-  const week = useQuery({ queryKey: ["weekday"], queryFn: () => get<WeekdaySpend[]>("/me/weekday", { months: 6 }) });
+  const merchants = useQuery({ queryKey: ["merchants", range], queryFn: () => get<MerchantSpend[]>("/me/merchants", { months: range, limit: 10 }) });
+  const week = useQuery({ queryKey: ["weekday", range], queryFn: () => get<WeekdaySpend[]>("/me/weekday", { months: range }) });
   const trend = useQuery({ queryKey: ["trend", 12], queryFn: () => get<TrendRow[]>("/me/trend", { months: 12 }) });
   return (
     <>
@@ -46,8 +51,12 @@ export default function Spend() {
         </QueryState>
       </Section>
 
+      <div className="flex flex-wrap items-center gap-2 mb-4" role="group" aria-label="Time range for payees and weekdays">
+        <span className="text-sm text-muted mr-1">Look back</span>
+        {RANGES.map((r) => <button key={r.m} type="button" aria-pressed={range === r.m} className={`btn ${range === r.m ? "btn-solid" : ""} !min-h-[34px]`} onClick={() => setRange(r.m)}>{r.label}</button>)}
+      </div>
       <div className="grid gap-8 lg:grid-cols-2">
-        <Section title="Top payees · last 6 months">
+        <Section title={`Top payees · ${range === 120 ? "all time" : `last ${rangeLabel}`}`}>
           <QueryState q={merchants} rows={5}>
             {(rows) => rows.length === 0 ? <Empty title="No payees yet" /> : (
               <BarList rows={rows.map((m) => ({ key: m.name, label: m.name, value: m.spend_paise, sub: `${m.count} payment${m.count > 1 ? "s" : ""}` }))} onPick={(name) => nav(`/entries?month=all&merchant=${encodeURIComponent(name)}`)} />
@@ -59,7 +68,7 @@ export default function Spend() {
             {(rows) => rows.every((r) => r.spend_paise === 0) ? <Empty title="Not enough yet" hint="A few weeks of entries show your weekly rhythm." /> : (
               <>
                 <WeekdayBars days={rows.map((r) => ({ name: r.name, value: r.average_paise, sub: `₹${rupees(r.average_paise)} on an average ${r.name}` }))} />
-                <p className="text-sm text-muted mt-3">Average spend on each weekday over the last six months.</p>
+                <p className="text-sm text-muted mt-3">Average spend on each weekday, {range === 120 ? "across all your entries" : `over the last ${rangeLabel}`}.</p>
               </>
             )}
           </QueryState>

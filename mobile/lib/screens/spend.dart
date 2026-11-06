@@ -16,12 +16,15 @@ class SpendScreen extends StatefulWidget {
 
 class _SpendScreenState extends State<SpendScreen> {
   String _month = currentMonth();
+  int _range = 6;   // months to look back for payees and weekdays; 120 means all time
+  static const _ranges = [(3, '3 months'), (6, '6 months'), (12, '12 months'), (120, 'All time')];
+  String get _rangeText => _range == 120 ? 'all time' : 'last $_range months';
 
   Future<Map<String, dynamic>> _load() async {
     final r = await Future.wait([
       Api.instance.get('/me/spend-by-category', {'month': _month}),
-      Api.instance.get('/me/merchants', {'months': '6', 'limit': '10'}),
-      Api.instance.get('/me/weekday', {'months': '6'}),
+      Api.instance.get('/me/merchants', {'months': '$_range', 'limit': '10'}),
+      Api.instance.get('/me/weekday', {'months': '$_range'}),
       Api.instance.get('/me/trend', {'months': '12'}),
     ]);
     return {'cats': r[0], 'merchants': r[1], 'week': r[2], 'trend': r[3]};
@@ -75,7 +78,12 @@ class _SpendScreenState extends State<SpendScreen> {
                     ]),
                   ),
               ],
-              const SectionTitle('Top payees · 6 months'),
+              const SectionTitle('Look back'),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                for (final r in _ranges)
+                  ChoiceChip(label: Text(r.$2), selected: _range == r.$1, onSelected: (_) => setState(() => _range = r.$1)),
+              ]),
+              SectionTitle('Top payees · $_rangeText'),
               if (merchants.isEmpty) const EmptyState('No payees yet') else
                 BarList(
                   rows: [for (final m in merchants) (key: m['name'] as String, label: m['name'] as String, sub: '${m['count']} payment${m['count'] == 1 ? '' : 's'} · last ${dayLabel(m['last_date'] as String)}', value: m['spend_paise'] as int)],
@@ -85,7 +93,7 @@ class _SpendScreenState extends State<SpendScreen> {
               if (week.every((w) => (w['spend_paise'] as int) == 0)) const EmptyState('Not enough yet', hint: 'A few weeks of entries show your weekly rhythm.') else ...[
                 const SizedBox(height: 10),
                 ColumnBars(cols: [for (final w in week) (label: (w['name'] as String).substring(0, 3), value: w['average_paise'] as int, line: null)]),
-                Text('Average spend on each weekday over six months.', style: TextStyle(color: k.muted, fontSize: 13)),
+                Text('Average spend on each weekday, ${_range == 120 ? 'across all your entries' : 'over the $_rangeText'}.', style: TextStyle(color: k.muted, fontSize: 13)),
               ],
               const SectionTitle('Twelve months'),
               if (trend.isEmpty) const EmptyState('No history yet') else ...[
