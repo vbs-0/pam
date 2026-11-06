@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
-import { BarList, Delta, Donut, TrendBars, WeekdayBars } from "../../components/charts";
+import { BarList, Delta, Donut, WeekdayBars } from "../../components/charts";
+import { TrendChart } from "./Folio";
 import { Empty, MonthBar, PageHead, QueryState, Section, useMonth } from "../../components/ui";
 import { get } from "../../lib/api";
 import { monthName, rupees } from "../../lib/format";
@@ -22,7 +23,7 @@ export default function Spend() {
       <Section title="By category">
         <QueryState q={cats} rows={6}>
           {(d) => d.categories.length === 0 ? <Empty title="No spending this month" hint="Entries you add show up here by category." /> : (
-            <div className="space-y-6">
+            <div className="grid gap-8 xl:grid-cols-2 items-start">
               <Donut
                 slices={d.categories.filter((c) => c.spend_paise > 0).map((c) => ({ key: c.code, label: c.name, value: c.spend_paise }))}
                 total={d.total_paise}
@@ -69,8 +70,7 @@ export default function Spend() {
         <QueryState q={trend} rows={4}>
           {(rows) => rows.length === 0 ? <Empty title="No history yet" /> : (
             <>
-              <TrendBars rows={rows.map((r) => ({ label: monthName(r.month, true), spend: r.spend_paise, income: r.income_paise }))} />
-              <p className="text-sm text-muted mt-2"><span className="inline-block w-3 h-3 bg-blue align-middle mr-1" aria-hidden />Spent <span className="inline-block w-3 h-[2px] bg-green align-middle ml-4 mr-1" aria-hidden />Income</p>
+              {rows.length < 2 ? <p className="text-muted py-3">The line appears after a second month of entries.</p> : <TrendChart data={rows} current={month} />}
             </>
           )}
         </QueryState>

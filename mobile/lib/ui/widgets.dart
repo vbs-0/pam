@@ -4,6 +4,7 @@ import '../api.dart';
 import '../format.dart';
 import '../offline.dart';
 import '../theme.dart';
+import 'motion.dart';
 
 class Money extends StatelessWidget {
   final int paise;
@@ -36,8 +37,8 @@ class Stamp extends StatelessWidget {
   const Stamp(this.text, this.color, {super.key});
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-        decoration: BoxDecoration(border: Border.all(color: color), borderRadius: BorderRadius.circular(1)),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 2),
+        decoration: BoxDecoration(border: Border.all(color: color, width: 1.2), borderRadius: BorderRadius.circular(99)),
         child: Text(text.toUpperCase(), style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: .9)),
       );
 }
@@ -61,12 +62,18 @@ class SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final k = Palette.of(context);
     return Container(
-      margin: const EdgeInsets.only(top: 24, bottom: 4),
-      padding: const EdgeInsets.only(bottom: 6),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: k.ruleStrong))),
-      child: Row(children: [
-        Expanded(child: Text(text.toUpperCase(), style: TextStyle(color: k.muted, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1))),
-        if (trailing != null) trailing!,
+      margin: const EdgeInsets.only(top: 28, bottom: 6),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text(text.toUpperCase(), style: const TextStyle(fontFamily: serif, fontSize: 28, height: 1.05, letterSpacing: .2))),
+          if (trailing != null) trailing!,
+        ]),
+        const SizedBox(height: 6),
+        // the line draws itself under the heading
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1), duration: const Duration(milliseconds: 900), curve: draw,
+          builder: (_, v, __) => FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: v, child: Container(height: 1.5, color: k.ink)),
+        ),
       ]),
     );
   }
@@ -82,17 +89,22 @@ class LimitBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final k = Palette.of(context);
     final max = ([actual, budget ?? 0, 1]..sort()).last * 1.04;
-    final color = status == 'OVER' ? k.red : status == 'NEAR' ? k.amber : k.blue;
+    final color = status == 'OVER' ? k.red : status == 'NEAR' ? k.amber : k.orange;
     return Semantics(
       label: budget == null ? 'No budget set' : 'Spent ${(actual / (budget == 0 ? 1 : budget!) * 100).round()} percent of budget',
       child: SizedBox(
         height: 14,
         child: LayoutBuilder(builder: (context, c) {
           final w = c.maxWidth;
+          final target = (actual.clamp(0, 1 << 60) / max) * w;
           return Stack(clipBehavior: Clip.none, children: [
-            Positioned.fill(child: Container(decoration: BoxDecoration(border: Border.symmetric(horizontal: BorderSide(color: k.rule))))),
-            Positioned(left: 0, top: 1, bottom: 1, width: (actual.clamp(0, 1 << 60) / max) * w, child: Container(decoration: BoxDecoration(color: color, borderRadius: const BorderRadius.horizontal(right: Radius.circular(4))))),
-            if (budget != null) Positioned(left: (budget! / max) * w - 1, top: -3, bottom: -3, width: 2, child: ColoredBox(color: k.red)),
+            Positioned.fill(child: Container(decoration: BoxDecoration(color: k.track, borderRadius: BorderRadius.circular(99)))),
+            // grows in from the left, like the site's bars
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: target), duration: const Duration(milliseconds: 1000), curve: draw,
+              builder: (_, v, __) => Positioned(left: 0, top: 0, bottom: 0, width: v, child: Container(decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(99)))),
+            ),
+            if (budget != null) Positioned(left: (budget! / max) * w - 1, top: -3, bottom: -3, width: 2.5, child: ColoredBox(color: k.ink)),
           ]);
         }),
       ),
@@ -124,7 +136,7 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
             Container(
               margin: const EdgeInsets.symmetric(vertical: 7), height: 18, width: double.infinity,
               alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(widthFactor: .96 - (i % 3) * .11, child: Container(color: Color.lerp(k.rule, k.blueSoft, reduce ? .5 : _c.value))),
+              child: FractionallySizedBox(widthFactor: .96 - (i % 3) * .11, child: Container(decoration: BoxDecoration(borderRadius: BorderRadius.circular(99), color: Color.lerp(k.track, k.bar, reduce ? .5 : _c.value)))),
             ),
         ]),
       ),
@@ -141,7 +153,7 @@ class ErrorBox extends StatelessWidget {
     final k = Palette.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: k.redSoft, border: Border.all(color: k.red)),
+      decoration: BoxDecoration(color: k.redSoft, border: Border.all(color: k.red), borderRadius: BorderRadius.circular(18)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(error is ApiException ? (error as ApiException).message : 'Something went wrong.', style: TextStyle(color: k.red, fontWeight: FontWeight.w700)),
         if (retry != null) Padding(padding: const EdgeInsets.only(top: 10), child: OutlinedButton(onPressed: retry, child: const Text('Try again'))),
@@ -203,14 +215,89 @@ class MonthBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final k = Palette.of(context);
     return Container(
-      decoration: BoxDecoration(color: k.sheet, border: Border.all(color: k.ruleStrong), borderRadius: BorderRadius.circular(2)),
+      decoration: BoxDecoration(color: k.sheet, border: Border.all(color: k.ink, width: 1.4), borderRadius: BorderRadius.circular(99)),
       child: Row(children: [
-        IconButton(tooltip: 'Previous month', onPressed: () => onChange(shiftMonth(month, -1)), icon: const Icon(Icons.chevron_left)),
-        Expanded(child: Text(monthName(month), textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16))),
-        IconButton(tooltip: 'Next month', onPressed: () => onChange(shiftMonth(month, 1)), icon: const Icon(Icons.chevron_right)),
+        _Round(Icons.chevron_left, 'Previous month', () => onChange(shiftMonth(month, -1))),
+        Expanded(
+          child: Press(
+            onTap: () => _pick(context, k),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Flexible(child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 380), switchInCurve: ease,
+                transitionBuilder: (c, a) => ClipRect(child: SlideTransition(position: Tween(begin: const Offset(0, .8), end: Offset.zero).animate(CurvedAnimation(parent: a, curve: ease)), child: c)),
+                child: Text(monthName(month), key: ValueKey(month), overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: serif, fontSize: 24)),
+              )),
+              const SizedBox(width: 6),
+              Icon(Icons.calendar_month_outlined, size: 18, color: k.orange),
+            ]),
+          ),
+        ),
+        _Round(Icons.chevron_right, 'Next month', () => onChange(shiftMonth(month, 1))),
       ]),
     );
   }
+
+  /// Twelve-month grid for the shown year; each month lifts and fills orange when pressed.
+  Future<void> _pick(BuildContext context, Palette k) async {
+    var year = int.parse(month.substring(0, 4));
+    final picked = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: k.sheet,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
+        const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(children: [
+              _Round(Icons.chevron_left, 'Previous year', () => set(() => year--)),
+              Expanded(child: Text('$year', textAlign: TextAlign.center, style: const TextStyle(fontFamily: serif, fontSize: 32))),
+              _Round(Icons.chevron_right, 'Next year', () => set(() => year++)),
+            ]),
+            const SizedBox(height: 12),
+            GridView.count(
+              shrinkWrap: true, crossAxisCount: 4, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 1.5, physics: const NeverScrollableScrollPhysics(),
+              children: [
+                for (var i = 0; i < 12; i++)
+                  SlideUp(
+                    index: i ~/ 2, distance: 22,
+                    child: Press(
+                      onTap: () => Navigator.pop(ctx, '$year-${(i + 1).toString().padLeft(2, '0')}'),
+                      child: Builder(builder: (_) {
+                        final m = '$year-${(i + 1).toString().padLeft(2, '0')}';
+                        final sel = m == month;
+                        return Container(
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(color: sel ? k.orange : k.paper, border: Border.all(color: sel ? k.orange : k.ruleStrong), borderRadius: BorderRadius.circular(16)),
+                          child: Text(names[i], style: TextStyle(fontFamily: serif, fontSize: 22, color: sel ? Colors.white : k.ink)),
+                        );
+                      }),
+                    ),
+                  ),
+              ],
+            ),
+          ]),
+        );
+      }),
+    );
+    if (picked != null) onChange(picked);
+  }
+}
+
+class _Round extends StatelessWidget {
+  final IconData icon;
+  final String tip;
+  final VoidCallback onTap;
+  const _Round(this.icon, this.tip, this.onTap);
+  @override
+  Widget build(BuildContext context) => Press(
+        onTap: onTap,
+        child: Tooltip(message: tip, child: Container(
+          width: 44, height: 44, margin: const EdgeInsets.all(3), alignment: Alignment.center,
+          decoration: BoxDecoration(color: Palette.of(context).paper, shape: BoxShape.circle),
+          child: Icon(icon, size: 22),
+        )),
+      );
 }
 
 Future<void> showError(BuildContext context, Object e) async {
@@ -242,9 +329,9 @@ class _BootSplashState extends State<BootSplash> with SingleTickerProviderStateM
             return Column(mainAxisSize: MainAxisSize.min, children: [
               Transform.scale(scale: 1 + .08 * t, child: Opacity(opacity: 1 - .2 * t, child: Image.asset(dark ? 'assets/logo-dark.png' : 'assets/logo-light.png', width: 84, height: 84))),
               const SizedBox(height: 14),
-              Text('PAM', style: TextStyle(color: k.blue, fontWeight: FontWeight.w800, letterSpacing: 3)),
+              Text('PAM', style: TextStyle(fontFamily: serif, fontSize: 34, color: k.ink, letterSpacing: 4)),
               const SizedBox(height: 14),
-              SizedBox(width: 120, child: LinearProgressIndicator(minHeight: 3, backgroundColor: k.rule, color: k.blue)),
+              SizedBox(width: 120, child: ClipRRect(borderRadius: BorderRadius.circular(9), child: LinearProgressIndicator(minHeight: 3, backgroundColor: k.track, color: k.orange))),
             ]);
           },
         ),

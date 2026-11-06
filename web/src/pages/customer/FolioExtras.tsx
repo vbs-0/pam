@@ -25,8 +25,8 @@ export default function FolioExtras({ month, summary, budgets }: { month: string
   const top = alerts.data?.alerts.slice(0, 3) ?? [];
 
   return (
-    <div className="grid gap-x-10 gap-y-6 md:grid-cols-3 mb-9">
-      <div>
+    <div className="grid gap-4 md:grid-cols-3 mb-6">
+      <div className="info-card">
         <p className="text-sm font-bold uppercase tracking-wider text-muted">Pace</p>
         <p className="text-2xl font-semibold mt-1 num">₹{rupees(avg)} <span className="text-sm font-normal text-muted">a day</span></p>
         <p className="text-sm text-muted mt-1">
@@ -35,7 +35,7 @@ export default function FolioExtras({ month, summary, budgets }: { month: string
           {room !== null && room < 0 && <> You are <b className="text-red">₹{rupees(room)}</b> over the total of your limits.</>}
         </p>
       </div>
-      <div>
+      <div className="info-card">
         <p className="text-sm font-bold uppercase tracking-wider text-muted">Against last month</p>
         {cats.data ? (
           <>
@@ -44,7 +44,7 @@ export default function FolioExtras({ month, summary, budgets }: { month: string
           </>
         ) : <p className="text-sm text-muted mt-2">Loading…</p>}
       </div>
-      <div>
+      <div className="info-card">
         <p className="text-sm font-bold uppercase tracking-wider text-muted">Net worth</p>
         {nw.data ? (
           <>
@@ -54,7 +54,7 @@ export default function FolioExtras({ month, summary, budgets }: { month: string
         ) : <p className="text-sm text-muted mt-2">Loading…</p>}
       </div>
       {top.length > 0 && (
-        <ul className="md:col-span-3 border-t border-rule pt-3 text-sm space-y-1" aria-label="Needs a look">
+        <ul className="alert-card md:col-span-3 text-sm space-y-1.5" aria-label="Needs a look">
           {top.map((a, i) => <li key={i}><b className={a.severity === "ALERT" ? "text-red" : ""}>{a.title}</b> <span className="text-muted">{a.detail}</span></li>)}
           {(alerts.data?.count ?? 0) > top.length && <li><Link to="/bills">See all {alerts.data?.count}</Link></li>}
         </ul>

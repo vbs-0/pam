@@ -83,7 +83,7 @@ class _Grid extends StatelessWidget {
       Row(children: [
         Text('Less', style: TextStyle(color: k.muted, fontSize: 12)),
         const SizedBox(width: 6),
-        for (final a in const [.1, .3, .5, .75, 1.0]) Container(width: 22, height: 12, margin: const EdgeInsets.only(right: 2), color: k.blue.withValues(alpha: a * .85)),
+        for (final a in const [.1, .3, .5, .75, 1.0]) Container(width: 22, height: 12, margin: const EdgeInsets.only(right: 2), color: k.orange.withValues(alpha: a * .85)),
         const SizedBox(width: 4),
         Text('More', style: TextStyle(color: k.muted, fontSize: 12)),
       ]),
@@ -106,7 +106,7 @@ class _Grid extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: shade > 0 ? k.blue.withValues(alpha: shade) : k.sheet,
+            color: shade > 0 ? k.orange.withValues(alpha: shade) : k.sheet,
             border: Border.all(color: isToday ? k.red : k.rule, width: isToday ? 2 : 1),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

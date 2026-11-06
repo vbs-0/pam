@@ -1,3 +1,4 @@
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { Link } from "react-router";
@@ -30,7 +31,7 @@ export default function Folio() {
         </>}
       />
 
-      <QueryState q={summary} rows={3}>
+      {summary.isPending ? <CardSkeleton /> : <QueryState q={summary} rows={3}>
         {(s) => {
           const noData = s.income_paise === 0 && s.spend_paise === 0 && s.naive_spend_paise === 0;
           if (noData && profile.data && !sample) return (
@@ -39,10 +40,10 @@ export default function Folio() {
           );
           const gap = s.naive_spend_paise - s.spend_paise;
           return (
-            <div key={month} className="reinked grid md:grid-cols-[1.6fr_1fr_1fr] border-y border-rule-strong mb-9">
-              <div className="p-5 md:border-r border-rule">
+            <div key={month} className="reinked grid md:grid-cols-[1.6fr_1fr_1fr] gap-4 mb-9">
+              <div className="hero-card p-6 rounded-2xl">
                 <p className="text-sm font-bold uppercase tracking-wider text-muted">True spend</p>
-                <p className="text-5xl font-semibold tracking-tight text-blue mt-1"><Money paise={s.spend_paise} /></p>
+                <p className="text-5xl font-semibold tracking-tight mt-1"><Money paise={s.spend_paise} /></p>
                 {gap > 0 && (
                   <p className="mt-3 text-muted text-sm">
                     A plain ledger would show <span className="strike-draw font-semibold"><Money paise={s.naive_spend_paise} /></span>.
@@ -51,11 +52,11 @@ export default function Folio() {
                   </p>
                 )}
               </div>
-              <div className="p-5 md:border-r border-rule">
+              <div className="stat-card p-6 rounded-2xl">
                 <p className="text-sm font-bold uppercase tracking-wider text-muted">Income</p>
                 <p className="text-3xl font-semibold mt-2"><Money paise={s.income_paise} /></p>
               </div>
-              <div className="p-5">
+              <div className="stat-card p-6 rounded-2xl">
                 <p className="text-sm font-bold uppercase tracking-wider text-muted">Kept</p>
                 <p className={`text-3xl font-semibold mt-2 ${s.savings_rate !== null && s.savings_rate < 0 ? "text-red" : ""}`}>
                   {s.savings_rate === null ? "—" : `${Math.round(s.savings_rate * 100)}%`}
@@ -65,11 +66,11 @@ export default function Folio() {
             </div>
           );
         }}
-      </QueryState>
+      </QueryState>}
 
       {!sample || summary.data ? <FolioExtras month={month} summary={summary.data} budgets={budgets.data} /> : null}
 
-      <div className="grid lg:grid-cols-[1.55fr_1fr] gap-x-10">
+      <div className="panels grid lg:grid-cols-[1.55fr_1fr] gap-6 mb-6">
         <Section title="Against budget" right={<Link to={`/budgets?month=${month}`} className="text-sm">All budgets</Link>}>
           <QueryState q={budgets}>
             {(b) => b.lines.length === 0 ? <Empty title="No spending or budgets this month" /> : (
@@ -114,9 +115,11 @@ export default function Folio() {
         </Section>
       </div>
 
+      <div className="panel">
       <Section title="Twelve months">
         <QueryState q={trend} rows={3}>{(t) => t.length < 2 ? <p className="text-muted py-3">Trends appear after a second month of entries.</p> : <TrendChart data={t} current={month} />}</QueryState>
       </Section>
+      </div>
     </>
   );
 }
@@ -132,36 +135,123 @@ function Note({ tone, to, children }: { tone: "red" | "amber" | "muted"; to: str
   );
 }
 
-/** Spend per month as ruled columns; income is the blue tick above. Hover or focus a column for its figures. */
-function TrendChart({ data, current }: { data: Trend[]; current: string }) {
-  const W = 760, H = 190, L = 6, B = 26, T = 22;
+/** Spend per month as one line (the Vestox graph). The dot rides the line from January to the selected month when the page opens,
+    and glides along it to whichever month you hover. Where spend rises above income the line glows red. */
+export function TrendChart({ data, current }: { data: Trend[]; current: string }) {
+  const W = 760, H = 220, L = 18, R = 18, B = 30, T = 34;
   const max = Math.max(...data.map((d) => Math.max(d.spend_paise, d.income_paise)), 1);
-  const step = (W - L) / data.length, bw = Math.min(34, step * 0.56);
+  const x = (i: number) => L + ((W - L - R) * i) / Math.max(data.length - 1, 1);
   const y = (v: number) => T + (H - T - B) * (1 - v / max);
-  const peak = data.reduce((a, d) => (d.spend_paise > a.spend_paise ? d : a), data[0]);
+  const curve = (vals: number[]) => vals.map((v, i) => {
+    if (i === 0) return `M${x(0)} ${y(v)}`;
+    const mx = (x(i - 1) + x(i)) / 2;
+    return `C${mx} ${y(vals[i - 1])} ${mx} ${y(v)} ${x(i)} ${y(v)}`;
+  }).join(" ");
+  const spend = data.map((d) => d.spend_paise), income = data.map((d) => d.income_paise);
+  const nowIdx = Math.max(data.findIndex((d) => d.month === current), 0);
+  const [hot, setHot] = useState<number | null>(null);
+  const [ready, setReady] = useState(false);
+  const at = hot ?? nowIdx, d = data[at];
+  const peak = data.reduce((a, dd) => (dd.spend_paise > a.spend_paise ? dd : a), data[0]);
+  const uid = useId().replace(/:/g, "");
+  const spendPath = curve(spend), incomePath = curve(income);
+  const area = `${spendPath} L${x(data.length - 1)} ${H - B} L${x(0)} ${H - B} Z`;
+  const above = `${incomePath} L${x(data.length - 1)} 0 L${x(0)} 0 Z`;   // everything above the income line
+  const below = `${incomePath} L${x(data.length - 1)} ${H} L${x(0)} ${H} Z`;   // everything below it
+  const incomeArea = `${incomePath} L${x(data.length - 1)} ${H - B} L${x(0)} ${H - B} Z`;
+  const pathRef = useRef<SVGPathElement>(null), dotRef = useRef<SVGGElement>(null), labRef = useRef<SVGTextElement>(null), guideRef = useRef<SVGLineElement>(null);
+  const lenRef = useRef(0), raf = useRef(0);
+
+  const place = (len: number) => {
+    const pt = pathRef.current?.getPointAtLength(len);
+    if (!pt || !dotRef.current) return;
+    dotRef.current.style.transform = `translate(${pt.x}px, ${pt.y}px)`;
+    labRef.current?.setAttribute("x", String(pt.x)); labRef.current?.setAttribute("y", String(Math.max(pt.y - 16, 14)));
+    guideRef.current?.setAttribute("x1", String(pt.x)); guideRef.current?.setAttribute("x2", String(pt.x));
+  };
+  const lenAtX = (xt: number) => {
+    const p = pathRef.current!;
+    let lo = 0, hi = p.getTotalLength();
+    for (let i = 0; i < 26; i++) { const mid = (lo + hi) / 2; if (p.getPointAtLength(mid).x < xt) lo = mid; else hi = mid; }
+    return hi;
+  };
+  const go = (to: number, dur: number, done?: () => void) => {
+    cancelAnimationFrame(raf.current);
+    const from = lenRef.current, t0 = performance.now();
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const step = (now: number) => {
+      const t = dur <= 0 ? 1 : Math.min(1, (now - t0) / dur);
+      lenRef.current = from + (to - from) * ease(t);
+      place(lenRef.current);
+      if (t < 1) raf.current = requestAnimationFrame(step); else done?.();
+    };
+    raf.current = requestAnimationFrame(step);
+  };
+  // page open: start at the beginning of the line and ride it to the selected month while the line draws
+  useLayoutEffect(() => {
+    setReady(false); lenRef.current = 0; place(0);
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches && document.documentElement.dataset.motion !== "on";
+    go(lenAtX(x(nowIdx)), still ? 0 : 2000, () => setReady(true));
+    return () => cancelAnimationFrame(raf.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, current]);
+  // hover or focus: glide along the line to that month
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!ready) return;
+    // a short hover-intent pause, then a slow float along the line (longer trips take longer)
+    const t = window.setTimeout(() => { const to = lenAtX(x(at)); go(to, Math.min(2400, Math.max(800, 700 + Math.abs(to - lenRef.current) * 1.5))); }, 140);
+    return () => window.clearTimeout(t);
+  }, [at, ready]);
+
   return (
     <figure>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={`Spend per month, ${data.length} months. Highest ${monthName(peak.month)} at ₹${rupeesShort(peak.spend_paise)}.`}>
-        {[0, 0.5, 1].map((f) => <line key={f} x1={L} x2={W} y1={y(max * f)} y2={y(max * f)} stroke="var(--rule)" />)}
-        {data.map((d, i) => {
-          const x = L + i * step + (step - bw) / 2, isNow = d.month === current;
-          return (
-            <g key={d.month} tabIndex={0} aria-label={`${monthName(d.month)}: spend ₹${rupeesShort(d.spend_paise)}, income ₹${rupeesShort(d.income_paise)}`}>
-              <title>{`${monthName(d.month)} · spent ₹${rupeesShort(d.spend_paise)} · income ₹${rupeesShort(d.income_paise)}`}</title>
-              <rect x={L + i * step} y={T} width={step} height={H - T - B} fill="transparent" />
-              <rect x={x} y={y(d.spend_paise)} width={bw} height={Math.max(H - B - y(d.spend_paise), 0)} fill={isNow ? "var(--blue)" : "var(--rule-strong)"} rx="3" />
-              <line x1={x - 3} x2={x + bw + 3} y1={y(d.income_paise)} y2={y(d.income_paise)} stroke="var(--red)" strokeWidth="2" />
-              <text x={x + bw / 2} y={H - 8} textAnchor="middle" fontSize="11" fill="var(--muted)">{monthName(d.month, true).slice(0, 3)}</text>
-              {(d === peak || isNow) && <text x={x + bw / 2} y={y(d.spend_paise) - 6} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink)">₹{rupeesShort(d.spend_paise)}</text>}
-            </g>
-          );
-        })}
+        <defs><clipPath id={`above-${uid}`}><path d={above} /></clipPath><clipPath id={`below-${uid}`}><path d={below} /></clipPath></defs>
+        {[0, 0.5, 1].map((f) => <line key={f} x1={L} x2={W - R} y1={y(max * f)} y2={y(max * f)} stroke="var(--rule-strong)" strokeDasharray="3 6" />)}
+        <path d={area} className="tl-area" />
+        <path d={area} className="tl-over-area" clipPath={`url(#above-${uid})`} />
+        <path d={`${incomeArea} ${area}`} fillRule="evenodd" className="tl-under-area" clipPath={`url(#below-${uid})`} />
+        <path d={incomePath} className="tl-income tl-draw" pathLength={1} />
+        <path ref={pathRef} d={spendPath} className="tl-spend tl-draw" pathLength={1} />
+        <path d={spendPath} className="tl-over-line tl-draw" pathLength={1} clipPath={`url(#above-${uid})`} />
+        <path d={spendPath} className="tl-under-line tl-draw" pathLength={1} clipPath={`url(#below-${uid})`} />
+        <line ref={guideRef} y1={T - 6} y2={H - B} className="tl-guide" />
+        <g ref={dotRef} className="tl-dot">
+          <g className="tl-bob">
+            <circle r="16" className="tl-dot-halo" />
+            <circle r="8" className="tl-dot-ring" />
+            <circle r="5" className="tl-dot-core" />
+          </g>
+        </g>
+        <text ref={labRef} textAnchor="middle" className="tl-label" style={{ visibility: ready ? "visible" : "hidden" }}>₹{rupeesShort(d.spend_paise)}{d.spend_paise > d.income_paise ? " · over income" : ""}</text>
+        {data.map((dd, i) => (
+          <g key={dd.month} tabIndex={0} aria-label={`${monthName(dd.month)}: spend ₹${rupeesShort(dd.spend_paise)}, income ₹${rupeesShort(dd.income_paise)}`}
+            onMouseEnter={() => setHot(i)} onMouseLeave={() => setHot(null)} onFocus={() => setHot(i)} onBlur={() => setHot(null)}>
+            <title>{`${monthName(dd.month)} · spent ₹${rupeesShort(dd.spend_paise)} · income ₹${rupeesShort(dd.income_paise)}`}</title>
+            <rect x={x(i) - (W - L - R) / data.length / 2} y={T - 10} width={(W - L - R) / data.length} height={H - T - B + 10} fill="transparent" />
+            <text x={x(i)} y={H - 8} textAnchor="middle" fontSize="11" fill={i === at ? "var(--ink)" : "var(--muted)"} fontWeight={i === at ? 700 : 400}>{monthName(dd.month, true).slice(0, 3)}</text>
+          </g>
+        ))}
       </svg>
-      <figcaption className="text-sm text-muted flex gap-5 mt-1">
-        <span><span className="inline-block w-3 h-3 bg-rule-strong align-[-2px] mr-1.5" />Spend</span>
-        <span><span className="inline-block w-3 h-0.5 bg-red align-middle mr-1.5" />Income</span>
-        <span>Selected month in ink</span>
+      <figcaption className="text-sm text-muted flex flex-wrap gap-x-5 gap-y-1 mt-1">
+        <span><span className="inline-block w-4 h-[3px] rounded-full bg-ink align-middle mr-1.5" />Spend</span>
+        <span><span className="inline-block w-4 h-[2px] rounded-full align-middle mr-1.5" style={{ background: "var(--orange)" }} />Income</span>
+        <span><span className="inline-block w-4 h-[3px] rounded-full align-middle mr-1.5" style={{ background: "var(--red)", boxShadow: "0 0 6px var(--red)" }} />Spend above income</span>
+        <span><span className="inline-block w-4 h-[3px] rounded-full align-middle mr-1.5" style={{ background: "var(--ok)", boxShadow: "0 0 6px var(--ok)" }} />Spend below income</span>
+        <span>Hover a month to move the dot</span>
       </figcaption>
     </figure>
+  );
+}
+
+function CardSkeleton() {
+  const label = "text-sm font-bold uppercase tracking-wider";
+  return (
+    <div className="grid md:grid-cols-[1.6fr_1fr_1fr] gap-4 mb-9" aria-hidden>
+      <div className="sk-card sk-hero" style={{ animationDelay: "0s" }}><p className={label}>True spend</p><div className="sk-num" /><div className="sk-line" /><div className="sk-line short" /></div>
+      <div className="sk-card sk-sand" style={{ animationDelay: ".1s" }}><p className={label}>Income</p><div className="sk-num" /></div>
+      <div className="sk-card sk-ink" style={{ animationDelay: ".2s" }}><p className={label}>Kept</p><div className="sk-num" /><div className="sk-line short" /></div>
+    </div>
   );
 }

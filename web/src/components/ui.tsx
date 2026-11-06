@@ -1,6 +1,6 @@
 import { useIsFetching, useIsMutating, useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, RefreshCw, X } from "lucide-react";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw, X } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router";
 import { ApiError, get } from "../lib/api";
 import { currentMonth, monthName, shiftMonth, split, titleCase } from "../lib/format";
@@ -94,16 +94,52 @@ export function useMonth(): [string, (m: string) => void] {
   const month = raw && /^\d{4}-(0[1-9]|1[0-2])$/.test(raw) ? raw : currentMonth();
   return [month, (m) => setSp((p) => { p.set("month", m); return p; }, { replace: true })];
 }
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MIN_YEAR = 2020, MAX_YEAR = 2030;
 export function MonthBar({ month, onChange }: { month: string; onChange: (m: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [year, setYear] = useState(Number(month.slice(0, 4)));
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => setYear(Number(month.slice(0, 4))), [month]);
+  useEffect(() => {
+    if (!open) return;
+    const key = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const away = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("keydown", key);
+    document.addEventListener("mousedown", away);
+    return () => { document.removeEventListener("keydown", key); document.removeEventListener("mousedown", away); };
+  }, [open]);
+  const pick = (i: number) => { onChange(`${year}-${String(i + 1).padStart(2, "0")}`); setOpen(false); };
+  const now = currentMonth();
   return (
-    <div className="flex items-center border border-rule-strong rounded-sm bg-sheet" role="group" aria-label="Month">
-      <button className="btn btn-ghost" aria-label="Previous month" onClick={() => onChange(shiftMonth(month, -1))}><ChevronLeft size={18} /></button>
-      <input
-        type="month" aria-label="Pick month" value={month} onChange={(e) => e.target.value && onChange(e.target.value)}
-        className="bg-transparent border-0 text-center font-semibold w-40 min-h-[38px]" min="2020-01" max="2030-12"
-      />
-      <span className="sr-only" aria-live="polite">{monthName(month)}</span>
-      <button className="btn btn-ghost" aria-label="Next month" onClick={() => onChange(shiftMonth(month, 1))}><ChevronRight size={18} /></button>
+    <div className="month-wrap" ref={ref}>
+      <div className="month-bar flex items-center border border-rule-strong bg-sheet" role="group" aria-label="Month">
+        <button className="month-btn" aria-label="Previous month" onClick={() => onChange(shiftMonth(month, -1))}><ChevronLeft size={18} /></button>
+        <button type="button" className="month-label" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <span aria-live="polite">{monthName(month)}</span>
+          <span className="month-cal" aria-hidden><CalendarDays size={17} /></span>
+        </button>
+        <button className="month-btn" aria-label="Next month" onClick={() => onChange(shiftMonth(month, 1))}><ChevronRight size={18} /></button>
+      </div>
+      {open && (
+        <div className="month-pop" role="dialog" aria-label="Choose a month">
+          <div className="mp-head">
+            <button type="button" className="month-btn" aria-label="Previous year" disabled={year <= MIN_YEAR} onClick={() => setYear((y) => y - 1)}><ChevronLeft size={18} /></button>
+            <span className="mp-year">{year}</span>
+            <button type="button" className="month-btn" aria-label="Next year" disabled={year >= MAX_YEAR} onClick={() => setYear((y) => y + 1)}><ChevronRight size={18} /></button>
+          </div>
+          <div className="mp-grid">
+            {MONTHS.map((m, i) => {
+              const val = `${year}-${String(i + 1).padStart(2, "0")}`;
+              return (
+                <button key={m} type="button" className={`mp-month${val === month ? " sel" : ""}${val === now ? " now" : ""}`} style={{ animationDelay: `${i * 28}ms` }}
+                  aria-pressed={val === month} onClick={() => pick(i)}>{m}</button>
+              );
+            })}
+          </div>
+          <div className="mp-foot"><button type="button" className="mp-link" onClick={() => { onChange(now); setOpen(false); }}>This month</button></div>
+        </div>
+      )}
     </div>
   );
 }
@@ -185,7 +221,7 @@ export function LimitBar({ actual, budget, status }: { actual: number; budget: n
   const color = status === "OVER" ? "var(--red)" : status === "NEAR" ? "var(--amber)" : "var(--blue)";
   return (
     <div className="relative h-3 border-y border-rule bg-transparent" role="img" aria-label={budget === null ? "No budget set" : `Spent ${Math.round((actual / (budget || 1)) * 100)}% of budget`}>
-      <div className="absolute inset-y-0 left-0 rounded-r-[4px]" style={{ width: `${(Math.max(actual, 0) / max) * 100}%`, background: color }} />
+      <div className="bar-grow absolute inset-y-0 left-0 rounded-r-[4px]" style={{ width: `${(Math.max(actual, 0) / max) * 100}%`, background: color }} />
       {budget !== null && <div className="absolute -inset-y-1 w-0.5 bg-red" style={{ left: `${(budget / max) * 100}%` }} />}
     </div>
   );

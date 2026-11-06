@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../api.dart';
 import '../format.dart';
 import '../theme.dart';
+import '../ui/motion.dart';
+import '../ui/trendline.dart';
 import '../ui/widgets.dart';
 import 'onboarding.dart';
 
@@ -23,8 +25,9 @@ class _FolioState extends State<Folio> {
       api.get('/me/budgets', {'month': _month}),
       api.get('/me/insights', {'month': _month}),
       api.get('/me/profile'),
+      api.get('/me/trend', {'months': '12'}),
     ]);
-    return {'summary': r[0], 'budgets': r[1], 'insights': r[2], 'profile': r[3]};
+    return {'summary': r[0], 'budgets': r[1], 'insights': r[2], 'profile': r[3], 'trend': r[4]};
   }
 
   @override
@@ -33,8 +36,8 @@ class _FolioState extends State<Folio> {
     return RefreshIndicator(
       onRefresh: () async => setState(() {}),
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), children: [
-        const Text('Folio', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -.4)),
-        const SizedBox(height: 12),
+        const SlideUp(child: Text('FOLIO', style: TextStyle(fontFamily: serif, fontSize: 64, height: .95, letterSpacing: -.5))),
+        const SizedBox(height: 14),
         MonthBar(_month, (m) => setState(() => _month = m)),
         const SizedBox(height: 8),
         Loader<Map<String, dynamic>>(
@@ -46,6 +49,7 @@ class _FolioState extends State<Folio> {
             final b = d['budgets'] as Map<String, dynamic>;
             final ins = (d['insights'] as List).cast<Map<String, dynamic>>();
             final profile = d['profile'] as Map<String, dynamic>;
+            final trend = (d['trend'] as List).cast<Map<String, dynamic>>();
             final spend = s['spend_paise'] as int, naive = s['naive_spend_paise'] as int, income = s['income_paise'] as int;
             final rate = s['savings_rate'] as num?;
             final lines = ((b['lines'] as List).cast<Map<String, dynamic>>())
@@ -54,36 +58,47 @@ class _FolioState extends State<Folio> {
             return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               if (profile['sample'] == true) Padding(padding: const EdgeInsets.only(top: 10), child: Stamp('Sample household · read-only', k.blue)) else SetupGuide(onGo: widget.onGo),
               if (empty) const EmptyState('Nothing written for this month yet', hint: 'Add an account in Books, then your first entry.') else ...[
-                Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  decoration: BoxDecoration(border: Border.symmetric(horizontal: BorderSide(color: k.ruleStrong))),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('TRUE SPEND', style: TextStyle(color: k.muted, fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1)),
-                    const SizedBox(height: 4),
-                    DefaultTextStyle.merge(style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: -1), child: CountUp(spend, (v) => _BigMoney(v, k.blue))),
-                    if (naive > spend) Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 6, children: [
-                        Text('A plain ledger shows', style: TextStyle(color: k.muted)),
-                        CountUp(naive, (v) => Money(v, struck: true, big: true)),
-                        Text('· PAM leaves out ${inr(naive - spend)}', style: TextStyle(color: k.muted)),
+                const SizedBox(height: 14),
+                SlideUp(
+                  child: ShapeCard(
+                    shape: CardShape.hero, color: k.orange, stripes: true,
+                    child: DefaultTextStyle.merge(
+                      style: const TextStyle(color: Colors.white),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('TRUE SPEND', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 1.2)),
+                        const SizedBox(height: 4),
+                        DefaultTextStyle.merge(style: const TextStyle(fontFamily: serif, fontSize: 50, height: 1.05), child: CountUp(spend, (v) => _BigMoney(v, Colors.white))),
+                        if (naive > spend) Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text('A plain ledger shows ${inr(naive)}. PAM leaves out ${inr(naive - spend)}.', style: const TextStyle(height: 1.35)),
+                        ),
                       ]),
                     ),
-                    const SizedBox(height: 14),
-                    Row(children: [
-                      Expanded(child: _Fig('INCOME', CountUp(income, (v) => Money(v, big: true)))),
-                      Expanded(child: _Fig('KEPT', rate == null ? const Text('—', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)) : CountUp((rate * 100).round(), (v) => Text('$v%', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: rate < 0 ? k.red : k.ink))))),
-                    ]),
-                  ]),
+                  ),
                 ),
+                const SizedBox(height: 12),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: SlideUp(index: 1, child: ShapeCard(shape: CardShape.tab, color: k.sand, radius: 22, padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                      child: _Fig('INCOME', CountUp(income, (v) => Text(inr(v), style: const TextStyle(fontFamily: serif, fontSize: 24, color: Color(0xFF191919)))))))),
+                  const SizedBox(width: 12),
+                  Expanded(child: SlideUp(index: 2, child: ShapeCard(shape: CardShape.tab, color: const Color(0xFF191919), radius: 22, padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                      child: _Fig('KEPT', rate == null ? const Text('—', style: TextStyle(fontFamily: serif, fontSize: 24, color: Color(0xFFFCF9EB))) : CountUp((rate * 100).round(), (v) => Text('$v%', style: TextStyle(fontFamily: serif, fontSize: 24, color: rate < 0 ? const Color(0xFFFF7A52) : const Color(0xFFFCF9EB)))), light: true)))),
+                ]),
+                if (trend.length >= 2) ...[
+                  const SectionTitle('Twelve months'),
+                  SlideUp(index: 3, child: Container(
+                    padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+                    decoration: BoxDecoration(color: k.sheet, borderRadius: BorderRadius.circular(24), border: Border.all(color: k.rule)),
+                    child: TrendLine(data: trend, current: _month),
+                  )),
+                ],
               ],
               const SectionTitle('Against budget'),
               if (lines.isEmpty) const EmptyState('No budgets or spending this month') else
-                for (final l in lines.take(8)) _BudgetRow(l),
+                for (final (i, l) in lines.take(8).indexed) SlideUp(index: i, child: _BudgetRow(l)),
               if (ins.isNotEmpty) ...[
                 const SectionTitle('Margin notes'),
-                for (final i in ins.take(5)) _Note(i),
+                for (final (n, i) in ins.take(5).indexed) SlideUp(index: n, child: _Note(i)),
               ],
             ]);
           },
@@ -109,10 +124,11 @@ class _BigMoney extends StatelessWidget {
 class _Fig extends StatelessWidget {
   final String label;
   final Widget child;
-  const _Fig(this.label, this.child);
+  final bool light;
+  const _Fig(this.label, this.child, {this.light = false});
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: TextStyle(color: Palette.of(context).muted, fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1)),
+        Text(label, style: TextStyle(color: light ? const Color(0xFFBDB8A8) : const Color(0xFF5E5A50), fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1)),
         const SizedBox(height: 2),
         child,
       ]);
@@ -127,8 +143,9 @@ class _BudgetRow extends StatelessWidget {
     final status = l['status'] as String;
     final budget = l['budget_paise'] as int?;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: k.rule))),
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: k.sheet, borderRadius: BorderRadius.circular(22), border: Border.all(color: k.rule)),
       child: Column(children: [
         Row(children: [
           Expanded(child: Text((l['category_name'] ?? titleCase(l['category_code'] as String)) as String, style: const TextStyle(fontWeight: FontWeight.w600))),
@@ -154,8 +171,9 @@ class _Note extends StatelessWidget {
     final k = Palette.of(context);
     final c = i['severity'] == 'ALERT' ? k.red : i['severity'] == 'WARN' ? k.amber : k.muted;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: k.rule))),
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: k.sheet, borderRadius: BorderRadius.circular(22), border: Border.all(color: k.rule)),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(margin: const EdgeInsets.only(top: 6, right: 10), width: 8, height: 8, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
         Expanded(child: Text(i['message'] as String)),
@@ -163,3 +181,4 @@ class _Note extends StatelessWidget {
     );
   }
 }
+

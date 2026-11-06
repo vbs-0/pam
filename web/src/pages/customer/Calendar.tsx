@@ -64,8 +64,8 @@ function Grid({ d, onPick, picked }: { d: Daily; onPick: (date: string) => void;
         const label = `${dayLabel(c.date)}: ${c.count ? `spent ₹${rupees(c.spend_paise)}${c.income_paise ? `, received ₹${rupees(c.income_paise)}` : ""}, ${c.count} entr${c.count > 1 ? "ies" : "y"}` : "no entries"}`;
         return (
           <button key={c.date} type="button" role="gridcell" aria-label={label} onClick={() => onPick(c.date)} aria-pressed={picked === c.date}
-            className={`cal-cell relative text-left p-1.5 sm:p-2 min-h-[64px] sm:min-h-[84px] border ${picked === c.date ? "border-blue ring-2 ring-blue" : c.date === today ? "border-red" : "border-rule"}`}
-            style={{ background: c.spend_paise > 0 ? `color-mix(in srgb, var(--blue) ${Math.round(8 + heat * 52)}%, var(--sheet))` : "var(--sheet)" }}>
+            className={`cal-cell${heat > 0.5 ? " hot" : ""} relative text-left p-1.5 sm:p-2 min-h-[64px] sm:min-h-[84px] border ${picked === c.date ? "border-blue ring-2 ring-blue" : c.date === today ? "border-red" : "border-rule"}`}
+            style={{ background: c.spend_paise > 0 ? `color-mix(in srgb, var(--orange) ${Math.round(10 + heat * 80)}%, var(--sheet))` : "var(--sheet)" }}>
             <span className={`text-xs font-semibold ${c.date === today ? "text-red" : "text-muted"}`}>{n}</span>
             {c.spend_paise > 0 && <span className="block mt-1 text-[11px] sm:text-sm font-semibold num leading-tight">₹{rupeesShort(c.spend_paise)}</span>}
             {c.income_paise > 0 && <span aria-hidden className="absolute right-1.5 top-1.5 w-2 h-2 rounded-full bg-green" />}
