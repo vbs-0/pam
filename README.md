@@ -26,6 +26,10 @@ Sign in as `usr-000001@pam.is-cool.dev` / `password123` for a read-only sample h
 
 The full dataset (1,000 households, 500,000 transactions, seed `20261022`, ~500 MB) is not committed, but the complete files are attached to the [v1.1.0 release](https://github.com/vbs-0/pam/releases/tag/v1.1.0) as a 67 MB zip, and `python -m app.cli generate --scale full` recreates them byte for byte; its manifest, provenance record and reports are in `reports/full/`. The data is synthetic only; see [docs/dataset-provenance.md](docs/dataset-provenance.md) for provenance, tamper checks (`docs/manifest-hashes.sha256`) and the exact reproducibility scope (locked Python 3.12 and `backend/uv.lock`). Generated files are never edited by hand.
 
+## Screens and features
+
+Screenshots of every web and app screen: [`docs/screenshots.md`](docs/screenshots.md). Complete feature list read from the code, with file and line evidence: [`docs/features.md`](docs/features.md).
+
 ## Try it as each role
 
 Live site: log in with the password the author gives you (not stored in the repo) or run locally and set `DEMO_PASSWORD` in `backend/.env`. The seeded accounts are `customer@pam.test`, `analyst@pam.test`, `reviewer@pam.test` and `admin@pam.test`, all with `DEMO_PASSWORD`. Each sees only its own screens.
