@@ -124,7 +124,7 @@ class _Painter extends CustomPainter {
       required this.ready, required this.draw, required this.move, required this.pulse})
       : super(repaint: Listenable.merge([draw, move, pulse]));
 
-  static const _l = 18.0, _r = 18.0;
+  static const _l = 18.0, _r = 18.0, _t = 36.0, _b = 28.0;
 
   Path _curve(List<double> v, double Function(int) x, double Function(double) y) {
     final p = Path()..moveTo(x(0), y(v[0]));
