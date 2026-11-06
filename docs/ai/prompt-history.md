@@ -172,3 +172,15 @@ This is the record of every prompt I sent to the AI assistant (Claude Code) whil
 **P70.** What is today's entries versus the Folio total? *(Screenshots.)* Then: that 611 was income, so it should show plus, why does it show minus?
 
 **P71.** Push everywhere, even to git. Also update the prompt history, and respect the existing information in it: do not edit or flag it.
+
+**P72.** Put all the new screenshots on GitHub; everything should be the latest. The phone is connected, go ahead. Why are you opening my other apps?
+
+**P73.** Many places on the web still take text in number fields. Some times the calendar fails like this. Can "last 6 months" be replaced with all time or similar?
+
+**P74.** I want our application on Komi Store. *(Screenshots of the store search.)*
+
+**P75.** I am done working. What else is left? Put the demo password on git, or tell me and I will put it manually, since everyone needs to sign in. Have you mentioned all four logins with their passwords?
+
+**P76.** Are the admin and staff accounts not in the problem statement? Then remove the other accounts' data, keep only dummy data, set the password to password123 for those roles as well, and put it on git, so everything is synthetic and anyone can look until the judges finish.
+
+**P77.** Can you finish, or is something still left before I submit?
